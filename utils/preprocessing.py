@@ -6,6 +6,7 @@ import json
 import tqdm
 import glob
 import os
+import re
 
 def computeDisplacement(trajectory_split, trajectory_type):
   # Compute the displacement
@@ -36,8 +37,8 @@ def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag'):
     # print("Index of each {} trajectory : ".format(traj_type), index_split_by_flag)
   return trajectory_split
 
-def get_col_names(dataset_folder):
-  with open(dataset_folder + '/configFile_camParams.json') as json_file:
+def get_col_names(dataset_folder, i):
+  with open(dataset_folder + '/configFile_camParams_Trial{}.json'.format(i)) as json_file:
     col_names = json.load(json_file)["col_names"]
     return col_names
 
@@ -57,24 +58,27 @@ if __name__ == '__main__':
   parser.add_argument('--split_by', type=str, help='Specify the flag for split', default='add_force_flag')
   parser.add_argument('--output_path', type=str, help='Specify output path to save dataset')
   args = parser.parse_args()
-  # 
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
+  pattern = r'(Trial_[0-9])+'
+  print(re.findall(pattern, dataset_folder[0]))
+  trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
+  print(trial_index)
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile"]
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])
     # Read json for column names
-    col_names = get_col_names(dataset_folder[i])
-    trajectory_df = {"Rolling" : pd.read_csv(dataset_folder[i] + "/RollingTrajectory.csv", names=col_names, skiprows=1, delimiter=','),
-                      "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory.csv", names=col_names, skiprows=1, delimiter=','),
-                      "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory.csv", names=col_names, skiprows=1, delimiter=',')}
+    col_names = get_col_names(dataset_folder[i], trial_index[i])
+    trajectory_df = {"Rolling" : pd.read_csv(dataset_folder[i] + "/RollingTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
+                      "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
+                      "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=',')}
     # Split the trajectory by flag
     trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag")
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
     # Save to npy format
     for traj_type in trajectory_type:
-      np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, i+1), arr=trajectory_npy[traj_type])
+      np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, trial_index[i]), arr=trajectory_npy[traj_type])
     # for key, values in trajectory_npy.items():
       # print("{} trajectory : #N = {} trajectory".format(key, values.shape))
 
