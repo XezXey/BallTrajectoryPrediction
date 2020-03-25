@@ -17,24 +17,20 @@ def computeDisplacement(trajectory_split, trajectory_type):
     # Remove by get rid of the np.vstack
     trajectory_npy[traj_type] = [np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
                                            np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).loc[:, :].values, axis=0))) for i in range(len(trajectory_split[traj_type]))]
-    # Cast to ndarray
+    # Cast to ndarray (Bunch of trajectory)
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
-    # print(trajectory_npy[traj_type].shape)
-    # print(trajectory_npy[traj_type][12].shape)
-    # print(trajectory_split[traj_type][0])
-    # print(np.array(trajectory_npy[traj_type][i].shape))
-    # print(np.array(trajectory_npy[traj_type][0]))
   return trajectory_npy
 
 def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag'):
+  threshold_lengths = 5 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
     # Split each dataframe by using the flag == True as an index of starting point
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)
-    # Store splitted dataframe in list (Not use the last trajectory)
-    trajectory_split[traj_type] = [trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1]+1, :] for i in range(1, len(index_split_by_flag)-1)]
-    # print("Index of each {} trajectory : ".format(traj_type), index_split_by_flag)
+    # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
+    trajectory_split[traj_type] = [trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :] for i in range(1, len(index_split_by_flag)-1) if len(trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :]) > threshold_lengths]
+    # print("Each trajectory length : ", [trajectory_split[traj_type][i].shape for i in range(len(trajectory_split[traj_type]))])
   return trajectory_split
 
 def get_col_names(dataset_folder, i):

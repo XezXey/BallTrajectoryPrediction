@@ -166,7 +166,8 @@ if __name__ == '__main__':
   wandb.init(project="ball-trajectory-estimation")
   # Argumentparser for input
   parser = argparse.ArgumentParser(description='Predict the 2D projectile')
-  parser.add_argument('--dataset_path', dest='dataset_path', type=str, help='Path to dataset', required=True)
+  parser.add_argument('--dataset_train_path', dest='dataset_train_path', type=str, help='Path to training set', required=True)
+  parser.add_argument('--dataset_val_path', dest='dataset_val_path', type=str, help='Path to validation set', required=True)
   parser.add_argument('--batch_size', dest='batch_size', type=int, help='Size of batch', default=50)
   parser.add_argument('--trajectory_type', dest='trajectory_type', type=str, help='Type of trajectory(Rolling, Projectile, MagnusProjectile)', default='Projectile')
   parser.add_argument('--visualize_trajectory_flag', dest='visualize_trajectory_flag', type=bool, help='Visualize the trajectory', default=False)
@@ -193,16 +194,20 @@ if __name__ == '__main__':
   camera_to_world_matrix = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
 
   # Initial writer for tensorboard
-  writer = SummaryWriter('trajectory_tensorboard/{}'.format(args.dataset_path))
+  writer = SummaryWriter('trajectory_tensorboard/{}'.format(args.dataset_train_path))
 
-  # Create Datasetloader
-  trajectory_dataset = TrajectoryDataset(dataset_path=args.dataset_path, trajectory_type=args.trajectory_type)
-  trajectory_dataloader = DataLoader(trajectory_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
-
+  # Create Datasetloader for train and validation
+  trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
+  trajectory_train_dataloader = DataLoader(trajectory_train_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  # Create Datasetloader for validation
+  trajectory_val_dataset = TrajectoryDataset(dataset_path=args.dataset_val_path, trajectory_type=args.trajectory_type)
+  trajectory_val_dataloader = DataLoader(trajectory_val_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  # Load 1 batch for validation set
+  trajectory_val_iterloader = iter(trajectory_val_dataloader)
   # Dataset format
   # Trajectory path : (x0, y0) ... (xn, yn)
   print("======================================================Summary Batch (batch_size = {})=========================================================================".format(args.batch_size))
-  for key, batch in enumerate(trajectory_dataloader):
+  for key, batch in enumerate(trajectory_train_dataloader):
     print("Input batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['input'][0].shape, batch['input'][1].shape, batch['input'][2].shape, batch['input'][3].shape))
     print("Output batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['output'][0].shape, batch['output'][1].shape, batch['output'][2].shape, batch['output'][3].shape))
     # Test RNN/LSTM Step
@@ -236,29 +241,34 @@ if __name__ == '__main__':
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
   # Training a model iterate over dataloader to get each batch and pass to train function
-  for batch_idx, batch in enumerate(trajectory_dataloader):
-    if batch_idx == 0:
-      continue
-    # Training set (Each index in batch came from the collate_fn_padd)
-    input_trajectory_train = batch['input'][0].to(device)
-    input_trajectory_train_lengths = batch['input'][1].to(device)
-    input_trajectory_train_mask = batch['input'][2].to(device)
-    input_trajectory_train_startpos = batch['input'][3].to(device)
-    output_trajectory_train = batch['output'][0].to(device)
-    output_trajectory_train_lengths = batch['output'][1].to(device)
-    output_trajectory_train_mask = batch['output'][2].to(device)
-    output_trajectory_train_startpos = batch['output'][3].to(device)
-    output_trajectory_train_xyz = batch['output'][4].to(device)
+  for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
+    # Training set (Each index in batch_train came from the collate_fn_padd)
+    input_trajectory_train = batch_train['input'][0].to(device)
+    input_trajectory_train_lengths = batch_train['input'][1].to(device)
+    input_trajectory_train_mask = batch_train['input'][2].to(device)
+    input_trajectory_train_startpos = batch_train['input'][3].to(device)
+    output_trajectory_train = batch_train['output'][0].to(device)
+    output_trajectory_train_lengths = batch_train['output'][1].to(device)
+    output_trajectory_train_mask = batch_train['output'][2].to(device)
+    output_trajectory_train_startpos = batch_train['output'][3].to(device)
+    output_trajectory_train_xyz = batch_train['output'][4].to(device)
+
     # Validation set
-    input_trajectory_val = batch['input'][0].to(device)
-    input_trajectory_val_lengths = batch['input'][1].to(device)
-    input_trajectory_val_mask = batch['input'][2].to(device)
-    input_trajectory_val_startpos = batch['input'][3].to(device)
-    output_trajectory_val = batch['output'][0].to(device)
-    output_trajectory_val_lengths = batch['output'][1].to(device)
-    output_trajectory_val_mask = batch['output'][2].to(device)
-    output_trajectory_val_startpos = batch['output'][3].to(device)
-    output_trajectory_val_xyz = batch['output'][4].to(device)
+    try:
+      batch_val = next(trajectory_val_iterloader)
+    except StopIteration:
+      trajectory_val_iterloader = iter(trajectory_val_dataloader)
+      batch_val = next(trajectory_val_iterloader)
+
+    input_trajectory_val = batch_val['input'][0].to(device)
+    input_trajectory_val_lengths = batch_val['input'][1].to(device)
+    input_trajectory_val_mask = batch_val['input'][2].to(device)
+    input_trajectory_val_startpos = batch_val['input'][3].to(device)
+    output_trajectory_val = batch_val['output'][0].to(device)
+    output_trajectory_val_lengths = batch_val['output'][1].to(device)
+    output_trajectory_val_mask = batch_val['output'][2].to(device)
+    output_trajectory_val_startpos = batch_val['output'][3].to(device)
+    output_trajectory_val_xyz = batch_val['output'][4].to(device)
 
     # Call function to train
     min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,

@@ -75,6 +75,19 @@ if __name__ == '__main__':
   args = parser.parse_args()
   trajectory_dataset = TrajectoryDataset(args.dataset_path, trajectory_type=args.trajectory_type)
   trajectory_dataloader = DataLoader(trajectory_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True)
+  '''
+  trajectory_val_dataset = TrajectoryDataset(args.dataset_path, trajectory_type=args.trajectory_type)
+  trajectory_val_dataloader = DataLoader(trajectory_val_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True)
+  trajectory_val_iterloader = iter(trajectory_val_dataloader)
+  for i in range(20):
+    try:
+      batch=next(trajectory_val_iterloader)
+    except StopIteration:
+      print("Reload a batch...")
+      trajectory_val_iterloader = iter(trajectory_val_dataloader)
+      batch=next(trajectory_val_iterloader)
+    print(i, len(batch['input']))
+  '''
   print("===============================Summary Batch (batch_size = {})===============================".format(args.batch_size))
   for key, batch in enumerate(trajectory_dataloader):
     print("Input batch [{}] : batch={}, lengths={}, mask={}".format(key, batch['input'][0].shape, batch['input'][1].shape, batch['input'][2].shape))
