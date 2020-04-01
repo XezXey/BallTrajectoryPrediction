@@ -21,10 +21,12 @@ def computeDisplacement(trajectory_split, trajectory_type):
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
   return trajectory_npy
 
-def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag'):
+def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag', force_zero_ground_flag=False):
   threshold_lengths = 5 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
+    if traj_type=='Rolling' and force_zero_ground_flag is True:
+      trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * 0.0
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
     # Split each dataframe by using the flag == True as an index of starting point
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)
@@ -53,6 +55,7 @@ if __name__ == '__main__':
   parser.add_argument('--dataset_path', type=str, help='Specify path to dataset', required=True)
   parser.add_argument('--split_by', type=str, help='Specify the flag for split', default='add_force_flag')
   parser.add_argument('--output_path', type=str, help='Specify output path to save dataset')
+  parser.add_argument('--force_zero_ground_flag', type=bool, help='Input the flag the make all rolling trajectory stay on the ground(Force y=0)', default=False)
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
@@ -69,7 +72,7 @@ if __name__ == '__main__':
                       "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
                       "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=',')}
     # Split the trajectory by flag
-    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag")
+    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag)
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
     # Save to npy format

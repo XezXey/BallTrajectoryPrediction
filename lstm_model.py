@@ -15,11 +15,11 @@ class LSTM(pt.nn.Module):
     self.n_layers = n_layers
     # Define the layers
     # RNN layer
-    self.lstm1 = pt.nn.LSTM(input_size=input_size, hidden_size=hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False)
-    self.lstm2 = pt.nn.LSTM(input_size=hidden_dim, hidden_size=hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False)
-    self.lstm3 = pt.nn.LSTM(input_size=hidden_dim, hidden_size=hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False)
+    self.lstm1 = pt.nn.LSTM(input_size=input_size, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
+    self.lstm2 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
+    self.lstm3 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
     # FC
-    self.fc1 = pt.nn.Linear(hidden_dim, 32, bias=True)
+    self.fc1 = pt.nn.Linear(self.hidden_dim, 32, bias=True)
     self.fc2 = pt.nn.Linear(32, 16, bias=True)
     self.fc3 = pt.nn.Linear(16, 8, bias=True)
     self.fc4 = pt.nn.Linear(8, output_size, bias=True)
@@ -36,8 +36,7 @@ class LSTM(pt.nn.Module):
     out_packed, (hidden, cell_state) = self.lstm2(out_packed, (hidden, cell_state))
     out_packed, (hidden, cell_state) = self.lstm3(out_packed, (hidden, cell_state))
     # Reshaping the output such that it can be fit into the fc layer
-    # out = out.contiguous().view(-1, self.hidden_dim) # Flatten
-    out_unpacked = pad_packed_sequence(out_packed, batch_first=True)[0]
+    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-1)[0]
     out = self.fc1(out_unpacked)
     out = self.relu1(out)
     out = self.fc2(out)
