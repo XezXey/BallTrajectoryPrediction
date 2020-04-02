@@ -22,10 +22,17 @@ import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import json
 
+def visualize_layout_update(fig=None, n_vis=0):
+  # Save to html file and use wandb to log the html and display (Plotly3D is not working)
+  fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
+  for i in range(n_vis*2):
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[0, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+  return fig
+
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, fig=None, flag='train', n_vis=5):
   # marker_dict for contain the marker properties
-  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.4)')
-  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)')
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.4)', size=5)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.2)', size=5)
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
   # Random the index the be visualize
@@ -38,13 +45,22 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
     fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
     fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col)
 
-  # Save to html file and use wandb to log the html and display (Plotly3D is not working)
-  fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1))
-  plotly.offline.plot(fig, filename='./trajectory_visualization.html', auto_open=False)
-  wandb.log({"Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./trajectory_visualization.html'))})
-
-def MSELoss(output, trajectory_gt, mask, delmask=True):
-  mse_loss = pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)
+def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
+  # print(output.shape)
+  # print(lengths.shape)
+  # print(mask.shape)
+  if lengths is None :
+    on_ground_penalize = pt.tensor([0]).to(device)
+  else: on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
+  # print(on_ground_penalize)
+  # for i in range(lengths.shape[0]):
+    # print(trajectory_gt[i][lengths[i], 1], trajectory_gt[i][lengths[i]+1, 1])
+    # print(mask[i][lengths[i], 1], mask[i][lengths[i]+1, 1])
+    # trajectory_gt = trajectory_gt * mask
+    # print(trajectory_gt[i][lengths[i], 1], trajectory_gt[i][lengths[i]+1, 1])
+  # print(on_ground_penalize)
+  # exit()
+  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + pt.sum((on_ground_penalize*10)**2)
   return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
@@ -110,8 +126,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
       print(output_train.shape, output_trajectory_train_xyz.shape)
     exit()
     '''
-    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train_xyz, mask=output_trajectory_train_mask)
-    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val_xyz, mask=output_trajectory_val_mask)
+    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train_xyz, mask=output_trajectory_train_mask, lengths=output_trajectory_train_lengths)
+    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val_xyz, mask=output_trajectory_val_mask, lengths=output_trajectory_val_lengths)
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
@@ -131,6 +147,10 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
         visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train_xyz, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
         visualize_trajectory(output=pt.mul(output_val, output_trajectory_val_mask), trajectory_gt=output_trajectory_val_xyz, trajectory_startpos=output_trajectory_val_startpos, lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask, fig=fig, flag='Validation', n_vis=n_vis)
+        # Adjust the layout/axis
+        fig = visualize_layout_update(fig=fig, n_vis=n_vis)
+        plotly.offline.plot(fig, filename='./trajectory_visualization.html', auto_open=False)
+        wandb.log({"Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./trajectory_visualization.html'))})
       # Save model checkpoint
       if min_val_loss > val_loss:
         print('[#]Saving a model checkpoint')
@@ -150,7 +170,7 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, 4:6]) for trajectory in batch]
+    input_batch = [pt.Tensor(trajectory[1:, 4:6]) for trajectory in batch] # (4, 5, -1) = (u, v ,g)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position
     input_startpos = pt.stack([pt.Tensor(trajectory[0, 4:7]) for trajectory in batch])
@@ -296,7 +316,7 @@ if __name__ == '__main__':
                                              input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
                                              input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
                                              output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask,
-                                             output_trajectory_val_lengths=output_trajectory_val_mask, output_trajectory_val_startpos=output_trajectory_val_startpos,
+                                             output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                              input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,

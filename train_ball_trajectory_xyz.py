@@ -46,7 +46,7 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, mask, fig=N
   plotly.offline.plot(fig, filename='./trajectory_visualization.html', auto_open=False)
   wandb.log({"Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./trajectory_visualization.html'))})
 
-def MSELoss(output, trajectory_gt, mask, delmask=True):
+def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   mse_loss = pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)
   return mse_loss
 
@@ -75,8 +75,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     hidden.detach()
     hidden = hidden.detach()
     # Calculate loss of displacement
-    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train, mask=output_trajectory_train_mask)
-    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val, mask=output_trajectory_val_mask)
+    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train, mask=output_trajectory_train_mask, lengths=output_trajectory_train_lengths)
+    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val, mask=output_trajectory_val_mask, lengths=output_trajectory_val_lengths)
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
@@ -241,7 +241,7 @@ if __name__ == '__main__':
     # Call function to train
     min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos,
                                              input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask, input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
-                                             output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_mask, output_trajectory_val_startpos=output_trajectory_val_startpos,
+                                             output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                              writer=writer, min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path)

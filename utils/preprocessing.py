@@ -35,6 +35,11 @@ def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag', force_z
     # print("Each trajectory length : ", [trajectory_split[traj_type][i].shape for i in range(len(trajectory_split[traj_type]))])
   return trajectory_split
 
+def addGravityColumns(trajectory_npy):
+  stacked_gravity = [np.concatenate((trajectory_npy[i], np.array([-9.81]*len(trajectory_npy[i])).reshape(-1, 1)), axis=1) for i in range(trajectory_npy.shape[0])]
+  stacked_gravity = np.array(stacked_gravity)
+  return stacked_gravity
+
 def get_col_names(dataset_folder, i):
   with open(dataset_folder + '/configFile_camParams_Trial{}.json'.format(i)) as json_file:
     col_names = json.load(json_file)["col_names"]
@@ -77,7 +82,8 @@ if __name__ == '__main__':
     trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
     # Save to npy format
     for traj_type in trajectory_type:
+      # Adding Gravity columns
+      trajectory_npy[traj_type] = addGravityColumns(trajectory_npy[traj_type])
+      # Write each trajectory
       np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, trial_index[i]), arr=trajectory_npy[traj_type])
-    # for key, values in trajectory_npy.items():
-      # print("{} trajectory : #N = {} trajectory".format(key, values.shape))
 
