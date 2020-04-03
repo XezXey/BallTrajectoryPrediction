@@ -8,6 +8,7 @@ import argparse
 from tqdm import tqdm
 from rnn_model import RNN
 from lstm_model import LSTM
+from bilstm_model import BiLSTM
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset, DataLoader, RandomSampler
@@ -45,13 +46,40 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
     fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
     fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col)
 
+def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
+  gravity_constraint_penalize = 0
+  # Gaussian blur kernel for not get rid of the input information
+  gaussian_blur = pt.tensor([0.25, 0.5, 0.5], dtype=pt.float32).view(1, 1, -1).to(device)
+  # Kernel weight for performing a finite difference
+  kernel_weight = pt.tensor([-1., 0., 1.], dtype=pt.float32).view(1, 1, -1).to(device)
+  # Apply Gaussian blur and finite difference to trajectory_gt
+  for i in range(trajectory_gt.shape[0]):
+    trajectory_gt_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt[i][:lengths[i], 1].view(1, 1, -1), gaussian_blur)
+    trajectory_gt_yaxis_1st_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_gaussian_blur, kernel_weight)
+    trajectory_gt_yaxis_2nd_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_finite_difference, gaussian_blur)
+    trajectory_gt_yaxis_2nd_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_2nd_gaussian_blur, kernel_weight)
+    # Apply Gaussian blur and finite difference to trajectory_gt
+    output_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(output[i][:lengths[i], 1].view(1, 1, -1), gaussian_blur)
+    output_yaxis_1st_finite_difference = pt.nn.functional.conv1d(output_yaxis_1st_gaussian_blur, kernel_weight)
+    output_yaxis_2nd_gaussian_blur = pt.nn.functional.conv1d(output_yaxis_1st_finite_difference, gaussian_blur)
+    output_yaxis_2nd_finite_difference = pt.nn.functional.conv1d(output_yaxis_2nd_gaussian_blur, kernel_weight)
+    # Compute the penalize term
+    # print(trajectory_gt_yaxis_2nd_finite_difference, output_yaxis_2nd_finite_difference)
+    gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference))*10)**2
+  return gravity_constraint_penalize
+
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   # print(output.shape)
   # print(lengths.shape)
   # print(mask.shape)
+  # Adding on ground penalize
   if lengths is None :
-    on_ground_penalize = pt.tensor([0]).to(device)
-  else: on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
+    on_ground_penalize = pt.tensor(0).to(device)
+    gravity_constraint_penalize = pt.tensor(0).to(device)
+  else:
+    on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
+    gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
+  # Adding gravity constraint penalize(2nd derivative)
   # print(on_ground_penalize)
   # for i in range(lengths.shape[0]):
     # print(trajectory_gt[i][lengths[i], 1], trajectory_gt[i][lengths[i]+1, 1])
@@ -60,7 +88,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     # print(trajectory_gt[i][lengths[i], 1], trajectory_gt[i][lengths[i]+1, 1])
   # print(on_ground_penalize)
   # exit()
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + pt.sum((on_ground_penalize*10)**2)
+  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + pt.sum((on_ground_penalize*10)**2) + gravity_constraint_penalize
   return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
@@ -74,15 +102,12 @@ def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_
   screen_space = ((camera_to_world_matrix @ projection_matrix) @ screen_space.t()).t() # Reprojected
   return screen_space[:, :3]
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, visualize_trajectory_flag=True, writer=None, min_val_loss=2e10, model_checkpoint_path='./model/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, optimizer, visualize_trajectory_flag=True, writer=None, min_val_loss=2e10, model_checkpoint_path='./model/'):
   # Training RNN/LSTM model 
   # Run over each example
   # trajectory_train = trajectory_train path with shape (n_trajectory_train, 2) ===> All 2 features are (x0, y0) ... (xn, yn) ;until yn == 0
   # initial_condition_train = Initial conditon with shape (n_trajectory_train, 6) ===> All 6 features are (x, y, angle, velocity, g, timestep)
-  # Define models parameters
-  learning_rate = 0.001
   n_epochs = 300
-  optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
   # Initial hidden layer for the first RNN Cell
   model.train()
   # Train a model
@@ -269,13 +294,20 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = BiLSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input_, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = BiLSTM(input_size=n_input_, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
+
+  # Define optimizer parameters
+  learning_rate = 0.001
+  optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
+  decay_rate = 0.96
+  lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
+
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
@@ -283,6 +315,7 @@ if __name__ == '__main__':
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
   # Training a model iterate over dataloader to get each batch and pass to train function
   for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
+
     # Training set (Each index in batch_train came from the collate_fn_padd)
     input_trajectory_train = batch_train['input'][0].to(device)
     input_trajectory_train_lengths = batch_train['input'][1].to(device)
@@ -320,6 +353,10 @@ if __name__ == '__main__':
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                              input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             writer=writer, min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix)
+                                             writer=writer, min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
+                                             optimizer=optimizer)
+
+    if batch_idx % 15==0 and batch_idx!=0:
+      lr_scheduler.step()
 
   print("[#] Done")
