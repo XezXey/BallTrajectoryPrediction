@@ -19,10 +19,27 @@ def computeDisplacement(trajectory_split, trajectory_type):
                                            np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).loc[:, :].values, axis=0))) for i in range(len(trajectory_split[traj_type]))]
     # Cast to ndarray (Bunch of trajectory)
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
+    # Remove some dataset that goes below the ground (Error from unity)
+    trajectory_npy[traj_type] = remove_below_ground_trajectory(trajectory=trajectory_npy[traj_type], traj_type=traj_type)
   return trajectory_npy
 
+def remove_below_ground_trajectory(trajectory, traj_type):
+  # Loop over the trajectory to remove any trajectory that goes below the ground
+  count=0
+  remove_idx = []
+  for idx in range(trajectory.shape[0]):
+    traj_cumsum_temp = np.cumsum(trajectory[idx][:, 1], axis=0)
+    if np.any(traj_cumsum_temp < -1) == True:
+      # print(traj_cumsum_temp)
+      # input()
+      remove_idx.append(idx)
+      count+=1
+  print("{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
+  trajectory = np.delete(trajectory.copy(), obj=remove_idx)
+  return trajectory
+
 def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag', force_zero_ground_flag=False):
-  threshold_lengths = 5 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
+  threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
     if traj_type=='Rolling' and force_zero_ground_flag is True:
