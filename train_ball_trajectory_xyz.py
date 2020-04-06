@@ -25,9 +25,8 @@ from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 
-def visualize_layout_update(fig=None, n_vis=0):
+def visualize_layout_update(fig=None, n_vis=5):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
-  fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
   for i in range(n_vis*2):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[0, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
@@ -92,11 +91,8 @@ def cumsum_trajectory(trajectory, trajectory_startpos):
   trajectory = pt.cumsum(trajectory, dim=1)
   return trajectory
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
   # Training RNN/LSTM model 
-  # Cummulative summation the ground truth
-  output_trajectory_train = cumsum_trajectory(trajectory=output_trajectory_train, trajectory_startpos=output_trajectory_train_startpos)
-  output_trajectory_val = cumsum_trajectory(trajectory=output_trajectory_val, trajectory_startpos=output_trajectory_val_startpos)
   n_epochs = 300
   # Initial hidden layer for the first RNN Cell
   model.train()
@@ -118,8 +114,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     output_val = cumsum_trajectory(trajectory=output_val, trajectory_startpos=output_trajectory_val_startpos)
 
     # Calculate loss of reconstructed trajectory
-    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train, mask=output_trajectory_train_mask, lengths=output_trajectory_train_lengths)
-    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val, mask=output_trajectory_val_mask, lengths=output_trajectory_val_lengths)
+    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train_xyz, mask=output_trajectory_train_mask, lengths=output_trajectory_train_lengths)
+    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val_xyz, mask=output_trajectory_val_mask, lengths=output_trajectory_val_lengths)
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
@@ -133,13 +129,13 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
       if visualize_trajectory_flag == True:
         # Visualize by make a subplots of trajectory
         n_vis = 5
-        fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis)
+        fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
         # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
         # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-        visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
-        visualize_trajectory(output=pt.mul(output_val, output_trajectory_val_mask), trajectory_gt=output_trajectory_val, trajectory_startpos=output_trajectory_val_startpos, lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask, fig=fig, flag='Validation', n_vis=n_vis)
+        visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train_xyz, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
+        visualize_trajectory(output=pt.mul(output_val, output_trajectory_val_mask), trajectory_gt=output_trajectory_val_xyz, trajectory_startpos=output_trajectory_val_startpos, lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask, fig=fig, flag='Validation', n_vis=n_vis)
         # Adjust the layout/axis
-        fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
+        fig.update_layout(height=1920, width=1500, autosize=True)
         plotly.offline.plot(fig, filename='./{}/trajectory_visualization_xyz_auto_scaled.html'.format(visualization_path), auto_open=False)
         wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_xyz_auto_scaled.html'.format(visualization_path)))})
         fig = visualize_layout_update(fig=fig, n_vis=n_vis)
@@ -189,6 +185,7 @@ def collate_fn_padd(batch):
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)
+    output_xyz = pt.cumsum(output_xyz, dim=1)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
@@ -208,6 +205,7 @@ if __name__ == '__main__':
   parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
   parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
   parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
+  parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   args = parser.parse_args()
 
   # Init wandb
@@ -218,6 +216,7 @@ if __name__ == '__main__':
 
   # GPU initialization
   if pt.cuda.is_available():
+    pt.cuda.set_device(args.cuda_device_num)
     device = pt.device('cuda')
     print('[%]GPU Enabled')
   else:
@@ -289,6 +288,7 @@ if __name__ == '__main__':
     output_trajectory_train_lengths = batch_train['output'][1].to(device)
     output_trajectory_train_mask = batch_train['output'][2].to(device)
     output_trajectory_train_startpos = batch_train['output'][3].to(device)
+    output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
     # Validation set
     try:
@@ -304,11 +304,12 @@ if __name__ == '__main__':
     output_trajectory_val_lengths = batch_val['output'][1].to(device)
     output_trajectory_val_mask = batch_val['output'][2].to(device)
     output_trajectory_val_startpos = batch_val['output'][3].to(device)
+    output_trajectory_val_xyz = batch_val['output'][4].to(device)
 
     # Call function to train
-    min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos,
+    min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
                                              input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask, input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
-                                             output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
+                                             output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                              min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, visualization_path=args.visualization_path)

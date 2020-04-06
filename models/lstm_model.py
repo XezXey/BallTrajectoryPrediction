@@ -11,18 +11,21 @@ class LSTM(pt.nn.Module):
   def __init__(self, input_size, output_size, hidden_dim, n_layers):
     super(LSTM, self).__init__()
     # Define the model parameters
+    self.input_size = input_size
     self.hidden_dim = hidden_dim
     self.n_layers = n_layers
+    self.output_size = output_size
     # Define the layers
     # RNN layer
-    self.lstm1 = pt.nn.LSTM(input_size=input_size, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
-    self.lstm2 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
-    self.lstm3 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=n_layers, batch_first=True, bidirectional=False, dropout=0.5)
+    self.lstm1 = pt.nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_dim, num_layers=self.n_layers, batch_first=True)
+    self.lstm2 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=self.n_layers, batch_first=True)
+    self.lstm3 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=self.n_layers, batch_first=True)
+    self.lstm4 = pt.nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, num_layers=self.n_layers, batch_first=True)
     # FC
-    self.fc1 = pt.nn.Linear(self.hidden_dim, 32, bias=True)
-    self.fc2 = pt.nn.Linear(32, 16, bias=True)
-    self.fc3 = pt.nn.Linear(16, 8, bias=True)
-    self.fc4 = pt.nn.Linear(8, output_size, bias=True)
+    self.fc1 = pt.nn.Linear(self.hidden_dim, 64, bias=True)
+    self.fc2 = pt.nn.Linear(64, 32, bias=True)
+    self.fc3 = pt.nn.Linear(32, 16, bias=True)
+    self.fc4 = pt.nn.Linear(16, output_size, bias=True)
     self.relu1 = pt.nn.ReLU()
     self.relu2 = pt.nn.ReLU()
     self.relu3 = pt.nn.ReLU()
@@ -35,6 +38,7 @@ class LSTM(pt.nn.Module):
     out_packed, (hidden, cell_state) = self.lstm1(x_packed, (hidden, cell_state))
     out_packed, (hidden, cell_state) = self.lstm2(out_packed, (hidden, cell_state))
     out_packed, (hidden, cell_state) = self.lstm3(out_packed, (hidden, cell_state))
+    out_packed, (hidden, cell_state) = self.lstm4(out_packed, (hidden, cell_state))
     # Reshaping the output such that it can be fit into the fc layer
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-1)[0]
     out = self.fc1(out_unpacked)

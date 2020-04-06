@@ -25,9 +25,8 @@ from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 
-def visualize_layout_update(fig=None, n_vis=0):
+def visualize_layout_update(fig=None, n_vis=5):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
-  fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
   for i in range(n_vis*2):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[0, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
@@ -57,6 +56,11 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   kernel_weight = pt.tensor([-1., 0., 1.], dtype=pt.float32).view(1, 1, -1).to(device)
   # Apply Gaussian blur and finite difference to trajectory_gt
   for i in range(trajectory_gt.shape[0]):
+    # print(trajectory_gt[i][:lengths[i]+1, 1])
+    # print(trajectory_gt[i][:lengths[i]+1, 1].shape)
+    if trajectory_gt[i][:lengths[i]+1, 1].shape[0] < 6:
+      print("The trajectory is too shorter to perform a convolution")
+      continue
     trajectory_gt_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt[i][:lengths[i]+1, 1].view(1, 1, -1), gaussian_blur)
     trajectory_gt_yaxis_1st_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_gaussian_blur, kernel_weight)
     trajectory_gt_yaxis_2nd_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_finite_difference, gaussian_blur)
@@ -154,7 +158,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train_xyz, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
         visualize_trajectory(output=pt.mul(output_val, output_trajectory_val_mask), trajectory_gt=output_trajectory_val_xyz, trajectory_startpos=output_trajectory_val_startpos, lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask, fig=fig, flag='Validation', n_vis=n_vis)
         # Adjust the layout/axis
-        fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
+        fig.update_layout(height=1920, width=1500, autosize=True)
         plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path), auto_open=False)
         wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path)))})
         fig = visualize_layout_update(fig=fig, n_vis=n_vis)
@@ -225,6 +229,7 @@ if __name__ == '__main__':
   parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
   parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
   parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
+  parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   args = parser.parse_args()
 
   # Init wandb
@@ -235,6 +240,7 @@ if __name__ == '__main__':
 
   # GPU initialization
   if pt.cuda.is_available():
+    pt.cuda.set_device(args.cuda_device_num)
     device = pt.device('cuda')
     print('[%]GPU Enabled')
   else:
@@ -283,10 +289,10 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input_, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = LSTM(input_size=n_input_, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

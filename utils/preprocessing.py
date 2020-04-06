@@ -64,7 +64,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
-  pattern = r'(Trial_[0-9])+'
+  pattern = r'(Trial_[0-9]+)+'
   print(re.findall(pattern, dataset_folder[0]))
   trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
   print(trial_index)
