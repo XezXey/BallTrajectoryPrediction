@@ -188,8 +188,7 @@ if __name__ == '__main__':
   parser.add_argument('--batch_size', dest='batch_size', type=int, help='Size of batch', default=50)
   parser.add_argument('--trajectory_type', dest='trajectory_type', type=str, help='Type of trajectory(Rolling, Projectile, MagnusProjectile)', default='Projectile')
   parser.add_argument('--visualize_trajectory_flag', dest='visualize_trajectory_flag', type=bool, help='Visualize the trajectory', default=False)
-  parser.add_argument('--model_checkpoint_path', dest='model_checkpoint_path', type=str, help='Path to save a model checkpoint', required=True)
-  parser.add_argument('--model_path', dest='model_path', type=str, help='Path to load a trained model checkpoint', default=None)
+  parser.add_argument('--pretrained_model_path', dest='pretrained_model_path', type=str, help='Path to load a trained model checkpoint', default=None)
   parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
   parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
@@ -240,14 +239,14 @@ if __name__ == '__main__':
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
-  if args.model_path is None:
-    # Create a model
-    print('===>No trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
+  if args.pretrained_model_path is None:
+    print('===>No pre-trained model to load')
+    print('EXIT...')
+    exit()
   else:
     print('===>Load trained model')
     rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
-    rnn_model.load_state_dict(pt.load(args.model_path))
+    rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
 
