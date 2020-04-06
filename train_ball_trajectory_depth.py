@@ -72,18 +72,25 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
     output_yaxis_2nd_finite_difference = pt.nn.functional.conv1d(output_yaxis_2nd_gaussian_blur, kernel_weight)
     # Compute the penalize term
     # print(trajectory_gt_yaxis_2nd_finite_difference, output_yaxis_2nd_finite_difference)
-    gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference))*10)**2
+    gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)))**2
   return gravity_constraint_penalize
 
+def compute_below_ground_constraint_penalize(output, mask, lengths):
+  # Penalize when the y-axis is below on the ground
+  output = output * mask
+  below_ground_constraint_penalize = pt.sum(pt.abs(output[:, :, 1][output[:, :, 1] < -1]))
+  return below_ground_constraint_penalize
+
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
-  # Adding on ground penalize
   if lengths is None :
-    on_ground_penalize = pt.tensor(0).to(device)
     gravity_constraint_penalize = pt.tensor(0).to(device)
+    below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
-    on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
+    # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
+    # Penalize the model if predicted values are below the ground (y < 0)
+    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
+  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize + below_ground_constraint_penalize
   return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):

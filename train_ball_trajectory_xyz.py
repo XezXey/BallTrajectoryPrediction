@@ -48,7 +48,6 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
     fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
     fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col)
 
-
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   # Declare a loss
   gravity_constraint_penalize = 0
@@ -72,16 +71,26 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
     # print(trajectory_gt_yaxis_2nd_finite_difference, output_yaxis_2nd_finite_difference)
     # exit()
     # Compute the penalize term
-    gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference))*10)**2
+    gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)))**2
   return gravity_constraint_penalize
+
+def compute_below_ground_constraint_penalize(output, mask, lengths):
+  # Penalize when the y-axis is below on the ground
+  output = output * mask
+  below_ground_constraint_penalize = pt.sum(pt.abs(output[:, :, 1][output[:, :, 1] < -1]))
+  return below_ground_constraint_penalize
 
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True, trajectory_startpos=None):
   if lengths is None:
     gravity_constraint_penalize = pt.tensor(0).to(device)
+    below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
+    # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
+    # Penalize the model if predicted values are below the ground (y < 0)
+    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
   # Calculate MSE Loss
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize + below_ground_constraint_penalize
   return mse_loss
 
 def cumsum_trajectory(trajectory, trajectory_startpos):
