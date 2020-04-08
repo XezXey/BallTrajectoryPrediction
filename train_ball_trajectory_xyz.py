@@ -33,8 +33,8 @@ def visualize_layout_update(fig=None, n_vis=5):
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, fig=None, flag='Train', n_vis=5):
   # marker_dict for contain the marker properties
-  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=5)
-  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=5)
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
   # detach() for visualization
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
@@ -103,14 +103,14 @@ def cumsum_trajectory(trajectory, trajectory_startpos):
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
   # Training RNN/LSTM model 
   n_epochs = 300
-  # Initial hidden layer for the first RNN Cell
-  model.train()
   # Train a model
   for epoch in range(1, n_epochs+1):
     optimizer.zero_grad() # Clear existing gradients from previous epoch
     # Forward PASSING
+    model.train()
     # Forward pass for training a model
     output_train, (hidden, cell_state) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+    model.eval()
     # Forward pass for validate a model
     output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
     # Detach for use hidden as a weights in next batch
@@ -134,6 +134,15 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
       print('Val Loss : {:.3f}'.format(val_loss.item()))
       wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
+      # Save model checkpoint
+      if min_val_loss > val_loss:
+        print('[#]Saving a model checkpoint')
+        min_val_loss = val_loss
+        # Save to directory
+        pt.save(model.state_dict(), args.model_checkpoint_path)
+        # Save to wandb
+        pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+
     if epoch%50 == 0:
       if visualize_trajectory_flag == True:
         # Visualize by make a subplots of trajectory
@@ -150,15 +159,6 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         fig = visualize_layout_update(fig=fig, n_vis=n_vis)
         plotly.offline.plot(fig, filename='./{}/trajectory_visualization_xyz_pitch_scaled.html'.format(visualization_path), auto_open=False)
         wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_xyz_pitch_scaled.html'.format(visualization_path)))})
-
-      # Save model checkpoint
-      if min_val_loss > val_loss:
-        print('[#]Saving a model checkpoint')
-        min_val_loss = val_loss
-        # Save to directory
-        pt.save(model.state_dict(), args.model_checkpoint_path)
-        # Save to wandb
-        pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
   return min_val_loss, hidden, cell_state
 
@@ -215,10 +215,11 @@ if __name__ == '__main__':
   parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
   parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
+  parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
   args = parser.parse_args()
 
   # Init wandb
-  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags)
+  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)
 
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -252,12 +253,11 @@ if __name__ == '__main__':
     packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
     # 2.RNN/LSTM model
     # 3.Unpack the packed
-    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True)
+    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-1)
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
 
   # Model definition
-  hidden_dim = 64
   n_output = 3 # Contain the depth information of the trajectory
   n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
   min_val_loss = 2e10
@@ -265,10 +265,10 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = LSTM(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input_, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = LSTM(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

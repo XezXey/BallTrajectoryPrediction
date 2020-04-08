@@ -235,7 +235,7 @@ if __name__ == '__main__':
     print("===============================================================================================================================================================")
 
   # Model definition
-  hidden_dim = 64
+  hidden_dim = 256
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
+    rnn_model = BiLSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
