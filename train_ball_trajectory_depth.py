@@ -125,7 +125,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     optimizer.zero_grad() # Clear existing gradients from previous epoch
     # Forward PASSING
     # Forward pass for training a model  
-    output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+    output_train, (hidden, cell_state) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
     output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train, trajectory_startpos=input_trajectory_train_startpos)
@@ -155,15 +155,16 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
-      print('Val Loss : {:.3f}'.format(val_loss.item()))if min_val_loss > val_loss:
+      print('Val Loss : {:.3f}'.format(val_loss.item()))
       wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
-      # Save model checkpoint
-      print('[#]Saving a model checkpoint')
-      min_val_loss = val_loss
-      # Save to directory
-      pt.save(model.state_dict(), args.model_checkpoint_path)
-      # Save to wandb
-      pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+      if min_val_loss > val_loss:
+        # Save model checkpoint
+        print('[#]Saving a model checkpoint')
+        min_val_loss = val_loss
+        # Save to directory
+        pt.save(model.state_dict(), args.model_checkpoint_path)
+        # Save to wandb
+        pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
     if epoch%50 == 0:
       if visualize_trajectory_flag == True:
@@ -306,7 +307,7 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.001
+  learning_rate = 0.01
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
@@ -361,6 +362,8 @@ if __name__ == '__main__':
 
     if batch_idx % 15==0 and batch_idx!=0:
       # Decrease learning rate every 15 batch
+      for param_group in optimizer.param_groups:
+          print(param_group['lr'])
       lr_scheduler.step()
 
   print("[#] Done")

@@ -32,7 +32,9 @@ class BiLSTM(pt.nn.Module):
     self.lstm = pt.nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_dim, num_layers=self.n_layers, batch_first=True, bidirectional=True)
     # FC
     fc_blocks = [create_fc_block(in_f, out_f, is_last_layer=False) if out_f!=self.output_size
-                 else create_fc_block(in_f, out_f, is_last_layer=True) for in_f, out_f in zip(self.fc_size, self.fc_size[1:])]
+                 else create_fc_block(in_f, out_f, is_last_layer=True)
+                 for in_f, out_f in zip(self.fc_size, self.fc_size[1:])]
+
     self.fc_blocks = pt.nn.Sequential(*fc_blocks)
 
   def forward(self, x, hidden, cell_state, lengths):

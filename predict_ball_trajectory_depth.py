@@ -36,8 +36,8 @@ def visualize_layout_update(fig=None, n_vis=7):
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
-  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=5)
-  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=5)
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
   # detach() for visualization
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
@@ -84,8 +84,16 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   else:
     on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
   return mse_loss
+
+def evaluateModel(output, trajectory_gt, mask, lengths, delmask=True):
+  print(pt.sum(mask, axis=1).shape)
+  print(pt.sum(pt.abs(trajectory_gt-output) * mask, axis=1).shape)
+  mae_loss = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
+  print(mae_loss)
+  return mae_loss
+
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   depth = depth.view(-1)
@@ -106,7 +114,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   output = pt.cumsum(output, dim=1)
   return output, trajectory_temp
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, per_trajectory_loss, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   model.eval()
@@ -121,6 +129,9 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   output_test = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_test.shape[0])])
   # Calculate loss of unprojected trajectory
   test_loss = MSELoss(output=output_test, trajectory_gt=output_trajectory_test_xyz, mask=output_trajectory_test_mask, lengths=output_trajectory_test_lengths)
+  # Calculate loss per trajectory
+  per_trajectory_loss.append(evaluateModel(output=output_test, trajectory_gt=output_trajectory_test_xyz, mask=output_trajectory_test_mask, lengths=output_trajectory_test_lengths))
+  print(per_trajectory_loss)
 
   print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
 
@@ -139,7 +150,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     fig.show()
     input("Continue plotting...")
 
-  return hidden, cell_state
+  return hidden, cell_state, per_trajectory_loss
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -230,12 +241,11 @@ if __name__ == '__main__':
     packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
     # 2.RNN/LSTM model
     # 3.Unpack the packed
-    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True)
+    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-1)
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
 
   # Model definition
-  hidden_dim = 256
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
@@ -245,7 +255,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = BiLSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=2)
+    rnn_model = LSTM(input_size=n_input, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
@@ -253,6 +263,7 @@ if __name__ == '__main__':
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
   # Test a model iterate over dataloader to get each batch and pass to train function
+  per_trajectory_loss = []
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     # Testing set (Each index in batch_test came from the collate_fn_padd)
     input_trajectory_test = batch_test['input'][0].to(device)
@@ -266,11 +277,11 @@ if __name__ == '__main__':
     output_trajectory_test_xyz = batch_test['output'][4].to(device)
 
     # Call function to test
-    hidden, cell_state = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
+    hidden, cell_state, per_trajectory_loss = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
                                              output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos, output_trajectory_test_xyz=output_trajectory_test_xyz,
                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type)
+                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, per_trajectory_loss=per_trajectory_loss)
 
   print("[#] Done")
