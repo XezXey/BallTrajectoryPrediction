@@ -24,6 +24,7 @@ from utils.dataloader import TrajectoryDataset
 from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
+from models.gru_model import GRU
 
 def visualize_layout_update(fig=None, n_vis=5):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
@@ -89,8 +90,8 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
-    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize + below_ground_constraint_penalize
+    # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
   return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
@@ -120,12 +121,14 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Initial hidden layer for the first RNN Cell
   # Train a model
   for epoch in range(1, n_epochs+1):
+    hidden = rnn_model.initHidden(batch_size=args.batch_size)
+    cell_state = rnn_model.initCellState(batch_size=args.batch_size)
     # Training mode
     model.train()
     optimizer.zero_grad() # Clear existing gradients from previous epoch
     # Forward PASSING
     # Forward pass for training a model  
-    output_train, (hidden, cell_state) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+    output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
     output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train, trajectory_startpos=input_trajectory_train_startpos)
@@ -162,7 +165,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         print('[#]Saving a model checkpoint')
         min_val_loss = val_loss
         # Save to directory
-        pt.save(model.state_dict(), args.model_checkpoint_path)
+        pt.save(model.state_dict(), model_checkpoint_path)
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
@@ -247,6 +250,7 @@ if __name__ == '__main__':
 
   # Initialize folder
   initialize_folder(args.visualization_path)
+  model_checkpoint_path = '{}/{}.pth'.format(args.model_checkpoint_path, args.wandb_notes)
 
   # GPU initialization
   if pt.cuda.is_available():
@@ -298,10 +302,10 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output)
+    rnn_model = GRU(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input_, output_size=n_output)
+    rnn_model = GRU(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
@@ -311,7 +315,7 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-
+  decay_cycle = int(len(trajectory_train_dataloader)/10)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
@@ -319,7 +323,6 @@ if __name__ == '__main__':
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
   # Training a model iterate over dataloader to get each batch and pass to train function
   for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
-
     # Training set (Each index in batch_train came from the collate_fn_padd)
     input_trajectory_train = batch_train['input'][0].to(device)
     input_trajectory_train_lengths = batch_train['input'][1].to(device)
@@ -347,6 +350,11 @@ if __name__ == '__main__':
     output_trajectory_val_startpos = batch_val['output'][3].to(device)
     output_trajectory_val_xyz = batch_val['output'][4].to(device)
 
+    # Log the learning rate
+    for param_group in optimizer.param_groups:
+      print("[#]Learning rate : ", param_group['lr'])
+      wandb.log({'Learning Rate':param_group['lr']})
+
     # Call function to train
     min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
                                              output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
@@ -357,13 +365,13 @@ if __name__ == '__main__':
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                              input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
+                                             min_val_loss=min_val_loss, model_checkpoint_path=model_checkpoint_path, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
                                              optimizer=optimizer)
 
-    if batch_idx % 15==0 and batch_idx!=0:
-      # Decrease learning rate every 15 batch
+    if batch_idx % decay_cycle==0 and batch_idx!=0:
+      # Decrease learning rate every batch_idx % decay_cycle batch
       for param_group in optimizer.param_groups:
-          print(param_group['lr'])
+        print("Learning rate : ", param_group['lr'])
       lr_scheduler.step()
 
   print("[#] Done")

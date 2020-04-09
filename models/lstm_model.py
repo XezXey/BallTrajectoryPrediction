@@ -27,13 +27,15 @@ class LSTM(pt.nn.Module):
     self.input_size = input_size
     self.output_size = output_size
     self.hidden_dim = 64
-    self.n_layers = 8
+    self.n_layers = 4
+    # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, 64, 64, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim, 32, 16, 8, self.output_size]
+    self.fc_size = [self.hidden_dim, 32, 16, 8, 4, self.output_size]
     # Define the layers
     # RNN layer
-    self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers) for in_f, hidden_f in zip(self.recurrent_stacked, self.recurrent_stacked[1:])])
+    self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers)
+                                              for in_f, hidden_f in zip(self.recurrent_stacked, self.recurrent_stacked[1:])])
     # FC
     fc_blocks = [create_fc_block(in_f, out_f, is_last_layer=False) if out_f!=self.output_size
                  else create_fc_block(in_f, out_f, is_last_layer=True)

@@ -278,7 +278,7 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-
+  decay_cycle = len(trajectory_train_dataloader)/10
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
@@ -323,8 +323,10 @@ if __name__ == '__main__':
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                              min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, visualization_path=args.visualization_path)
 
-    if batch_idx % 15==0 and batch_idx!=0:
-      # Decrease learning rate every 15 batch
+    if batch_idx % decay_cycle==0 and batch_idx!=0:
+      # Decrease learning rate every batch_idx % decay_cycle batch
+      for param_group in optimizer.param_groups:
+        print("Learning rate : ", param_group['lr'])
       lr_scheduler.step()
 
   print("[#] Done")
