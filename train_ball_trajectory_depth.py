@@ -85,7 +85,7 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   if lengths is None :
     gravity_constraint_penalize = pt.tensor(0).to(device)
-    below_ground_constraint_penalize = pt.tensor(0).to(device)
+    # below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
@@ -169,11 +169,11 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
-    if epoch%50 == 0:
+    if epoch%100 == 0:
       if visualize_trajectory_flag == True:
         # Visualize by make a subplots of trajectory
         n_vis = 5
-        fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis)
+        fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
         # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
         # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
         visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train_xyz, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
@@ -250,7 +250,11 @@ if __name__ == '__main__':
 
   # Initialize folder
   initialize_folder(args.visualization_path)
-  model_checkpoint_path = '{}/{}.pth'.format(args.model_checkpoint_path, args.wandb_notes)
+  model_checkpoint_path = '{}/'.format(args.model_checkpoint_path + args.wandb_tags.replace('/', '_'))
+  print(model_checkpoint_path)
+  initialize_folder(model_checkpoint_path)
+  model_checkpoint_path = '{}/{}.pth'.format(model_checkpoint_path, args.wandb_notes)
+  print(model_checkpoint_path)
 
   # GPU initialization
   if pt.cuda.is_available():
@@ -302,10 +306,10 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = GRU(input_size=n_input, output_size=n_output)
+    rnn_model = LSTM(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = GRU(input_size=n_input_, output_size=n_output)
+    rnn_model = LSTM(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

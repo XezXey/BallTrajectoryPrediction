@@ -83,14 +83,14 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True, trajectory_startpos=None):
   if lengths is None:
     gravity_constraint_penalize = pt.tensor(0).to(device)
-    below_ground_constraint_penalize = pt.tensor(0).to(device)
+    # below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
-    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
+    # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
   # Calculate MSE Loss
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize + below_ground_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
   return mse_loss
 
 def cumsum_trajectory(trajectory, trajectory_startpos):
@@ -105,11 +105,13 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   n_epochs = 300
   # Train a model
   for epoch in range(1, n_epochs+1):
+    hidden = rnn_model.initHidden(batch_size=args.batch_size)
+    cell_state = rnn_model.initCellState(batch_size=args.batch_size)
     optimizer.zero_grad() # Clear existing gradients from previous epoch
     # Forward PASSING
     model.train()
     # Forward pass for training a model
-    output_train, (hidden, cell_state) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+    output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
     model.eval()
     # Forward pass for validate a model
     output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
@@ -139,11 +141,11 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         print('[#]Saving a model checkpoint')
         min_val_loss = val_loss
         # Save to directory
-        pt.save(model.state_dict(), args.model_checkpoint_path)
+        pt.save(model.state_dict(), model_checkpoint_path)
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
-    if epoch%50 == 0:
+    if epoch%100 == 0:
       if visualize_trajectory_flag == True:
         # Visualize by make a subplots of trajectory
         n_vis = 5
@@ -223,6 +225,11 @@ if __name__ == '__main__':
 
   # Initialize folder
   initialize_folder(args.visualization_path)
+  model_checkpoint_path = '{}/'.format(args.model_checkpoint_path + args.wandb_tags.replace('/', '_'))
+  print(model_checkpoint_path)
+  initialize_folder(model_checkpoint_path)
+  model_checkpoint_path = '{}/{}.pth'.format(model_checkpoint_path, args.wandb_notes)
+  print(model_checkpoint_path)
 
   # GPU initialization
   if pt.cuda.is_available():
@@ -278,7 +285,7 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-  decay_cycle = len(trajectory_train_dataloader)/10
+  decay_cycle = int(len(trajectory_train_dataloader)/10)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
@@ -315,13 +322,18 @@ if __name__ == '__main__':
     output_trajectory_val_startpos = batch_val['output'][3].to(device)
     output_trajectory_val_xyz = batch_val['output'][4].to(device)
 
+    # Log the learning rate
+    for param_group in optimizer.param_groups:
+      print("[#]Learning rate : ", param_group['lr'])
+      wandb.log({'Learning Rate':param_group['lr']})
+
     # Call function to train
     min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
                                              input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask, input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
                                              output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                              input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             min_val_loss=min_val_loss, model_checkpoint_path=args.model_checkpoint_path, visualization_path=args.visualization_path)
+                                             min_val_loss=min_val_loss, model_checkpoint_path=model_checkpoint_path, visualization_path=args.visualization_path)
 
     if batch_idx % decay_cycle==0 and batch_idx!=0:
       # Decrease learning rate every batch_idx % decay_cycle batch

@@ -58,10 +58,10 @@ class GRU(pt.nn.Module):
     return out, (hidden, cell_state)
 
   def initHidden(self, batch_size):
-    hidden = Variable(pt.zeros(self.n_layers, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    hidden = Variable(pt.randn(self.n_layers, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
     return hidden
 
   def initCellState(self, batch_size):
-    cell_state = Variable(pt.zeros(self.n_layers, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    cell_state = Variable(pt.randn(self.n_layers, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
     return cell_state
 
