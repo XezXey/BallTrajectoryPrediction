@@ -33,10 +33,10 @@ def visualize_layout_update(fig=None, n_vis=7):
       fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[0, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
-def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
-  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=5)
-  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=5)
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
   # detach() for visualization
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
@@ -45,7 +45,7 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
     for col_idx in range(1, 3):
-      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+1, col=col_idx)
       fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col_idx)
 
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
@@ -78,13 +78,20 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   # Adding on ground penalize
   if lengths is None :
-    on_ground_penalize = pt.tensor(0).to(device)
     gravity_constraint_penalize = pt.tensor(0).to(device)
   else:
-    on_ground_penalize = pt.stack([output[i][lengths[i], 1] for i in range(lengths.shape[0])])
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) # + gravity_constraint_penalize
   return mse_loss
+
+def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
+  mae_loss_3axis = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
+  mae_loss_trajectory = pt.sum(mae_loss_3axis, axis=1) / 3
+  accepted_3axis_loss = pt.sum((pt.sum(mae_loss_3axis < threshold, axis=1) == 3))
+  print("Accepted 3-Axis(X, Y, Z) loss < {} : {}".format(threshold, accepted_3axis_loss))
+  accepted_trajectory_loss = pt.sum(mae_loss_trajectory < threshold)
+  print("Accepted trajectory loss < {} : {}".format(threshold, accepted_trajectory_loss))
+  return accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis
 
 def cumsum_trajectory(trajectory, trajectory_startpos):
   # Stack the start position to the top of each trajectory
@@ -93,7 +100,7 @@ def cumsum_trajectory(trajectory, trajectory_startpos):
   trajectory = pt.cumsum(trajectory, dim=1)
   return trajectory
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, trajectory_type, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, trajectory_type, threshold, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   model.eval()
@@ -106,6 +113,8 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
 
   # Calculate loss of reconstructed trajectory
   test_loss = MSELoss(output=output_test, trajectory_gt=output_trajectory_test_xyz, mask=output_trajectory_test_mask, lengths=output_trajectory_test_lengths)
+  # Calculate loss per trajectory
+  accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis = evaluateModel(output=output_test, trajectory_gt=output_trajectory_test_xyz, mask=output_trajectory_test_mask, lengths=output_trajectory_test_lengths, threshold=threshold)
 
   print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
 
@@ -116,7 +125,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
 
     # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
     # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-    visualize_trajectory(output=pt.mul(output_test, output_trajectory_test_mask), trajectory_gt=output_trajectory_test_xyz, trajectory_startpos=output_trajectory_test_startpos, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask, fig=fig, flag='Test', n_vis=n_vis)
+    visualize_trajectory(output=pt.mul(output_test, output_trajectory_test_mask), trajectory_gt=output_trajectory_test_xyz, trajectory_startpos=output_trajectory_test_startpos, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask, fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy())
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
     fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
@@ -124,7 +133,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     fig.show()
     input("Continue plotting...")
 
-  return hidden, cell_state
+  return accepted_3axis_loss, accepted_trajectory_loss
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -175,6 +184,7 @@ if __name__ == '__main__':
   parser.add_argument('--pretrained_model_path', dest='pretrained_model_path', type=str, help='Path to load a trained model checkpoint', default=None, required=True)
   parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
+  parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
   args = parser.parse_args()
 
   # Initialize folder
@@ -219,14 +229,17 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output, hidden_dim=hidden_dim, n_layers=8)
+    rnn_model = LSTM(input_size=n_input, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
 
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
-  # Test a model iterate over dataloader to get each batch and pass to train function
+  # Test a model iterate over dataloader to get each batch and pass to predict function
+  n_accepted_3axis_loss = 0
+  n_accepted_trajectory_loss = 0
+  n_trajectory = len(trajectory_test_dataloader)*args.batch_size
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     # Testing set (Each index in batch_test came from the collate_fn_padd)
     input_trajectory_test = batch_test['input'][0].to(device)
@@ -240,9 +253,19 @@ if __name__ == '__main__':
     output_trajectory_test_xyz = batch_test['output'][4].to(device)
 
     # Call function to test
-    hidden, cell_state = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
+    accepted_3axis_loss, accepted_trajectory_loss = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
                                              output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos, output_trajectory_test_xyz=output_trajectory_test_xyz, input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
-                                             model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag, trajectory_type=args.trajectory_type)
+                                             model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag, trajectory_type=args.trajectory_type, threshold=args.threshold)
+
+    n_accepted_3axis_loss += accepted_3axis_loss
+    n_accepted_trajectory_loss += accepted_trajectory_loss
+
+
+  print("="*100)
+  print("[#]Summary")
+  print("Accepted trajectory by MAE Loss : {} from {}".format(n_accepted_trajectory_loss, n_trajectory))
+  print("Accepted trajectory by 3axis MAE Loss : {} from {}".format(n_accepted_3axis_loss, n_trajectory))
+  print("="*100)
 
   print("[#] Done")

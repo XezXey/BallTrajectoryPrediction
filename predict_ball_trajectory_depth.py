@@ -84,7 +84,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = pt.tensor(0).to(device)
   else:
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) # + gravity_constraint_penalize
   return mse_loss
 
 def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
-  # Test a model iterate over dataloader to get each batch and pass to train function
+  # Test a model iterate over dataloader to get each batch and pass to predict function
   n_accepted_3axis_loss = 0
   n_accepted_trajectory_loss = 0
   n_trajectory = len(trajectory_test_dataloader)*args.batch_size
