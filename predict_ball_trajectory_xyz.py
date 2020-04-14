@@ -24,6 +24,7 @@ from utils.dataloader import TrajectoryDataset
 from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
+from models.gru_model import GRU
 
 def visualize_layout_update(fig=None, n_vis=7):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
@@ -201,7 +202,7 @@ if __name__ == '__main__':
 
   # Create Datasetloader for test
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True)#, drop_last=True)
 
   # Dataset format
   # Trajectory path : (x0, y0) ... (xn, yn)
@@ -229,7 +230,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = LSTM(input_size=n_input, output_size=n_output)
+    rnn_model = GRU(input_size=n_input, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
