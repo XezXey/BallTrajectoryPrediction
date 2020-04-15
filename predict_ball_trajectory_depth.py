@@ -32,7 +32,7 @@ def visualize_layout_update(fig=None, n_vis=7):
   for i in range(n_vis*2):
     if i%2==0:
       # Set the figure in column 1 (fig0, 2, 4, ...) into a pitch scaled
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[0, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, fig=None, flag='test', n_vis=5):
@@ -47,6 +47,15 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   vis_idx = np.random.randint(low=0, high=trajectory_startpos.shape[0], size=(n_vis))
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
+    print("X", lengths[i]+1)
+    print(trajectory_gt[i][:lengths[i]+1, 0], output[i][:lengths[i]+1, 0])
+    print(trajectory_gt[i][:lengths[i]+1, 0].shape, output[i][:lengths[i]+1, 0].shape)
+    print("Y", lengths[i]+1)
+    print(trajectory_gt[i][:lengths[i]+1, 1], output[i][:lengths[i]+1, 1])
+    print(trajectory_gt[i][:lengths[i]+1, 1].shape, output[i][:lengths[i]+1, 1].shape)
+    print("Z", lengths[i]+1)
+    print(trajectory_gt[i][:lengths[i]+1, 2], output[i][:lengths[i]+1, 2])
+    print(trajectory_gt[i][:lengths[i]+1, 2].shape, output[i][:lengths[i]+1, 2].shape)
     for col_idx in range(1, 3):
       fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+1, col=col_idx)
       fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col_idx)
@@ -254,7 +263,7 @@ if __name__ == '__main__':
   else:
     print('===>Load trained model')
     rnn_model = GRU(input_size=n_input, output_size=n_output)
-    rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
+    rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
 

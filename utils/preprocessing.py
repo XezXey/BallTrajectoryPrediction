@@ -25,20 +25,19 @@ def computeDisplacement(trajectory_split, trajectory_type):
 
 def remove_below_ground_trajectory(trajectory, traj_type):
   # Loop over the trajectory to remove any trajectory that goes below the ground
+  # Also remove the trajectory that is outside the field and droping to the ground
   count=0
   remove_idx = []
   for idx in range(trajectory.shape[0]):
     traj_cumsum_temp = np.cumsum(trajectory[idx][:, 1], axis=0)
-    if np.any(traj_cumsum_temp < -1) == True:
-      # print(traj_cumsum_temp)
-      # input()
+    if np.any(traj_cumsum_temp <= -1) == True:
       remove_idx.append(idx)
       count+=1
   print("{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   return trajectory
 
-def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag', force_zero_ground_flag=False):
+def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, flag='add_force_flag', force_zero_ground_flag=False):
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
@@ -46,13 +45,26 @@ def split_by_flag(trajectory_df, trajectory_type, flag='add_force_flag', force_z
       trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * 0.0
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
     # Split each dataframe by using the flag == True as an index of starting point
-    index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)
+    index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
     # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
-    trajectory_split[traj_type] = [trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :] for i in range(1, len(index_split_by_flag)-1) if len(trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :]) > threshold_lengths]
-    # print("Each trajectory length : ", [trajectory_split[traj_type][i].shape for i in range(len(trajectory_split[traj_type]))])
+    # Split the trajectory that shorter than threhsold 12 points
+    # trajectory_split[traj_type] = [trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :] for i in range(1, len(index_split_by_flag)-1) if len(trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :]) > threshold_lengths]
+    # For the trajectory into continuous trajectory
+    temp_trajectory = []
+    for i in range(0, int(len(index_split_by_flag)/(num_continuous_trajectory))-1):
+      # [i] value will loop to get sequence (0, 1), (1, 2), (2, 3), (3, 4) ... to multiply with num_continuous_trajectory to get the index of ending trajectory
+      start_index = i * num_continuous_trajectory   # Index to point out where to start in index_split_by_flag
+      end_index = (i+1) * num_continuous_trajectory # Index to point out where to stop in index_split_by_flag
+      # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
+      thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
+      if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
+        temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index], :])   # Append to the list(Will be list of dataframe)
+    # Store the list of dataframe into the trajectory_split[traj_type]
+    trajectory_split[traj_type] = temp_trajectory
   return trajectory_split
 
 def addGravityColumns(trajectory_npy):
+  # print(trajectory_npy.shape)
   stacked_gravity = [np.concatenate((trajectory_npy[i], np.array([-9.81]*len(trajectory_npy[i])).reshape(-1, 1)), axis=1) for i in range(trajectory_npy.shape[0])]
   stacked_gravity = np.array(stacked_gravity)
   return stacked_gravity
@@ -77,7 +89,8 @@ if __name__ == '__main__':
   parser.add_argument('--dataset_path', type=str, help='Specify path to dataset', required=True)
   parser.add_argument('--split_by', type=str, help='Specify the flag for split', default='add_force_flag')
   parser.add_argument('--output_path', type=str, help='Specify output path to save dataset')
-  parser.add_argument('--force_zero_ground_flag', type=bool, help='Input the flag the make all rolling trajectory stay on the ground(Force y=0)', default=False)
+  parser.add_argument('--force_zero_ground_flag', type=bool, help='Input the flag that make all rolling trajectory stay on the ground(Force y=0)', default=False)
+  parser.add_argument('--num_continuous_trajectory', type=int, help='Keep the continuous of trajectory', default=0)
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
@@ -94,7 +107,7 @@ if __name__ == '__main__':
                       "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
                       "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=',')}
     # Split the trajectory by flag
-    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag)
+    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory)
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
     # Save to npy format

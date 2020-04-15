@@ -231,7 +231,7 @@ if __name__ == '__main__':
   else:
     print('===>Load trained model')
     rnn_model = GRU(input_size=n_input, output_size=n_output)
-    rnn_model.load_state_dict(pt.load(args.pretrained_model_path))
+    rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
 

@@ -178,12 +178,12 @@ def collate_fn_padd(batch):
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
     input_batch = [pt.Tensor(trajectory[1:, 4:6]) for trajectory in batch]
-    input_batch = pt.nn.utils.rnn.pad_sequence(input_batch, batch_first=True)
+    input_batch = pt.nn.utils.rnn.pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position (u, v)
     input_startpos = pt.stack([pt.Tensor(trajectory[0, 4:6]) for trajectory in batch])
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
-    input_mask = (input_batch != 0)
+    input_mask = (input_batch != -1)
 
     # Output features : columns 0-2 cotain x, y, z in world space
     ## Padding
@@ -282,7 +282,7 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.001
+  learning_rate = 0.01
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
