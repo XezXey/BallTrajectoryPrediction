@@ -85,13 +85,13 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   if lengths is None :
     gravity_constraint_penalize = pt.tensor(0).to(device)
-    below_ground_constraint_penalize = pt.tensor(0).to(device)
+    # below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
-    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize + below_ground_constraint_penalize
+    # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
   return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
@@ -117,7 +117,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, optimizer, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
-  n_epochs = 5000
+  n_epochs = 500
   # Initial hidden layer for the first RNN Cell
   # Train a model
   for epoch in range(1, n_epochs+1):
@@ -276,10 +276,10 @@ if __name__ == '__main__':
 
   # Create Datasetloader for train and validation
   trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
-  trajectory_train_dataloader = DataLoader(trajectory_train_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  trajectory_train_dataloader = DataLoader(trajectory_train_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
   # Create Datasetloader for validation
   trajectory_val_dataset = TrajectoryDataset(dataset_path=args.dataset_val_path, trajectory_type=args.trajectory_type)
-  trajectory_val_dataloader = DataLoader(trajectory_val_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  trajectory_val_dataloader = DataLoader(trajectory_val_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
   # Cast it to iterable object
   trajectory_val_iterloader = iter(trajectory_val_dataloader)
 
@@ -319,7 +319,7 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-  decay_cycle = int(len(trajectory_train_dataloader)/10)
+  decay_cycle = int(len(trajectory_train_dataloader)/2)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
