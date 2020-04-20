@@ -10,13 +10,15 @@ import re
 
 def computeDisplacement(trajectory_split, trajectory_type):
   # Compute the displacement
-  drop_cols = ["add_force_flag", "outside_flag", "trajectory_type", "t"]
+  drop_cols = ["end_of_trajectory", "add_force_flag", "outside_flag", "trajectory_type", "t"]
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
-    # Remove by get rid of the np.vstack
-    trajectory_npy[traj_type] = [np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
-                                           np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).loc[:, :].values, axis=0))) for i in range(len(trajectory_split[traj_type]))]
+    # First vstack(extend rows) with (First row, np.diff())
+    # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 
+    trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
+                                                       np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
+                                            trajectory_split[traj_type][i].loc[:, 'end_of_trajectory'].values.reshape(-1, 1))) for i in range(len(trajectory_split[traj_type]))]
     # Cast to ndarray (Bunch of trajectory)
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
     # Remove some dataset that goes below the ground (Error from unity)
@@ -33,7 +35,7 @@ def remove_below_ground_trajectory(trajectory, traj_type):
     if np.any(traj_cumsum_temp <= -1) == True:
       remove_idx.append(idx)
       count+=1
-  print("{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
+  print("\n{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   return trajectory
 
@@ -46,12 +48,23 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, fla
     # Split each dataframe by using the flag == True as an index of starting point
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
     # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
-    # Split the trajectory that shorter than threhsold 12 points
-    # trajectory_split[traj_type] = [trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :] for i in range(1, len(index_split_by_flag)-1) if len(trajectory_df[traj_type].iloc[index_split_by_flag[i]:index_split_by_flag[i+1], :]) > threshold_lengths]
     if random_sampling_mode:
       trajectory_split[traj_type] = generate_random_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type)
     else:
       trajectory_split[traj_type] = generate_constant_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type)
+    trajectory_split[traj_type] = get_end_of_trajectory_flag(trajectory_split=trajectory_split[traj_type])
+  return trajectory_split
+
+def get_end_of_trajectory_flag(trajectory_split):
+  for i in range(len(trajectory_split)):
+    unflip_add_force = trajectory_split[i]['add_force_flag'].values # Get the unflip add_force_flag value columns on the trajectory i-th index
+    index_split_by_add_force_flag = list(trajectory_split[i].loc[trajectory_split[i]['add_force_flag'] == True].index)[:] # remove the first trajectory and the last trajectory
+    index_split_by_add_force_flag.append(len(unflip_add_force) + index_split_by_add_force_flag[0]) # Index of each trajectory
+    index_split_by_add_force_flag = np.array(index_split_by_add_force_flag) - index_split_by_add_force_flag[0]  # Re-index every row to start from 0
+    flipped_add_force = [np.flip(unflip_add_force[index_split_by_add_force_flag[j]:index_split_by_add_force_flag[j+1]]) for j in range(len(index_split_by_add_force_flag)-1)]   # Get each trajectory in from index_split_by_add_force_flag
+    flipped_add_force = np.concatenate(flipped_add_force)   # Concatenate together to make its shape as (-1, )
+    trajectory_split[i]['end_of_trajectory'] = flipped_add_force.astype(int) # + unflip_add_force.astype(int)    # Assign to new columns
+    # print(unflip_add_force + flipped_add_force)
   return trajectory_split
 
 def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type):
@@ -72,7 +85,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(1, 5)
+  random_continuous_length = np.arange(1, 3)
   total_trajectory = len(index_split_by_flag) - 1
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
@@ -97,7 +110,6 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
 
 
 def addGravityColumns(trajectory_npy):
-  # print(trajectory_npy.shape)
   stacked_gravity = [np.concatenate((trajectory_npy[i], np.array([-9.81]*len(trajectory_npy[i])).reshape(-1, 1)), axis=1) for i in range(trajectory_npy.shape[0])]
   stacked_gravity = np.array(stacked_gravity)
   return stacked_gravity

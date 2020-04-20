@@ -83,6 +83,7 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
   return below_ground_constraint_penalize
 
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
+  print(output.shape, trajectory_gt.shape, mask.shape)
   if lengths is None :
     gravity_constraint_penalize = pt.tensor(0).to(device)
     # below_ground_constraint_penalize = pt.tensor(0).to(device)
@@ -94,7 +95,20 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
   return mse_loss
 
+def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
+  # Add the feature dimension using unsqueeze
+  eot_gt = pt.unsqueeze(eot_gt, dim=2)
+  mask = pt.unsqueeze(mask, dim=2)
+  print("EndOfTrajectoryLoss function : ")
+  print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
+  print((output_eot * mask).shape)
+  print((eot_gt * mask).shape)
+  print((eot_gt * mask)[0][:lengths[0]+1])
+  return 0
+  pass
+
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
+  # print(screen_space.shape, depth.shape)
   depth = depth.view(-1)
   screen_width = 1920.
   screen_height = 1080.
@@ -106,13 +120,27 @@ def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_
   return screen_space[:, :3]
 
 def cumsum_trajectory(output, trajectory, trajectory_startpos):
+  '''
+  Perform a cummulative summation to the output
+  Argument :
+  1. output : The displacement from the network with shape = (batch_size, sequence_length,)
+  2. trajectory : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
+  3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
+  Output :
+  1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
+  2. trajectory_temp : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
+  '''
   # Apply cummulative summation to output
+  # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
   trajectory_temp = pt.stack([pt.cat([trajectory_startpos[i][:, :2], trajectory[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  # trajectory_temp : perform cumsum along the sequence_length axis
   trajectory_temp = pt.cumsum(trajectory_temp, dim=1)
+  # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
   output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), output[i]]) for i in range(trajectory_startpos.shape[0])])
+  # output : perform cumsum along the sequence_length axis
   output = pt.cumsum(output, dim=1)
+  # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
-
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, optimizer, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
@@ -129,32 +157,42 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     # Forward PASSING
     # Forward pass for training a model  
     output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+    # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
+    output_train_depth = pt.unsqueeze(output_train[..., 0], dim=2)
+    output_train_eot = pt.unsqueeze(output_train[..., 1], dim=2)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train, trajectory_startpos=input_trajectory_train_startpos)
+    output_train_depth, input_trajectory_train_temp = cumsum_trajectory(output=output_train_depth, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
     # Project the (u, v, depth) to world space
-    output_train = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
+    output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
     # Evaluating mode
     model.eval()
     # Forward pass for validate a model
     output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
+    # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
+    output_val_depth = pt.unsqueeze(output_val[..., 0], dim=2)
+    output_val_eot = pt.unsqueeze(output_val[..., 1], dim=2)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_val, input_trajectory_val_temp = cumsum_trajectory(output=output_val, trajectory=input_trajectory_val, trajectory_startpos=input_trajectory_val_startpos)
+    output_val_depth, input_trajectory_val_temp = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos)
     # Project the (u, v, depth) to world space
-    output_val = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
+    output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
     # Detach for use hidden as a weights in next batch
     cell_state.detach()
     cell_state = cell_state.detach()
     hidden.detach()
     hidden = hidden.detach()
 
+    print(output_train_eot.shape)
+    print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
     # Calculate loss of unprojected trajectory
-    train_loss = MSELoss(output=output_train, trajectory_gt=output_trajectory_train_xyz, mask=output_trajectory_train_mask, lengths=output_trajectory_train_lengths)
-    val_loss = MSELoss(output=output_val, trajectory_gt=output_trajectory_val_xyz, mask=output_trajectory_val_mask, lengths=output_trajectory_val_lengths)
+    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_start_pos=input_trajectory_train_startpos[..., -1])
+    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_start_pos=input_trajectory_val_startpos[..., -1])
 
+    print(train_loss, val_loss)
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
+    exit()
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -199,23 +237,23 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, 4:6]) for trajectory in batch] # (4, 5, -1) = (u, v ,g)
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -1) = (u, v ,end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, 4:7]) for trajectory in batch])
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != -1)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
-    output_batch = [pt.Tensor(trajectory[:, 6]) for trajectory in batch]
+    output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch]
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, :3]) for trajectory in batch])
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch])
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, :3]) for trajectory in batch]
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)
@@ -299,8 +337,8 @@ if __name__ == '__main__':
     print("===============================================================================================================================================================")
 
   # Model definition
-  n_output = 1 # Contain the depth information of the trajectory
-  n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
+  n_output = 2 # Contain the depth information of the trajectory and the end_of_trajectory flag
+  n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
   if args.model_path is None:
