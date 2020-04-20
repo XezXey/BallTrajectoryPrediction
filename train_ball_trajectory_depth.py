@@ -83,7 +83,6 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
   return below_ground_constraint_penalize
 
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
-  print(output.shape, trajectory_gt.shape, mask.shape)
   if lengths is None :
     gravity_constraint_penalize = pt.tensor(0).to(device)
     # below_ground_constraint_penalize = pt.tensor(0).to(device)
@@ -99,13 +98,22 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
   # Add the feature dimension using unsqueeze
   eot_gt = pt.unsqueeze(eot_gt, dim=2)
   mask = pt.unsqueeze(mask, dim=2)
-  print("EndOfTrajectoryLoss function : ")
-  print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
-  print((output_eot * mask).shape)
-  print((eot_gt * mask).shape)
-  print((eot_gt * mask)[0][:lengths[0]+1])
-  return 0
-  pass
+  eot_start_pos = pt.unsqueeze(eot_start_pos, dim=2)
+  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output_eot = pt.stack([pt.cat([output_eot[i], eot_start_pos[i]]) for i in range(eot_start_pos.shape[0])])
+  # Concat the startpos of end_of_trajectory
+  # print("EndOfTrajectoryLoss function : ")
+  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
+  # print((output_eot * mask)[0][:lengths[0]+1].shape)
+  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
+  output_eot *= mask
+  eot_gt *= mask
+  print(pt.cat((pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1]), dim=1))
+  eot_loss = pt.nn.BCEWithLogitsLoss()(output_eot, eot_gt)
+  # for i in range(eot_gt.shape[0]):
+    # print(pt.cat((output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]), dim=1))
+  # eot_loss = pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss()(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])]))
+  return eot_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
@@ -174,7 +182,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     output_val_eot = pt.unsqueeze(output_val[..., 1], dim=2)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_val_depth, input_trajectory_val_temp = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos)
+    output_val_depth, input_trajectory_val_temp = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
     # Project the (u, v, depth) to world space
     output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
     # Detach for use hidden as a weights in next batch
@@ -183,16 +191,14 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     hidden.detach()
     hidden = hidden.detach()
 
-    print(output_train_eot.shape)
-    print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
+    # print(output_train_eot.shape)
+    # print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
     # Calculate loss of unprojected trajectory
     train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_start_pos=input_trajectory_train_startpos[..., -1])
-    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_start_pos=input_trajectory_val_startpos[..., -1])
+    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)+ EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_start_pos=input_trajectory_val_startpos[..., -1])
 
-    print(train_loss, val_loss)
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
-    exit()
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -207,15 +213,15 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
-    if epoch%250 == 0:
+    if epoch%100 == 0:
       if visualize_trajectory_flag == True:
         # Visualize by make a subplots of trajectory
         n_vis = 5
         fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
         # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
         # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-        visualize_trajectory(output=pt.mul(output_train, output_trajectory_train_mask), trajectory_gt=output_trajectory_train_xyz, trajectory_startpos=output_trajectory_train_startpos, lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask, fig=fig, flag='Train', n_vis=n_vis)
-        visualize_trajectory(output=pt.mul(output_val, output_trajectory_val_mask), trajectory_gt=output_trajectory_val_xyz, trajectory_startpos=output_trajectory_val_startpos, lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask, fig=fig, flag='Validation', n_vis=n_vis)
+        visualize_trajectory(output=pt.mul(output_train_xyz, output_trajectory_train_mask[..., :-1]), trajectory_gt=output_trajectory_train_xyz[..., :-1], trajectory_startpos=output_trajectory_train_startpos[..., :-1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., :-1], fig=fig, flag='Train', n_vis=n_vis)
+        visualize_trajectory(output=pt.mul(output_val_xyz, output_trajectory_val_mask[..., :-1]), trajectory_gt=output_trajectory_val_xyz[..., :-1], trajectory_startpos=output_trajectory_val_startpos[..., :-1], lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask[..., :-1], fig=fig, flag='Validation', n_vis=n_vis)
         # Adjust the layout/axis
         fig.update_layout(height=1920, width=1500, autosize=True)
         plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path), auto_open=False)
@@ -257,8 +263,9 @@ def collate_fn_padd(batch):
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)
-    ## Compute cummulative summation to form a trajectory from displacement
-    output_xyz = pt.cumsum(output_xyz, dim=1)
+    ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
+    # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
+    output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
