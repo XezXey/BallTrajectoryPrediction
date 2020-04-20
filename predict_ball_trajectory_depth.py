@@ -233,8 +233,9 @@ def collate_fn_padd(batch):
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)
-    ## Compute cummulative summation to form a trajectory from displacement
-    output_xyz = pt.cumsum(output_xyz, dim=1)
+    ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
+    # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
+    output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
