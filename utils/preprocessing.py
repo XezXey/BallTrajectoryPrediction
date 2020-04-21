@@ -39,7 +39,7 @@ def remove_below_ground_trajectory(trajectory, traj_type):
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   return trajectory
 
-def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, flag='add_force_flag', force_zero_ground_flag=False, random_sampling_mode=False):
+def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, timelag, flag='add_force_flag', force_zero_ground_flag=False, random_sampling_mode=False):
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
     if traj_type=='Rolling' and force_zero_ground_flag is True:
@@ -49,13 +49,13 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, fla
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
     # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
     if random_sampling_mode:
-      trajectory_split[traj_type] = generate_random_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type)
+      trajectory_split[traj_type] = generate_random_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type, timelag=timelag)
     else:
-      trajectory_split[traj_type] = generate_constant_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type)
-    trajectory_split[traj_type] = get_end_of_trajectory_flag(trajectory_split=trajectory_split[traj_type])
+      trajectory_split[traj_type] = generate_constant_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type, timelag=timelag)
+    trajectory_split[traj_type] = get_end_of_trajectory_flag(trajectory_split=trajectory_split[traj_type], timelag=timelag)
   return trajectory_split
 
-def get_end_of_trajectory_flag(trajectory_split):
+def get_end_of_trajectory_flag(trajectory_split, timelag):
   for i in range(len(trajectory_split)):
     unflip_add_force = trajectory_split[i]['add_force_flag'].values # Get the unflip add_force_flag value columns on the trajectory i-th index
     index_split_by_add_force_flag = list(trajectory_split[i].loc[trajectory_split[i]['add_force_flag'] == True].index)[:] # remove the first trajectory and the last trajectory
@@ -63,11 +63,13 @@ def get_end_of_trajectory_flag(trajectory_split):
     index_split_by_add_force_flag = np.array(index_split_by_add_force_flag) - index_split_by_add_force_flag[0]  # Re-index every row to start from 0
     flipped_add_force = [np.flip(unflip_add_force[index_split_by_add_force_flag[j]:index_split_by_add_force_flag[j+1]]) for j in range(len(index_split_by_add_force_flag)-1)]   # Get each trajectory in from index_split_by_add_force_flag
     flipped_add_force = np.concatenate(flipped_add_force)   # Concatenate together to make its shape as (-1, )
+    if timelag != 0:
+      flipped_add_force[-1] = 0 # If adding timelag, the last trajectory which is lag should be ignored for the end_of_trajectory flag since it's not the real end point of trajectory
     trajectory_split[i]['end_of_trajectory'] = flipped_add_force.astype(int) # + unflip_add_force.astype(int)    # Assign to new columns
     # print(unflip_add_force + flipped_add_force)
   return trajectory_split
 
-def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type):
+def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type, timelag):
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
@@ -78,10 +80,10 @@ def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_fl
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
-      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index], :])   # Append to the list(Will be list of dataframe)
+      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag, :])   # Append to the list(Will be list of dataframe)
   return temp_trajectory
 
-def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type):
+def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type, timelag):
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
@@ -100,7 +102,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
-      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index], :])   # Append to the list(Will be list of dataframe)
+      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag, :])   # Append to the list(Will be list of dataframe)
     # Move the pointer
     ptr_index_split += num_continuous_trajectory
     # Update the length of total_trajectory
@@ -138,6 +140,7 @@ if __name__ == '__main__':
   parser.add_argument('--num_continuous_trajectory', type=int, help='Keep the continuous of trajectory', default=1)
   parser.add_argument('--random_num_continuous', dest='random_sampling_mode', help='Generate the random number of continuous trajectory', action='store_true')
   parser.add_argument('--constant_num_continuous', dest='random_sampling_mode', help='Generate the constant number of continuous trajectory', action='store_false')
+  parser.add_argument('--timelag', type=int, dest='timelag', help='Timelag for input some part of next trajectory', default=0)
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
@@ -158,7 +161,7 @@ if __name__ == '__main__':
                       "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
                       "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=',')}
     # Split the trajectory by flag
-    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory, random_sampling_mode=args.random_sampling_mode)
+    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory, random_sampling_mode=args.random_sampling_mode, timelag=args.timelag)
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
     # Save to npy format

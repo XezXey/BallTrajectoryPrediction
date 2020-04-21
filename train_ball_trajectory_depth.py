@@ -101,18 +101,27 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
   eot_start_pos = pt.unsqueeze(eot_start_pos, dim=2)
   # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
   output_eot = pt.stack([pt.cat([output_eot[i], eot_start_pos[i]]) for i in range(eot_start_pos.shape[0])])
-  # Concat the startpos of end_of_trajectory
-  # print("EndOfTrajectoryLoss function : ")
-  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
-  # print((output_eot * mask)[0][:lengths[0]+1].shape)
-  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
   output_eot *= mask
   eot_gt *= mask
-  print(pt.cat((pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1]), dim=1))
-  # eot_loss = pt.nn.BCEWithLogitsLoss()(output_eot, eot_gt)
-  # for i in range(eot_gt.shape[0]):
-    # print(pt.cat((output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]), dim=1))
-  eot_loss = pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss(reduction='mean')(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])]))
+  # Concat the startpos of end_of_trajectory
+  # print("EndOfTrajectoryLoss function : ")
+  print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
+  # print((output_eot * mask)[0][:lengths[0]+1].shape)
+  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
+  # BCELoss
+  # eot_loss = pt.nn.BCELoss(reduction='mean')(pt.sigmoid(output_eot), eot_gt)
+  # print("EOT Loss : ", eot_loss)
+  # BCEWithLogitsLoss
+  # eot_loss = (1/args.batch_size) * (pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss(reduction='mean', pos_weight=pt.ones_like(eot_gt[i][:lengths[i]+1])*1000)(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])])))
+  # Implement from scratch
+  print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
+  eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(args.batch_size)]))
+  output_eot = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(args.batch_size)])))
+  pos_weight = 500
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (1-eot_gt)*pt.log(1-output_eot)))
+  # print(output_eot.shape, eot_gt.shape)
+  print("EOT LOSS : ", eot_loss)
+  # exit()
   return eot_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
@@ -194,8 +203,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     # print(output_train_eot.shape)
     # print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
     # Calculate loss of unprojected trajectory
-    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_start_pos=input_trajectory_train_startpos[..., -1])
-    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)+ EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_start_pos=input_trajectory_val_startpos[..., -1])
+    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) # + EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_start_pos=input_trajectory_train_startpos[..., -1])
+    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) # + EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_start_pos=input_trajectory_val_startpos[..., -1])
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
