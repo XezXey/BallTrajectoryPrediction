@@ -73,22 +73,30 @@ def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_fl
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  for i in range(0, int(len(index_split_by_flag)/(num_continuous_trajectory))-1):
+  # For the timelag may access the trajectory at index_split_by_flag[end_index+1] and can cause the out-of-range error so need to -2 to reserve the last trajectory for timelag
+  for i in range(0, int(len(index_split_by_flag)/(num_continuous_trajectory))-2):
     # [i] value will loop to get sequence (0, 1), (1, 2), (2, 3), (3, 4) ... to multiply with num_continuous_trajectory to get the index of ending trajectory
     start_index = i * num_continuous_trajectory   # Index to point out where to start in index_split_by_flag
     end_index = (i+1) * num_continuous_trajectory # Index to point out where to stop in index_split_by_flag
+    # Adding timelag
+    if timelag == 'half':   # A half of next trajectory
+      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
+      # print("Half : ({}-{}) = {}/2 = {}".format(index_split_by_flag[end_index], index_split_by_flag[(end_index+1)], index_split_by_flag[(end_index+1)]-index_split_by_flag[(end_index)], timelag_offset))
+      # exit()
+    else :  # Specify a number of data point to be an offset
+      timelag_offset = int(timelag)
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
-      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag, :])   # Append to the list(Will be list of dataframe)
+      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag_offset, :])   # Append to the list(Will be list of dataframe)
   return temp_trajectory
 
 def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type, timelag):
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(1, 3)
-  total_trajectory = len(index_split_by_flag) - 1
+  random_continuous_length = np.arange(1, 5)
+  total_trajectory = len(index_split_by_flag) - 2   # For the timelag may access the trajectory at index_split_by_flag[end_index+1] and can cause the out-of-range error so need to -2 to reserve the last trajectory for timelag
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
     # Random the continuous trajectory length
@@ -99,10 +107,16 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
     # [i] value will loop to get sequence (0, 1), (1, 2), (2, 3), (3, 4) ... to multiply with num_continuous_trajectory to get the index of ending trajectory
     start_index = ptr_index_split
     end_index = ptr_index_split + num_continuous_trajectory # Index to point out where to stop in index_split_by_flag
+    if timelag == 'half':
+      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
+      # print("Half : ({}-{}) = {}/2 = {}".format(index_split_by_flag[end_index], index_split_by_flag[(end_index+1)], index_split_by_flag[(end_index+1)]-index_split_by_flag[(end_index)], timelag_offset))
+      # exit()
+    else :
+      timelag_offset = int(timelag)
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
-      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag, :])   # Append to the list(Will be list of dataframe)
+      temp_trajectory.append(trajectory_df[traj_type].iloc[index_split_by_flag[start_index]:index_split_by_flag[end_index]+timelag_offset, :])   # Append to the list(Will be list of dataframe)
     # Move the pointer
     ptr_index_split += num_continuous_trajectory
     # Update the length of total_trajectory
@@ -140,12 +154,12 @@ if __name__ == '__main__':
   parser.add_argument('--num_continuous_trajectory', type=int, help='Keep the continuous of trajectory', default=1)
   parser.add_argument('--random_num_continuous', dest='random_sampling_mode', help='Generate the random number of continuous trajectory', action='store_true')
   parser.add_argument('--constant_num_continuous', dest='random_sampling_mode', help='Generate the constant number of continuous trajectory', action='store_false')
-  parser.add_argument('--timelag', type=int, dest='timelag', help='Timelag for input some part of next trajectory', default=0)
+  parser.add_argument('--timelag', dest='timelag', help='Timelag for input some part of next trajectory', default=0)
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
   pattern = r'(Trial_[0-9]+)+'
-  print(re.findall(pattern, dataset_folder[0]))
+  print("Dataset : ", [re.findall(pattern, dataset_folder[i]) for i in range(len(dataset_folder))])
   trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
   print(trial_index)
   if args.random_sampling_mode:
