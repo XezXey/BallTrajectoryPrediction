@@ -171,7 +171,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   # BCEWithLogitsLoss
   # eot_loss = (1/args.batch_size) * (pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss(reduction='mean', pos_weight=pt.ones_like(eot_gt[i][:lengths[i]+1])*1000)(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])])))
   # Implement from scratch
-  print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
+  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
   eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(args.batch_size)]))
   # print(eot_gt)
   output_eot = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(args.batch_size)])))
@@ -179,10 +179,10 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   # print((eot_gt * pt.log(output_eot))[:250])
   # print(((1-eot_gt)*pt.log(1-output_eot))[:250])
   # exit()
-  # pos_weight = 1
-  # neg_weight = 0.1
-  # eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))))
-  eot_loss = pt.mean(((eot_gt - output_eot)**2))
+  pos_weight = 100
+  neg_weight = 0.1
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))))
+  # eot_loss = pt.mean(((eot_gt - output_eot)**2))
   # print(output_eot.shape, eot_gt.shape)
   print("EOT LOSS : ", eot_loss)
   # exit()
@@ -268,16 +268,22 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     # print(output_train_eot.shape)
     # print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
     # Calculate loss of unprojected trajectory
-    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + EndOfTrajectoryLoss(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1])
-    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + EndOfTrajectoryLoss(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1])
+    train_mse_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
+    train_eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1])
+    val_mse_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
+    val_eot_loss = EndOfTrajectoryLoss(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1])
+
+    train_loss = train_mse_loss + train_eot_loss
+    val_loss = val_mse_loss + val_eot_loss
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
-      print('Val Loss : {:.3f}'.format(val_loss.item()))
-      wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
+      print('Val Loss : {:.3f}'.format(val_loss.item()), end=', ')
+      print('EOT Loss : {:.3f}'.format(eot_loss))
+      wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item(), 'EOT Train Loss':train_eot_loss, 'EOT Validation Loss':val_eot_loss})
       if min_val_loss > val_loss:
         # Save model checkpoint
         print('[#]Saving a model checkpoint')
