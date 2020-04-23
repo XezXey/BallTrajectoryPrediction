@@ -154,10 +154,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
   output_eot *= mask
   eot_gt *= mask
   print(pt.cat((pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1]), dim=1))
-  # exit()
   eot_loss = pt.nn.BCEWithLogitsLoss()(output_eot, eot_gt)
-  # for i in range(eot_gt.shape[0]):
-    # print(pt.cat((output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]), dim=1))
   # eot_loss = pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss()(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])]))
   return eot_loss
 

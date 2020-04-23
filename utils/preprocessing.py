@@ -165,7 +165,7 @@ if __name__ == '__main__':
   if args.random_sampling_mode:
     print("Mode : Random number of continuous trajectory")
   else:
-    print("Mode : Constant number of continuous trajectory")
+    print("Mode : Constant number of continuous trajectory with n =", args.num_continuous_trajectory)
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile"]
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])
