@@ -162,7 +162,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   eot_gt *= mask
   # Concat the startpos of end_of_trajectory
   # print("EndOfTrajectoryLoss function : ")
-  print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_startpos.shape)
+  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_startpos.shape)
   # print((output_eot * mask)[0][:lengths[0]+1].shape)
   # print((eot_gt * mask)[0][:lengths[0]+1].shape)
   # BCELoss
@@ -179,14 +179,11 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   # print((eot_gt * pt.log(output_eot))[:250])
   # print(((1-eot_gt)*pt.log(1-output_eot))[:250])
   # exit()
-  pos_weight = 100
-  neg_weight = 0.1
+  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
+  neg_weight = 1
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))))
   # eot_loss = pt.mean(((eot_gt - output_eot)**2))
-  # print(output_eot.shape, eot_gt.shape)
-  print("EOT LOSS : ", eot_loss)
-  # exit()
-  return eot_loss
+  return eot_loss * 10
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
@@ -282,7 +279,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
       print('Val Loss : {:.3f}'.format(val_loss.item()), end=', ')
-      print('EOT Loss : {:.3f}'.format(eot_loss))
+      print('Train EOT Loss : {:.3f}'.format(train_eot_loss), end=', ')
+      print('Val EOT Loss : {:.3f}'.format(val_eot_loss))
       wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item(), 'EOT Train Loss':train_eot_loss, 'EOT Validation Loss':val_eot_loss})
       if min_val_loss > val_loss:
         # Save model checkpoint
@@ -293,7 +291,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
-    if epoch%1 == 0:
+    if epoch%100 == 0:
       if visualize_trajectory_flag == True:
         make_visualize(output_train_xyz=output_train_xyz, output_train_eot=output_train_eot, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_val_eot=output_val_eot, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
