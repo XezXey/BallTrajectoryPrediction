@@ -122,8 +122,8 @@ def get_timelag_offset(trajectory_df, traj_type, index_split_by_flag, end_index,
       timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
     elif timelag == 'quater':
       timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/4)
-    elif timelag == 'quater':
-      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/4)
+    elif timelag == 'oneeight':
+      timelag_offset = np.ceil(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/8).astype(int)
     elif timelag == 'random':
       timelag_offset = np.random.choice(range(int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)))
     else :
