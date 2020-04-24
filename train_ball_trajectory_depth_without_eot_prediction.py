@@ -25,6 +25,7 @@ from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.gru_model import GRU
+from models.bigru_model import BiGRU
 
 def visualize_layout_update(fig=None, n_vis=5):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
@@ -32,7 +33,7 @@ def visualize_layout_update(fig=None, n_vis=5):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
-def make_visualize(output_train_xyz, output_train_eot, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_val_eot, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
+def make_visualize(output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
   # Visualize by make a subplots of trajectory
   n_vis = 5
   # Random the index the be visualize
@@ -52,44 +53,6 @@ def make_visualize(output_train_xyz, output_train_eot, output_trajectory_train_x
   fig = visualize_layout_update(fig=fig, n_vis=n_vis)
   plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
-
-  # Visualize the End of trajectory(EOT) flag
-  fig_eot = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_eot(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_xyz[..., -1], eot_startpos=output_trajectory_train_startpos[..., -1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., -1], fig=fig_eot, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_eot(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_xyz[..., -1], eot_startpos=output_trajectory_val_startpos[..., -1], lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask[..., -1], fig=fig_eot, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
-  plotly.offline.plot(fig_eot, filename='./{}/trajectory_visualization_depth_eot_prediction.html'.format(visualization_path), auto_open=False)
-  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_eot_prediction.html'.format(visualization_path)))})
-
-def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
-  # Add the feature dimension using unsqueeze
-  eot_gt = pt.unsqueeze(eot_gt, dim=2)
-  mask = pt.unsqueeze(mask, dim=2)
-  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
-  output_eot *= mask
-  eot_gt *= mask
-  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
-  output_eot = pt.sigmoid(output_eot)
-  pos_weight = 100
-  neg_weight = 0.1
-  # detach() for visualization
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))), dim=1).cpu().detach().numpy()
-  output_eot = output_eot.cpu().detach().numpy()
-  eot_gt = eot_gt.cpu().detach().numpy()
-  lengths = lengths.cpu().detach().numpy()
-  # marker_dict for contain the marker properties
-  marker_dict_gt = dict(color='rgba(0, 0, 255, .7)', size=5)
-  marker_dict_pred = dict(color='rgba(255, 0, 0, .7)', size=5)
-  # Random the index the be visualize
-  vis_idx = np.random.randint(low=0, high=eot_startpos.shape[0], size=(n_vis))
-  # Change the columns for each set
-  if flag == 'Train': col = 1
-  elif flag == 'Validation': col=2
-  # Iterate to plot each trajectory
-  for idx, i in enumerate(vis_idx):
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=output_eot[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}".format(flag, i, eot_loss[i][0])), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=eot_gt[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # marker_dict for contain the marker properties
@@ -149,41 +112,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
   mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
-  return mse_loss
-
-def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
-  # Add the feature dimension using unsqueeze
-  eot_gt = pt.unsqueeze(eot_gt, dim=2)
-  mask = pt.unsqueeze(mask, dim=2)
-  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
-  output_eot *= mask
-  eot_gt *= mask
-  # Concat the startpos of end_of_trajectory
-  # print("EndOfTrajectoryLoss function : ")
-  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_startpos.shape)
-  # print((output_eot * mask)[0][:lengths[0]+1].shape)
-  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
-  # BCELoss
-  # eot_loss = pt.nn.BCELoss(reduction='mean')(pt.sigmoid(output_eot), eot_gt)
-  # print("EOT Loss : ", eot_loss)
-  # BCEWithLogitsLoss
-  # eot_loss = (1/args.batch_size) * (pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss(reduction='mean', pos_weight=pt.ones_like(eot_gt[i][:lengths[i]+1])*1000)(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])])))
-  # Implement from scratch
-  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
-  eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(args.batch_size)]))
-  # print(eot_gt)
-  output_eot = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(args.batch_size)])))
-  # print(output_eot)
-  # print((eot_gt * pt.log(output_eot))[:250])
-  # print(((1-eot_gt)*pt.log(1-output_eot))[:250])
-  # exit()
-  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
-  neg_weight = 1
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))))
-  # eot_loss = pt.mean(((eot_gt - output_eot)**2))
-  return eot_loss * 10
+  return mse_loss * 100
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
@@ -236,52 +165,37 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     # Forward PASSING
     # Forward pass for training a model  
     output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
-    # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
-    output_train_depth = pt.unsqueeze(output_train[..., 0], dim=2)
-    output_train_eot = pt.unsqueeze(output_train[..., -1], dim=2)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_train_depth, input_trajectory_train_temp = cumsum_trajectory(output=output_train_depth, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+    output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
     # Project the (u, v, depth) to world space
-    output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
+    output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
     # Evaluating mode
     model.eval()
     # Forward pass for validate a model
     output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
-    # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
-    output_val_depth = pt.unsqueeze(output_val[..., 0], dim=2)
-    output_val_eot = pt.unsqueeze(output_val[..., -1], dim=2)
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_val_depth, input_trajectory_val_temp = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+    output_val, input_trajectory_val_temp = cumsum_trajectory(output=output_val, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
     # Project the (u, v, depth) to world space
-    output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
+    output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
     # Detach for use hidden as a weights in next batch
     cell_state.detach()
     cell_state = cell_state.detach()
     hidden.detach()
     hidden = hidden.detach()
 
-    # print(output_train_eot.shape)
-    # print(output_trajectory_train_mask.shape, output_trajectory_train_mask[..., :-1].shape)
     # Calculate loss of unprojected trajectory
-    train_mse_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
-    train_eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_xyz[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1])
-    val_mse_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
-    val_eot_loss = EndOfTrajectoryLoss(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_xyz[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1])
-
-    train_loss = train_mse_loss + train_eot_loss
-    val_loss = val_mse_loss + val_eot_loss
+    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
+    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     optimizer.step() # Updates the weights accordingly to the gradients
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
-      print('Val Loss : {:.3f}'.format(val_loss.item()), end=', ')
-      print('Train EOT Loss : {:.3f}'.format(train_eot_loss), end=', ')
-      print('Val EOT Loss : {:.3f}'.format(val_eot_loss))
-      wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item(), 'EOT Train Loss':train_eot_loss, 'EOT Validation Loss':val_eot_loss})
+      print('Val Loss : {:.3f}'.format(val_loss.item()))
+      wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
       if min_val_loss > val_loss:
         # Save model checkpoint
         print('[#]Saving a model checkpoint')
@@ -293,7 +207,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
     if epoch%100 == 0:
       if visualize_trajectory_flag == True:
-        make_visualize(output_train_xyz=output_train_xyz, output_train_eot=output_train_eot, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_val_eot=output_val_eot, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+        make_visualize(output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
   return min_val_loss, hidden, cell_state
 
@@ -410,17 +324,17 @@ if __name__ == '__main__':
     print("===============================================================================================================================================================")
 
   # Model definition
-  n_output = 2 # Contain the depth information of the trajectory and the end_of_trajectory flag
+  n_output = 1 # Contain the depth information of the trajectory
   n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = GRU(input_size=n_input, output_size=n_output)
+    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = GRU(input_size=n_input_, output_size=n_output)
+    rnn_model = BiGRU(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

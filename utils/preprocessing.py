@@ -79,12 +79,7 @@ def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_fl
     start_index = i * num_continuous_trajectory   # Index to point out where to start in index_split_by_flag
     end_index = (i+1) * num_continuous_trajectory # Index to point out where to stop in index_split_by_flag
     # Adding timelag
-    if timelag == 'half':   # A half of next trajectory
-      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
-      # print("Half : ({}-{}) = {}/2 = {}".format(index_split_by_flag[end_index], index_split_by_flag[(end_index+1)], index_split_by_flag[(end_index+1)]-index_split_by_flag[(end_index)], timelag_offset))
-      # exit()
-    else :  # Specify a number of data point to be an offset
-      timelag_offset = int(timelag)
+    timelag_offset = get_timelag_offset(trajectory_df=trajectory_df, traj_type=traj_type, timelag=timelag, end_index=end_index, index_split_by_flag=index_split_by_flag)
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
@@ -107,12 +102,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
     # [i] value will loop to get sequence (0, 1), (1, 2), (2, 3), (3, 4) ... to multiply with num_continuous_trajectory to get the index of ending trajectory
     start_index = ptr_index_split
     end_index = ptr_index_split + num_continuous_trajectory # Index to point out where to stop in index_split_by_flag
-    if timelag == 'half':
-      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
-      # print("Half : ({}-{}) = {}/2 = {}".format(index_split_by_flag[end_index], index_split_by_flag[(end_index+1)], index_split_by_flag[(end_index+1)]-index_split_by_flag[(end_index)], timelag_offset))
-      # exit()
-    else :
-      timelag_offset = int(timelag)
+    timelag_offset = get_timelag_offset(trajectory_df=trajectory_df, traj_type=traj_type, timelag=timelag, end_index=end_index, index_split_by_flag=index_split_by_flag)
     # Check the lengths of every trajectory before forming the continuous need to longer then threshold_lengths
     thresholding_lengths = [len(trajectory_df[traj_type].iloc[index_split_by_flag[start_index + j]:index_split_by_flag[start_index+j+1]]) for j in range(num_continuous_trajectory)]
     if all(length_traj > threshold_lengths for length_traj in thresholding_lengths):  # All length pass the condition
@@ -123,6 +113,23 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
     total_trajectory -= num_continuous_trajectory
 
   return temp_trajectory
+
+def get_timelag_offset(trajectory_df, traj_type, index_split_by_flag, end_index, timelag):
+  if int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2) == 0:
+    return 0
+  else:
+    if timelag == 'half':
+      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)
+    elif timelag == 'quater':
+      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/4)
+    elif timelag == 'quater':
+      timelag_offset = int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/4)
+    elif timelag == 'random':
+      timelag_offset = np.random.choice(range(int(len(trajectory_df[traj_type].iloc[index_split_by_flag[end_index]:index_split_by_flag[end_index+1]])/2)))
+    else :
+      timelag_offset = int(timelag)
+  return timelag_offset
+
 
 
 def addGravityColumns(trajectory_npy):
