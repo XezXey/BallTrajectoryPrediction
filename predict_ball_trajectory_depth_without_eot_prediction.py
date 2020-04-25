@@ -24,6 +24,7 @@ from utils.dataloader import TrajectoryDataset
 from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
+from models.bigru_model import BiGRU
 from models.gru_model import GRU
 
 def visualize_layout_update(fig=None, n_vis=7):
@@ -139,25 +140,6 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
-  # Add the feature dimension using unsqueeze
-  eot_gt = pt.unsqueeze(eot_gt, dim=2)
-  mask = pt.unsqueeze(mask, dim=2)
-  eot_start_pos = pt.unsqueeze(eot_start_pos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_start_pos[i]]) for i in range(eot_start_pos.shape[0])])
-  # Concat the startpos of end_of_trajectory
-  # print("EndOfTrajectoryLoss function : ")
-  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_start_pos.shape)
-  # print((output_eot * mask)[0][:lengths[0]+1].shape)
-  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
-  output_eot *= mask
-  eot_gt *= mask
-  print(pt.cat((pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1]), dim=1))
-  eot_loss = pt.nn.BCEWithLogitsLoss()(output_eot, eot_gt)
-  # eot_loss = pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss()(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])]))
-  return eot_loss
-
 def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
@@ -166,20 +148,15 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   # Forward PASSING
   # Forward pass for testing a model  
   output_test, (_, _) = model(input_trajectory_test, hidden, cell_state, lengths=input_trajectory_test_lengths)
-  # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
-  output_test_depth = pt.unsqueeze(output_test[..., 0], dim=2)
-  output_test_eot = pt.unsqueeze(output_test[..., 1], dim=2)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
-  output_test_depth, input_trajectory_test_temp = cumsum_trajectory(output=output_test_depth, trajectory=input_trajectory_test[..., :-1], trajectory_startpos=input_trajectory_test_startpos[..., :-1])
+  output_test, input_trajectory_test_temp = cumsum_trajectory(output=output_test, trajectory=input_trajectory_test[..., :-1], trajectory_startpos=input_trajectory_test_startpos[..., :-1])
   # Project the (u, v, depth) to world space
-  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_test.shape[0])])
+  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_test.shape[0])])
   # Calculate loss of unprojected trajectory
   test_loss = MSELoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
   # Calculate loss per trajectory
   accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis = evaluateModel(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths, threshold=threshold)
-  # Calculate the Endoftrajectoryloss
-  EndOfTrajectoryLoss(output_eot=output_test_eot, eot_gt=output_trajectory_test_xyz[..., -1], mask=output_trajectory_test_mask[..., -1], lengths=output_trajectory_test_lengths, eot_start_pos=input_trajectory_test_startpos[..., -1])
 
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
@@ -293,7 +270,7 @@ if __name__ == '__main__':
     print("===============================================================================================================================================================")
 
   # Model definition
-  n_output = 2 # Contain the depth information of the trajectory
+  n_output = 1 # Contain the depth information of the trajectory
   n_input = 3 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
   if args.pretrained_model_path is None:
@@ -302,7 +279,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = BiLSTM(input_size=n_input, output_size=n_output)
+    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

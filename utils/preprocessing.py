@@ -63,10 +63,11 @@ def get_end_of_trajectory_flag(trajectory_split, timelag):
     index_split_by_add_force_flag = np.array(index_split_by_add_force_flag) - index_split_by_add_force_flag[0]  # Re-index every row to start from 0
     flipped_add_force = [np.flip(unflip_add_force[index_split_by_add_force_flag[j]:index_split_by_add_force_flag[j+1]]) for j in range(len(index_split_by_add_force_flag)-1)]   # Get each trajectory in from index_split_by_add_force_flag
     flipped_add_force = np.concatenate(flipped_add_force)   # Concatenate together to make its shape as (-1, )
-    if timelag != 0:
-      flipped_add_force[-1] = 0 # If adding timelag, the last trajectory which is lag should be ignored for the end_of_trajectory flag since it's not the real end point of trajectory
+    if timelag != '0':
+      flipped_add_force[-1] = 0 # If adding timelag, the last trajectory which is a lag flag is up should be ignored for the end_of_trajectory flag since it's not the real end point of trajectory
     trajectory_split[i]['end_of_trajectory'] = flipped_add_force.astype(int) # + unflip_add_force.astype(int)    # Assign to new columns
     # print(unflip_add_force + flipped_add_force)
+    # print(flipped_add_force)
   return trajectory_split
 
 def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type, timelag):
@@ -90,7 +91,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(1, 5)
+  random_continuous_length = np.arange(3, 8)
   total_trajectory = len(index_split_by_flag) - 2   # For the timelag may access the trajectory at index_split_by_flag[end_index+1] and can cause the out-of-range error so need to -2 to reserve the last trajectory for timelag
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
