@@ -18,6 +18,8 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import json
+# Animated visualization
+from utils.animated_visualization import trajectory_animation
 # Dataloader
 from utils.dataloader import TrajectoryDataset
 # Models
@@ -36,7 +38,7 @@ def visualize_layout_update(fig=None, n_vis=7):
       fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
-def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
@@ -44,8 +46,6 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   # detach() for visualization
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
-  # Random the index the be visualize
-  vis_idx = np.random.randint(low=0, high=trajectory_startpos.shape[0], size=(n_vis))
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
     # print("X", lengths[i]+1)
@@ -60,6 +60,8 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
     for col_idx in range(1, 3):
       fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+1, col=col_idx)
       fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col_idx)
+
+  return vis_idx
 
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   gravity_constraint_penalize = 0
@@ -140,7 +142,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   model.eval()
@@ -161,16 +163,19 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
     # Visualize by make a subplots of trajectory
-    n_vis = 7
+    n_vis = 5
     fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-    # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
-    # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy())
+    # Random the index the be visualize
+    vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
+    # Visualize a trajectory
+    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
     fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
     fig = visualize_layout_update(fig=fig, n_vis=n_vis)
     fig.show()
+    if animation_visualize_flag:
+      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
     input("Continue plotting...")
 
   return accepted_3axis_loss, accepted_trajectory_loss
@@ -228,6 +233,8 @@ if __name__ == '__main__':
   parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
+  parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
+  parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
   args = parser.parse_args()
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -289,7 +296,7 @@ if __name__ == '__main__':
   # Test a model iterate over dataloader to get each batch and pass to predict function
   n_accepted_3axis_loss = 0
   n_accepted_trajectory_loss = 0
-  n_trajectory = len(trajectory_test_dataloader)*args.batch_size
+  n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
     # Testing set (Each index in batch_test came from the collate_fn_padd)
@@ -309,9 +316,10 @@ if __name__ == '__main__':
                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold)
+                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss
+    n_trajectory += input_trajectory_test.shape[0]
 
 
   print("="*100)

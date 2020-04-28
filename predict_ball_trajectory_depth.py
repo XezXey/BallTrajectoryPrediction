@@ -35,7 +35,7 @@ def visualize_layout_update(fig=None, n_vis=7):
       fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
-def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
@@ -184,16 +184,19 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
     # Visualize by make a subplots of trajectory
-    n_vis = 7
+    n_vis = 5
     fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-    # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
-    # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy())
+    # Random the index the be visualize
+    vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
+    # Visualize a trajectory
+    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
     fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
     fig = visualize_layout_update(fig=fig, n_vis=n_vis)
     fig.show()
+    if animation_visualize_flag:
+      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
     input("Continue plotting...")
 
   return accepted_3axis_loss, accepted_trajectory_loss

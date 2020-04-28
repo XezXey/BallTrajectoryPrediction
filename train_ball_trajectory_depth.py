@@ -24,6 +24,7 @@ from utils.dataloader import TrajectoryDataset
 from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
+from models.bigru_model import BiGRU
 from models.gru_model import GRU
 
 def visualize_layout_update(fig=None, n_vis=5):
@@ -417,10 +418,10 @@ if __name__ == '__main__':
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = GRU(input_size=n_input, output_size=n_output)
+    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = GRU(input_size=n_input_, output_size=n_output)
+    rnn_model = BiGRU(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
@@ -430,7 +431,7 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-  decay_cycle = int(len(trajectory_train_dataloader)/2)
+  decay_cycle = int(len(trajectory_train_dataloader)/10)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
