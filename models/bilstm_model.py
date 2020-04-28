@@ -18,7 +18,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers):
-  return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.9)
+  return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.7)
 
 class BiLSTM(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -26,7 +26,7 @@ class BiLSTM(pt.nn.Module):
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 256
+    self.hidden_dim = 32
     self.n_layers = 1
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, self.hidden_dim]
