@@ -171,7 +171,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
-    fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
+    fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
     fig = visualize_layout_update(fig=fig, n_vis=n_vis)
     fig.show()
     if animation_visualize_flag:
