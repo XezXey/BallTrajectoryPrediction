@@ -214,8 +214,11 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = BiGRU(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
     rnn_model = LSTM(input_size=input_size, output_size=output_size)
-  elif model_arch=='bigru':
+  elif model_arch=='bilstm':
     rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+  else :
+    print("Please input correct model architecture : (gru, bigru, lstm, bilstm)")
+    exit()
 
   return rnn_model
 
