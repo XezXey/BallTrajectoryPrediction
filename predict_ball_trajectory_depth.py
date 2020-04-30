@@ -162,7 +162,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     fig = visualize_layout_update(fig=fig, n_vis=n_vis)
     fig.show()
     if animation_visualize_flag:
-      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
+      trajectory_animation(output_xyz=pt.mul(output_test, output_trajectory_test_mask), gt_xyz=output_trajectory_test_xyz, input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask, n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
     input("Continue plotting...")
 
   return accepted_3axis_loss, accepted_trajectory_loss
@@ -206,6 +206,20 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'output':[output_batch, lengths, output_mask, output_startpos, output_xyz]}
 
+
+def get_model(input_size, output_size, model_arch):
+  if model_arch=='gru':
+    rnn_model = GRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru':
+    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='lstm':
+    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru':
+    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+
+  return rnn_model
+
+
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
   # Argumentparser for input
@@ -221,6 +235,7 @@ if __name__ == '__main__':
   parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
   parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
   parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
+  parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
   args = parser.parse_args()
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -272,7 +287,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
+    rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
