@@ -220,6 +220,18 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'output':[output_batch, lengths, output_mask, output_startpos, output_xyz]}
 
+def get_model(input_size, output_size, model_arch):
+  if model_arch=='gru':
+    rnn_model = GRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru':
+    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='lstm':
+    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru':
+    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+
+  return rnn_model
+
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
   # Argumentparser for input
@@ -235,6 +247,7 @@ if __name__ == '__main__':
   parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
   parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
   parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
+  parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input model architecture (gru, bigru, lstm, bilstm)', required=True)
   args = parser.parse_args()
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -280,13 +293,13 @@ if __name__ == '__main__':
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 3 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
+  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
   if args.pretrained_model_path is None:
     print('===>No pre-trained model to load')
     print('EXIT...')
     exit()
   else:
     print('===>Load trained model')
-    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
   rnn_model = rnn_model.to(device)
   print(rnn_model)

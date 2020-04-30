@@ -72,8 +72,8 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eot_gt *= mask
   # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
   output_eot = pt.sigmoid(output_eot)
-  pos_weight = 100
-  neg_weight = 0.1
+  pos_weight = 10
+  neg_weight = 1
   # detach() for visualization
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))), dim=1).cpu().detach().numpy()
   output_eot = output_eot.cpu().detach().numpy()
@@ -338,6 +338,21 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'output':[output_batch, lengths, output_mask, output_startpos, output_xyz]}
 
+def get_model(input_size, output_size, model_arch):
+  if model_arch=='gru':
+    rnn_model = GRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru':
+    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='lstm':
+    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+  elif model_arch=='bilstm':
+    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+  else :
+    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
+    exit()
+
+  return rnn_model
+
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
   # Argumentparser for input
@@ -355,6 +370,7 @@ if __name__ == '__main__':
   parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
+  parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
   args = parser.parse_args()
 
   # Init wandb
@@ -415,13 +431,12 @@ if __name__ == '__main__':
   n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
+  rnn_model = get_model(input_size=input_size, output_size=output_size, model_arch=args.model_arch)
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
-    rnn_model = BiGRU(input_size=n_input, output_size=n_output)
   else:
     print('===>Load trained model')
-    rnn_model = BiGRU(input_size=n_input_, output_size=n_output)
     rnn_model.load_state_dict(pt.load(args.model_path))
   rnn_model = rnn_model.to(device)
   print(rnn_model)
