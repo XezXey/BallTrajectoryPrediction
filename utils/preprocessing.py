@@ -163,31 +163,49 @@ if __name__ == '__main__':
   parser.add_argument('--random_num_continuous', dest='random_sampling_mode', help='Generate the random number of continuous trajectory', action='store_true')
   parser.add_argument('--constant_num_continuous', dest='random_sampling_mode', help='Generate the constant number of continuous trajectory', action='store_false')
   parser.add_argument('--timelag', dest='timelag', help='Timelag for input some part of next trajectory', default=0)
+  parser.add_argument('--process_trial_index', dest='process_trial_index', help='Process trial at given idx only', default=None)
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
   pattern = r'(Trial_[0-9]+)+'
   print("Dataset : ", [re.findall(pattern, dataset_folder[i]) for i in range(len(dataset_folder))])
-  trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
-  print(trial_index)
+  if args.process_trial_index is not None:
+    # Use only interesting trial : Can be edit the trial index in process_trial_index.txt
+    with open(args.process_trial_index) as f:
+      # Split the text input of interested trial index into list of trial index
+      trial_index = f.readlines()[-1].split()
+      # Create the pattern for regex following this : (10)|(11)|(12) ===> match the any trial from 10, 11 or 12
+      pattern_trial_index= ['({})'.format(trial_index[i]) for i in range(len(trial_index))]
+      # Add it into full pattern of regex : r'(Trial_((10)|(11)|(12))+)+'
+      pattern_trial_index = r'(Trial_({})+)+'.format('|'.join(pattern_trial_index))
+      # filter the dataset folder which is not in the trial_index
+      filter_trial_index = [re.search(pattern_trial_index, dataset_folder[i]) for i in range(len(dataset_folder))]
+      dataset_folder = [dataset_folder[i] for i in range(len(filter_trial_index)) if filter_trial_index[i] is not None]
+  else :
+    # Use all trial
+    trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
+  print("Trial index : ", trial_index)
   if args.random_sampling_mode:
-    print("Mode : Random number of continuous trajectory")
+    print("Mode : Random number of continuous trajectory with n = {} and timelag = {}".format(args.num_continuous_trajectory, args.timelag))
   else:
-    print("Mode : Constant number of continuous trajectory with n =", args.num_continuous_trajectory)
-  trajectory_type = ["Rolling", "Projectile", "MagnusProjectile"]
+    print("Mode : Constant number of continuous trajectory with n = {} and timelag = {}".format(args.num_continuous_trajectory, args.timelag))
+  trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])
     # Read json for column names
     col_names = get_col_names(dataset_folder[i], trial_index[i])
-    trajectory_df = {"Rolling" : pd.read_csv(dataset_folder[i] + "/RollingTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
-                      "Projectile" : pd.read_csv(dataset_folder[i] + "/ProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=','),
-                      "MagnusProjectile" : pd.read_csv(dataset_folder[i] + "/MagnusProjectileTrajectory_Trial{}.csv".format(trial_index[i]), names=col_names, skiprows=1, delimiter=',')}
-    # Split the trajectory by flag
-    trajectory_split = split_by_flag(trajectory_df, trajectory_type, flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory, random_sampling_mode=args.random_sampling_mode, timelag=args.timelag)
-    # Cast to npy format
-    trajectory_npy = computeDisplacement(trajectory_split, trajectory_type)
-    # Save to npy format
+    trajectory_df = {}
     for traj_type in trajectory_type:
+      if os.path.isfile(dataset_folder[i] + "/{}Trajectory_Trial{}.csv".format(traj_type, trial_index[i])):
+        trajectory_df[traj_type] = pd.read_csv(dataset_folder[i] + "/{}Trajectory_Trial{}.csv".format(traj_type, trial_index[i]), names=col_names, skiprows=1, delimiter=',')
+    print("Trajectory type in Trial{} : {}".format(trial_index[i], trajectory_df.keys()))
+
+    # Split the trajectory by flag
+    trajectory_split = split_by_flag(trajectory_df=trajectory_df, trajectory_type=trajectory_df.keys(), flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory, random_sampling_mode=args.random_sampling_mode, timelag=args.timelag)
+    # Cast to npy format
+    trajectory_npy = computeDisplacement(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys())
+    # Save to npy format
+    for traj_type in trajectory_df.keys():
       # Adding Gravity columns
       trajectory_npy[traj_type] = addGravityColumns(trajectory_npy[traj_type])
       # Write each trajectory
