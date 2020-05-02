@@ -103,11 +103,13 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   # exit()
   # print(eot_gt[:200])
   # print(output_eot[:200])
-  pos_weight = 100
+  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))))
+  # Prevent of pt.log(-value)
+  eps = 1e-10
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
   # eot_loss = pt.mean(((eot_gt - output_eot)**2))
-  return eot_loss
+  return eot_loss * 100
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_uv, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_uv, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, optimizer, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
@@ -142,9 +144,9 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     val_loss = val_eot_loss
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
-    # pt.nn.utils.clip_grad_norm_(model.parameters(), 50)
+    pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=1)
     optimizer.step() # Updates the weights accordingly to the gradients
-    if epoch%1 == 0:
+    if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
       print('Val Loss : {:.3f}'.format(val_loss.item()))
@@ -158,7 +160,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
         # Save to wandb
         pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
 
-    if epoch%50 == 0:
+    if epoch%25 == 0:
       if visualize_trajectory_flag == True:
         make_visualize(output_train_eot=output_train_eot, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_eot=output_val_eot, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
