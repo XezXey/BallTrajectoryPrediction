@@ -14,7 +14,7 @@ def computeDisplacement(trajectory_split, trajectory_type):
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
-    # First vstack(extend rows) with (First row, np.diff())
+    # First vstack(extend rows) with (First row, np.diff() of the rest)
     # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 
     trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
                                                        np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
