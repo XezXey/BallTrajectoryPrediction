@@ -344,7 +344,7 @@ if __name__ == '__main__':
   n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
-  rnn_model = get_model(input_size=input_size, output_size=output_size, model_arch=args.model_arch)
+  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
   if args.model_path is None:
     # Create a model
     print('===>No trained model')
