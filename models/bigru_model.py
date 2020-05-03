@@ -18,7 +18,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers):
-  return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.5)
+  return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
 
 class BiGRU(pt.nn.Module):
   def __init__(self, input_size, output_size):

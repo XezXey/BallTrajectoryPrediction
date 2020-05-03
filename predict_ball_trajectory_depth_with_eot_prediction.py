@@ -336,7 +336,7 @@ if __name__ == '__main__':
   # Test a model iterate over dataloader to get each batch and pass to predict function
   n_accepted_3axis_loss = 0
   n_accepted_trajectory_loss = 0
-  n_trajectory = len(trajectory_test_dataloader)*args.batch_size
+  n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
     # Testing set (Each index in batch_test came from the collate_fn_padd)
@@ -359,6 +359,7 @@ if __name__ == '__main__':
                                              projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss
+    n_trajectory += input_trajectory_test.shape[0]
 
 
   print("="*100)

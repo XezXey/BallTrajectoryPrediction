@@ -53,10 +53,11 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eot_gt *= mask
   # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
   output_eot = pt.sigmoid(output_eot)
-  pos_weight = 10
+  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
+  eps = 1e-10
   # detach() for visualization
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))), dim=1).cpu().detach().numpy()
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -145,7 +146,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=1)
-    optimizer.step() # Updates the weights accordingly to the gradients
+    # optimizer.step() # Updates the weights accordingly to the gradients
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
