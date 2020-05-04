@@ -18,6 +18,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import json
+from sklearn.metrics import confusion_matrix
 # Dataloader
 from utils.dataloader import TrajectoryDataset
 # Models
@@ -47,17 +48,20 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eot_gt = pt.unsqueeze(eot_gt, dim=2)
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
   output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
   output_eot *= mask
   eot_gt *= mask
-  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
+  # sigmoid the output to keep each trajectory seperately
   output_eot = pt.sigmoid(output_eot)
+  # Weight of positive/negative classes for imbalanced class
   pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
   eps = 1e-10
-  # detach() for visualization
+  # Calculate the EOT loss for each trajectory
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  # detach() for visualization
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -74,42 +78,45 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=output_eot[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}".format(flag, i, eot_loss[i][0])), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=eot_gt[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=idx+1, col=col)
 
-def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
+def eot_metrics_log(eot_gt, output_eot, lengths, flag):
+  output_eot = output_eot > 0.8
+  # Output of confusion_matrix.ravel() = [TN, FP ,FN, TP]
+  cm_each_trajectory = np.array([confusion_matrix(y_pred=output_eot[i][:lengths[i]+1, :], y_true=eot_gt[i][:lengths[i]+1]).ravel() for i in range(lengths.shape[0])])
+  n_accepted_trajectory = np.sum(np.logical_and(cm_each_trajectory[:, 1]==0., cm_each_trajectory[:, 2] == 0.))
+  cm_batch = np.sum(cm_each_trajectory, axis=0)
+  tn, fp, fn, tp = cm_batch
+  precision = tp/(tp+fp)
+  recall = tp/(tp+fn)
+  f1_score = 2 * (precision * recall) / (precision + recall)
+  wandb.log({'{} Precision'.format(flag):precision, '{} Recall'.format(flag):recall, '{} F1-score'.format(flag):f1_score, '{}-#N accepted trajectory(Perfect EOT without FN, FP)'.format(flag):n_accepted_trajectory})
+
+def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='train'):
   # Add the feature dimension using unsqueeze
   eot_gt = pt.unsqueeze(eot_gt, dim=2)
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
   output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
   output_eot *= mask
   eot_gt *= mask
-  # Concat the startpos of end_of_trajectory
-  # print("EndOfTrajectoryLoss function : ")
-  # print(output_eot.shape, eot_gt.shape, mask.shape, lengths.shape, eot_startpos.shape)
-  # print((output_eot * mask)[0][:lengths[0]+1].shape)
-  # print((eot_gt * mask)[0][:lengths[0]+1].shape)
-  # BCELoss
-  # eot_loss = pt.nn.BCELoss(reduction='mean')(pt.sigmoid(output_eot) + 1e-10, eot_gt)
-  # print("EOT Loss : ", eot_loss)
-  # BCEWithLogitsLoss
-  # eot_loss = (1/args.batch_size) * (pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss(reduction='mean', pos_weight=pt.ones_like(eot_gt[i][:lengths[i]+1])*100)(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])], requires_grad=True)))
+
+  # Log the precision, recall, confusion_matrix and using wandb
+  eot_gt_log = eot_gt.clone().cpu().detach().numpy()
+  output_eot_log = output_eot.clone().cpu().detach().numpy()
+  eot_metrics_log(eot_gt=eot_gt_log, output_eot=output_eot_log, lengths=lengths.cpu().detach().numpy(), flag=flag)
+
   # Implement from scratch
-  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
-  eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(args.batch_size)]))
-  # print(eot_gt)
-  output_eot = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(args.batch_size)])))
-  # print(output_eot)
-  # print((eot_gt * pt.log(output_eot))[:250])
-  # print(((1-eot_gt)*pt.log(1-output_eot))[:250])
-  # exit()
-  # print(eot_gt[:200])
-  # print(output_eot[:200])
+  # Flatten and concat all trajectory together
+  eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(eot_startpos.shape[0])]))
+  output_eot = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(eot_startpos.shape[0])])))
+  # Class weight for imbalance class problem
   pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
   # Prevent of pt.log(-value)
   eps = 1e-10
+  # Calculate the BCE loss
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
-  # eot_loss = pt.mean(((eot_gt - output_eot)**2))
   return eot_loss * 100
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_uv, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_uv, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, optimizer, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
@@ -138,15 +145,15 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     hidden = hidden.detach()
 
     # Calculate loss of unprojected trajectory
-    train_eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_uv[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1])
-    val_eot_loss = EndOfTrajectoryLoss(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_uv[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1])
+    train_eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_uv[..., -1], mask=output_trajectory_train_mask[..., -1], lengths=output_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1], flag='Train')
+    val_eot_loss = EndOfTrajectoryLoss(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_uv[..., -1], mask=output_trajectory_val_mask[..., -1], lengths=output_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1], flag='Validation')
 
     train_loss = train_eot_loss
     val_loss = val_eot_loss
 
     train_loss.backward() # Perform a backpropagation and calculates gradients
     pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=1)
-    # optimizer.step() # Updates the weights accordingly to the gradients
+    optimizer.step() # Updates the weights accordingly to the gradients
     if epoch%10 == 0:
       print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
       print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')

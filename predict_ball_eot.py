@@ -80,7 +80,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   eot_gt = pt.unsqueeze(eot_gt, dim=2)
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
   output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
   output_eot *= mask
   eot_gt *= mask
