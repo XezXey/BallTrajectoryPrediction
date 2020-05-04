@@ -186,7 +186,7 @@ if __name__ == '__main__':
     trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
   print("Trial index : ", trial_index)
   if args.random_sampling_mode:
-    print("Mode : Random number of continuous trajectory with timelag = {}".format(args.num_continuous_trajectory, args.timelag))
+    print("Mode : Random number of continuous trajectory with timelag = {}".format(args.timelag))
   else:
     print("Mode : Constant number of continuous trajectory with n = {} and timelag = {}".format(args.num_continuous_trajectory, args.timelag))
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
