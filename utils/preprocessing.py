@@ -72,7 +72,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(1, 5)
+  random_continuous_length = np.arange(1, 6)
   total_trajectory = len(index_split_by_flag) - 1
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
