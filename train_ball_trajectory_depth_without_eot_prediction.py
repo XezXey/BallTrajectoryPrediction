@@ -437,6 +437,6 @@ if __name__ == '__main__':
       pt.save(rnn_model.state_dict(), model_checkpoint_path)
       pt.save(rnn_model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
     else:
-      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
 
   print("[#] Done")
