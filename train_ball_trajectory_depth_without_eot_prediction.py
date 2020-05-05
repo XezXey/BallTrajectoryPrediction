@@ -188,7 +188,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=1)
+  pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=100)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -357,7 +357,7 @@ if __name__ == '__main__':
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
 
   # Training settings
-  n_epochs = 500
+  n_epochs = 300
   decay_cycle = int(n_epochs/10)
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
@@ -422,7 +422,7 @@ if __name__ == '__main__':
     val_loss_per_epoch = np.mean(accumulate_val_loss)
     train_loss_per_epoch = np.mean(accumulate_train_loss)
     # Decrease learning rate every n_epochs % decay_cycle batch
-    if n_epochs % decay_cycle == 0:
+    if epoch % decay_cycle == 0:
       lr_scheduler.step()
       for param_group in optimizer.param_groups:
         print("Stepping Learning rate to {}", param_group['lr'])
