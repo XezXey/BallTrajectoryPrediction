@@ -150,66 +150,55 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   return output, trajectory_temp
 
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, optimizer, visualize_trajectory_flag=True, min_val_loss=2e10, model_checkpoint_path='./model/', visualization_path='./visualize_html/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
-  n_epochs = 500
   # Initial hidden layer for the first RNN Cell
   # Train a model
-  for epoch in range(1, n_epochs+1):
-    hidden = rnn_model.initHidden(batch_size=args.batch_size)
-    cell_state = rnn_model.initCellState(batch_size=args.batch_size)
-    # Training mode
-    model.train()
-    optimizer.zero_grad() # Clear existing gradients from previous epoch
-    # Forward PASSING
-    # Forward pass for training a model  
-    output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
-    # (This step we get the displacement of depth by input the displacement of u and v)
-    # Apply cummulative summation to output using cumsum_trajectory function
-    output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
-    # Project the (u, v, depth) to world space
-    output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
-    # Evaluating mode
-    model.eval()
-    # Forward pass for validate a model
-    output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
-    # (This step we get the displacement of depth by input the displacement of u and v)
-    # Apply cummulative summation to output using cumsum_trajectory function
-    output_val, input_trajectory_val_temp = cumsum_trajectory(output=output_val, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
-    # Project the (u, v, depth) to world space
-    output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
-    # Detach for use hidden as a weights in next batch
-    cell_state.detach()
-    cell_state = cell_state.detach()
-    hidden.detach()
-    hidden = hidden.detach()
+  hidden = rnn_model.initHidden(batch_size=args.batch_size)
+  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  # Training mode
+  model.train()
+  optimizer.zero_grad() # Clear existing gradients from previous epoch
+  # Forward PASSING
+  # Forward pass for training a model  
+  output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+  # (This step we get the displacement of depth by input the displacement of u and v)
+  # Apply cummulative summation to output using cumsum_trajectory function
+  output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  # Project the (u, v, depth) to world space
+  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
+  # Evaluating mode
+  model.eval()
+  # Forward pass for validate a model
+  output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
+  # (This step we get the displacement of depth by input the displacement of u and v)
+  # Apply cummulative summation to output using cumsum_trajectory function
+  output_val, input_trajectory_val_temp = cumsum_trajectory(output=output_val, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+  # Project the (u, v, depth) to world space
+  output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
+  # Detach for use hidden as a weights in next batch
+  cell_state.detach()
+  cell_state = cell_state.detach()
+  hidden.detach()
+  hidden = hidden.detach()
 
-    # Calculate loss of unprojected trajectory
-    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
-    val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
+  # Calculate loss of unprojected trajectory
+  train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
+  val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
-    train_loss.backward() # Perform a backpropagation and calculates gradients
-    optimizer.step() # Updates the weights accordingly to the gradients
-    if epoch%10 == 0:
-      print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
-      print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
-      print('Val Loss : {:.3f}'.format(val_loss.item()))
-      wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
-      if min_val_loss > val_loss:
-        # Save model checkpoint
-        print('[#]Saving a model checkpoint')
-        min_val_loss = val_loss
-        # Save to directory
-        pt.save(model.state_dict(), model_checkpoint_path)
-        # Save to wandb
-        pt.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+  train_loss.backward() # Perform a backpropagation and calculates gradients
+  pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=1)
+  optimizer.step() # Updates the weights accordingly to the gradients
 
-    if epoch%100 == 0:
-      if visualize_trajectory_flag == True:
-        make_visualize(output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+  print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
+  print('Val Loss : {:.3f}'.format(val_loss.item()))
+  wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
-  return min_val_loss, hidden, cell_state
+  if visualize_trajectory_flag == True and vis_signal == True:
+    make_visualize(output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+
+  return train_loss.item(), val_loss.item(), hidden, cell_state, model
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -360,26 +349,20 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-  decay_cycle = int(len(trajectory_train_dataloader)/10)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
+  # Initialize the hidden and cell_state
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
-  # Training a model iterate over dataloader to get each batch and pass to train function
-  for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
-    # Training set (Each index in batch_train came from the collate_fn_padd)
-    input_trajectory_train = batch_train['input'][0].to(device)
-    input_trajectory_train_lengths = batch_train['input'][1].to(device)
-    input_trajectory_train_mask = batch_train['input'][2].to(device)
-    input_trajectory_train_startpos = batch_train['input'][3].to(device)
-    output_trajectory_train = batch_train['output'][0].to(device)
-    output_trajectory_train_lengths = batch_train['output'][1].to(device)
-    output_trajectory_train_mask = batch_train['output'][2].to(device)
-    output_trajectory_train_startpos = batch_train['output'][3].to(device)
-    output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
-    # Validation set (Get each batch for each training iteration
+  # Training settings
+  n_epochs = 500
+  decay_cycle = int(n_epochs/10)
+  for epoch in range(1, n_epochs+1):
+    accumulate_train_loss = []
+    accumulate_val_loss = []
+    # Fetch the Validation set (Get each batch for each training epochs)
     try:
       batch_val = next(trajectory_val_iterloader)
     except StopIteration:
@@ -395,28 +378,65 @@ if __name__ == '__main__':
     output_trajectory_val_startpos = batch_val['output'][3].to(device)
     output_trajectory_val_xyz = batch_val['output'][4].to(device)
 
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : {}/{}]<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch, n_epochs))
+
     # Log the learning rate
     for param_group in optimizer.param_groups:
       print("[#]Learning rate : ", param_group['lr'])
       wandb.log({'Learning Rate':param_group['lr']})
 
-    # Call function to train
-    min_val_loss, hidden, cell_state = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
-                                             output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
-                                             input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
-                                             input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
-                                             output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask,
-                                             output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
-                                             input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
-                                             input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
-                                             model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             min_val_loss=min_val_loss, model_checkpoint_path=model_checkpoint_path, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
-                                             optimizer=optimizer)
+    # Training a model iterate over dataloader to get each batch and pass to train function
+    for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
+      print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='')
+      # Training set (Each index in batch_train came from the collate_fn_padd)
+      input_trajectory_train = batch_train['input'][0].to(device)
+      input_trajectory_train_lengths = batch_train['input'][1].to(device)
+      input_trajectory_train_mask = batch_train['input'][2].to(device)
+      input_trajectory_train_startpos = batch_train['input'][3].to(device)
+      output_trajectory_train = batch_train['output'][0].to(device)
+      output_trajectory_train_lengths = batch_train['output'][1].to(device)
+      output_trajectory_train_mask = batch_train['output'][2].to(device)
+      output_trajectory_train_startpos = batch_train['output'][3].to(device)
+      output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
-    if batch_idx % decay_cycle==0 and batch_idx!=0:
-      # Decrease learning rate every batch_idx % decay_cycle batch
-      for param_group in optimizer.param_groups:
-        print("Learning rate : ", param_group['lr'])
+      # Visualize signal to make a plot and save to wandb
+      vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+
+      # Call function to train
+      train_loss, val_loss, hidden, cell_state, rnn_model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
+                                                                 output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
+                                                                 input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
+                                                                 input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
+                                                                 output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask,
+                                                                 output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
+                                                                 input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
+                                                                 input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
+                                                                 model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                                                 projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
+                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal)
+
+      accumulate_val_loss.append(val_loss)
+      accumulate_train_loss.append(train_loss)
+
+    # Get the average loss for each epoch over entire dataset
+    val_loss_per_epoch = np.mean(accumulate_val_loss)
+    train_loss_per_epoch = np.mean(accumulate_train_loss)
+    # Decrease learning rate every n_epochs % decay_cycle batch
+    if n_epochs % decay_cycle == 0:
       lr_scheduler.step()
+      for param_group in optimizer.param_groups:
+        print("Stepping Learning rate to {}", param_group['lr'])
+
+    # Save the model checkpoint every finished the epochs
+    print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
+    if min_val_loss > val_loss_per_epoch:
+      # Save model checkpoint
+      print('[#]Saving a model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      min_val_loss = val_loss_per_epoch
+      # Save to directory
+      pt.save(rnn_model.state_dict(), model_checkpoint_path)
+      pt.save(rnn_model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+    else:
+      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(min_val_loss, val_loss_per_epoch))
 
   print("[#] Done")

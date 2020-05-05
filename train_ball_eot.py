@@ -119,7 +119,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='t
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
   return eot_loss * 100
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_uv, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_uv, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, optimizer, epoch, n_epochs, vis_signal, visualize_trajectory_flag=True, accumulate_val_loss=2e10, visualization_path='./visualize_html/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_uv, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_uv, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, optimizer, epoch, n_epochs, vis_signal, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model on a minibatch
   # Run over each example batch
   # Initial hidden layer for the first RNN Cell
@@ -301,13 +301,15 @@ if __name__ == '__main__':
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
-  # decay_cycle = int(len(trajectory_train_dataloader)/10)
+  decay_cycle = int(len(trajectory_train_dataloader)/10)
   # Log metrics with wandb
   wandb.watch(rnn_model)
 
+  # Initialize the hidden and cell_state
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
 
+  # Training settings
   n_epochs = 500
   decay_cycle = int(n_epochs/10)
   for epoch in range(1, n_epochs+1):
@@ -329,12 +331,11 @@ if __name__ == '__main__':
     output_trajectory_val_startpos = batch_val['output'][3].to(device)
     output_trajectory_val_uv = batch_val['output'][4].to(device)
 
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : {}/{}]<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch, n_epochs))
     # Log the learning rate
     for param_group in optimizer.param_groups:
       print("[#]Learning rate : ", param_group['lr'])
       wandb.log({'Learning Rate':param_group['lr']})
-
-    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : {}/{}]<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch, n_epochs))
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
@@ -367,14 +368,16 @@ if __name__ == '__main__':
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
 
+    # Get the average loss for each epoch over entire dataset
+    val_loss_per_epoch = np.mean(accumulate_val_loss)
+    train_loss_per_epoch = np.mean(accumulate_train_loss)
+
     # Decrease learning rate every n_epochs % decay_cycle batch
-    if n_epochs % decay_cycle:
+    if epoch % decay_cycle == 0:
       lr_scheduler.step()
       for param_group in optimizer.param_groups:
         print("Stepping Learning rate to {}", param_group['lr'])
 
-    val_loss_per_epoch = np.mean(accumulate_val_loss)
-    train_loss_per_epoch = np.mean(accumulate_train_loss)
     # Save the model checkpoint every finished the epochs
     print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
     if min_val_loss > val_loss_per_epoch:
@@ -384,5 +387,7 @@ if __name__ == '__main__':
       # Save to directory
       pt.save(rnn_model.state_dict(), model_checkpoint_path)
       pt.save(rnn_model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+    else:
+      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(min_val_loss, val_loss_per_epoch))
 
   print("[#] Done")
