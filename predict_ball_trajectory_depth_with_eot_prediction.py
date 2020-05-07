@@ -231,7 +231,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   # Test a model on a testing batch
   # Forward PASSING
   # Forward pass for testing a model  
-  output_test, (_, _) = model(input_trajectory_test, hidden, cell_state, lengths=input_trajectory_test_lengths)
+  output_test, (_, _) = model(input_trajectory_test[..., :-1], hidden, cell_state, lengths=input_trajectory_test_lengths)
   # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
   output_test_depth = pt.unsqueeze(output_test[..., 0], dim=2)
   output_test_eot = pt.unsqueeze(output_test[..., 1], dim=2)
@@ -390,7 +390,7 @@ if __name__ == '__main__':
 
   # Model definition
   n_output = 2 # Contain the depth information of the trajectory
-  n_input = 3 # Contain following this trajectory parameters (u, v) position from tracking
+  n_input = 2 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
   rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
   if args.pretrained_model_path is None:
