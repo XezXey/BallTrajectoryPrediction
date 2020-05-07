@@ -18,6 +18,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import json
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 # Animated visualization
 from utils.animated_visualization import trajectory_animation
 # Dataloader
@@ -38,6 +39,43 @@ def visualize_layout_update(fig=None, n_vis=7):
       fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
   return fig
 
+def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
+  # Add the feature dimension using unsqueeze
+  eot_gt = pt.unsqueeze(eot_gt, dim=2)
+  mask = pt.unsqueeze(mask, dim=2)
+  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
+  # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot *= mask
+  eot_gt *= mask
+  # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
+  output_eot = pt.sigmoid(output_eot)
+  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
+  neg_weight = 1
+  eps = 1e-10
+  # detach() for visualization
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  output_eot = output_eot.cpu().detach().numpy()
+  eot_gt = eot_gt.cpu().detach().numpy()
+  lengths = lengths.cpu().detach().numpy()
+  # marker_dict for contain the marker properties
+  marker_dict_gt = dict(color='rgba(0, 0, 255, .5)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, .5)', size=3)
+  # Iterate to plot each trajectory
+  count = 2
+  for idx, i in enumerate(vis_idx):
+    col_idx = 1
+    row_idx = (idx*2)+2
+    # row_idx += count
+    # if idx+1 > n_vis:
+      # For plot a second columns and the row_idx need to reset 
+      # col_idx = 2   # Plot on the second columns
+      # row_idx = idx-n_vis+1 # for idx of vis_idx [n_vis, n_vis+1, n_vis+2, ..., n_vis*2]
+    cm_vis = confusion_matrix(y_pred=output_eot[i][:lengths[i]+1, :].reshape(-1) > 0.8, y_true=eot_gt[i][:lengths[i]+1, :].reshape(-1))
+    tn, fp, fn, tp = cm_vis.ravel()
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=output_eot[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}, [TP={}, FP={}, TN={}, FN={}, Precision={}, Recall={}]".format(flag, i, eot_loss[i][0], tp, fp, tn, fn, tp/(tp+fp), tp/(tp+fn))), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=eot_gt[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=row_idx, col=col_idx)
+
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
@@ -46,22 +84,13 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   # detach() for visualization
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
-  # Random the index the be visualize
-  vis_idx = np.random.randint(low=0, high=trajectory_startpos.shape[0], size=(n_vis))
   # Iterate to plot each trajectory
+  count = 1
   for idx, i in enumerate(vis_idx):
-    # print("X", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 0], output[i][:lengths[i]+1, 0])
-    # print(trajectory_gt[i][:lengths[i]+1, 0].shape, output[i][:lengths[i]+1, 0].shape)
-    # print("Y", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 1], output[i][:lengths[i]+1, 1])
-    # print(trajectory_gt[i][:lengths[i]+1, 1].shape, output[i][:lengths[i]+1, 1].shape)
-    # print("Z", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 2], output[i][:lengths[i]+1, 2])
-    # print(trajectory_gt[i][:lengths[i]+1, 2].shape, output[i][:lengths[i]+1, 2].shape)
     for col_idx in range(1, 3):
-      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+1, col=col_idx)
-      fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+count, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+count, col=col_idx)
+    count+=1
 
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   gravity_constraint_penalize = 0
@@ -99,8 +128,9 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) # + gravity_constraint_penalize
   return mse_loss
 
-def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
+def evaluateModelTrajectory(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
   mae_loss_3axis = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
+  print(mae_loss_3axis.shape)
   mae_loss_trajectory = pt.sum(mae_loss_3axis, axis=1) / 3
   accepted_3axis_loss = pt.sum((pt.sum(mae_loss_3axis < threshold, axis=1) == 3))
   print("Accepted 3-Axis(X, Y, Z) loss < {} : {}".format(threshold, accepted_3axis_loss))
@@ -142,6 +172,40 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
+def evaluateModelEOT(output_eot, eot_gt, eot_startpos, mask, lengths):
+  # Add the feature dimension using unsqueeze
+  eot_gt = pt.unsqueeze(eot_gt, dim=2)
+  mask = pt.unsqueeze(mask, dim=2)
+  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
+  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  # Multiplied with mask
+  output_eot *= mask
+  eot_gt *= mask
+  # Prediciton threshold
+  threshold = 0.8
+
+  # Each trajectory
+  output_eot_each_traj = pt.sigmoid(output_eot.clone()).cpu().detach().numpy() > threshold
+  eot_gt_each_traj = eot_gt.clone().cpu().detach().numpy()
+  # Confusion matrix of each sample : Output from confusion_matrix.ravel() would be [TN, FP, FN, TP]
+  cm_each_trajectory = [confusion_matrix(y_pred=output_eot_each_traj[i][:lengths[i]+1, :], y_true=eot_gt_each_traj[i][:lengths[i]+1, :]).ravel() for i in range(lengths.shape[0])]
+  # Metrics of each sameple : precision_recall_fscore_support is Precision, Recall, Fbeta_score, support(#N of each label) with 2D array in format of [negative class, positive class]
+  metrics_each_trajectory = [precision_recall_fscore_support(y_pred=output_eot_each_traj[i][:lengths[i]+1, :], y_true=eot_gt_each_traj[i][:lengths[i]+1, :]) for i in range(lengths.shape[0])]
+
+  # Each batch
+  eot_gt_batch = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(lengths.shape[0])]))
+  output_eot_batch = pt.sigmoid(pt.cat(([output_eot[i][:lengths[i]+1] for i in range(lengths.shape[0])]))) > threshold
+  eot_gt_batch = eot_gt_batch.cpu().detach().numpy()
+  output_eot_batch = output_eot_batch.cpu().detach().numpy()
+
+  # Confusion matrix of each batch : Output from confusion_matrix.ravel() would be [TN, FP, FN, TP]
+  cm_batch = confusion_matrix(y_true=eot_gt_batch, y_pred=output_eot_batch).ravel()
+  metrics_batch = precision_recall_fscore_support(y_pred=output_eot_batch, y_true=eot_gt_batch)
+  tn, fp, fn, tp = cm_batch.ravel()
+  print("Each Batch : TP = {}, FP = {}, TN = {}, FN = {}".format(tp, fp, tn, fn), end=', ')
+  return np.array(cm_batch), np.array(cm_each_trajectory), np.array(metrics_each_trajectory)
+
 def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
   # Add the feature dimension using unsqueeze
   eot_gt = pt.unsqueeze(eot_gt, dim=2)
@@ -156,7 +220,6 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_start_pos, mask, lengths):
   # print((eot_gt * mask)[0][:lengths[0]+1].shape)
   output_eot *= mask
   eot_gt *= mask
-  print(pt.cat((pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1]), dim=1))
   eot_loss = pt.nn.BCEWithLogitsLoss()(output_eot, eot_gt)
   # eot_loss = pt.sum(pt.tensor([pt.nn.BCEWithLogitsLoss()(output_eot[i][:lengths[i]+1], eot_gt[i][:lengths[i]+1]) for i in range(eot_gt.shape[0])]))
   return eot_loss
@@ -179,8 +242,14 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_test.shape[0])])
   # Calculate loss of unprojected trajectory
   test_loss = MSELoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
-  # Calculate loss per trajectory
-  accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis = evaluateModel(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths, threshold=threshold)
+  # Evaluating the trajectory reconstructed : Calculate loss per trajectory
+  accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis = evaluateModelTrajectory(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths, threshold=threshold)
+  # Evaluating the EOT prediciton : Calculate loss per trajectory
+  cm_batch, cm_each_trajectory, metrics_each_trajectory = evaluateModelEOT(output_eot=output_test_eot, eot_gt=output_trajectory_test_xyz[..., -1], mask=output_trajectory_test_mask[..., -1], lengths=output_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1])
+
+  # Get the accepted_trajectory in batch (Perfect trajectory with FP and FN == 0)
+  accepted_eot_trajectory = np.sum((np.logical_and(cm_each_trajectory[:, 1] == 0., cm_each_trajectory[:, 2] == 0.)))
+
   # Calculate the Endoftrajectoryloss
   EndOfTrajectoryLoss(output_eot=output_test_eot, eot_gt=output_trajectory_test_xyz[..., -1], mask=output_trajectory_test_mask[..., -1], lengths=output_trajectory_test_lengths, eot_start_pos=input_trajectory_test_startpos[..., -1])
 
@@ -188,7 +257,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   if visualize_trajectory_flag == True:
     # Visualize by make a subplots of trajectory
     n_vis = 5
-    fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+    fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{"colspan":2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
     # Random the index the be visualize
     vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
     # Visualize a trajectory
@@ -196,13 +265,15 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
     fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
+    # Visualize a end-of-trajectory
+    visualize_eot(output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_xyz[..., -1], eot_startpos=output_trajectory_test_startpos[..., -1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., -1], fig=fig, flag='test', n_vis=n_vis, vis_idx=vis_idx)
     fig = visualize_layout_update(fig=fig, n_vis=n_vis)
     fig.show()
     if animation_visualize_flag:
       trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
     input("Continue plotting...")
 
-  return accepted_3axis_loss, accepted_trajectory_loss
+  return accepted_3axis_loss, accepted_trajectory_loss, cm_batch, accepted_eot_trajectory
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -338,6 +409,8 @@ if __name__ == '__main__':
   n_accepted_3axis_loss = 0
   n_accepted_trajectory_loss = 0
   n_trajectory = 0
+  cm_entire_dataset = np.zeros(4)
+  n_accepted_eot_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
     # Testing set (Each index in batch_test came from the collate_fn_padd)
@@ -352,21 +425,37 @@ if __name__ == '__main__':
     output_trajectory_test_xyz = batch_test['output'][4].to(device)
 
     # Call function to test
-    accepted_3axis_loss, accepted_trajectory_loss = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
-                                             output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos, output_trajectory_test_xyz=output_trajectory_test_xyz,
-                                             input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
-                                             input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
-                                             model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag)
+    accepted_3axis_loss, accepted_trajectory_loss, cm_batch, accepted_eot_trajectory = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
+                                                                                               output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos,
+                                                                                               output_trajectory_test_xyz=output_trajectory_test_xyz, input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
+                                                                                               input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
+                                                                                               model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                                                                               projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold,
+                                                                                               animation_visualize_flag=args.animation_visualize_flag)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss
     n_trajectory += input_trajectory_test.shape[0]
+    cm_entire_dataset += np.array(cm_batch)
+    n_accepted_eot_trajectory += accepted_eot_trajectory
 
+  # Calculate the metrics to summary
+  tn, fp, fn, tp = cm_entire_dataset.ravel()
+  acc = (tp + tn)/(tn+fp+fn+tp)
+  recall = tp/(tp+fn)   # How model can retrieve the all actual positive
+  precision = tp/(tp+fp)    # How correct of prediciton from all prediciton as positive
+  f1_score = 2 * (recall*precision)/(precision+recall)
 
   print("="*100)
   print("[#]Summary")
-  print("Accepted trajectory by MAE Loss : {} from {}".format(n_accepted_trajectory_loss, n_trajectory))
-  print("Accepted trajectory by 3axis MAE Loss : {} from {}".format(n_accepted_3axis_loss, n_trajectory))
+  print("[##] Trajectory")
+  print("===>Accepted trajectory by MAE Loss : {} from {}".format(n_accepted_trajectory_loss, n_trajectory))
+  print("===>Accepted trajectory by 3axis MAE Loss : {} from {}".format(n_accepted_3axis_loss, n_trajectory))
+  print("[##] End Of Trajectory Prediction")
+  print("===>Accuracy = {}".format(acc))
+  print("===>Recall = {}".format(recall))
+  print("===>Precision = {}".format(precision))
+  print("===>F1-score = {}".format(f1_score))
+  print("===>#N accepted trajectory [Perfect trajectory(No FP and FN)] : {} from {}".format(n_accepted_eot_trajectory, n_trajectory))
   print("="*100)
 
   print("[#] Done")

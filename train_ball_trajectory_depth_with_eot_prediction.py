@@ -262,8 +262,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = val_mse_loss + val_eot_loss
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
+  pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=100)
   optimizer.step() # Updates the weights accordingly to the gradients
-  print('Epoch : {}/{}.........'.format(epoch, n_epochs), end='')
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()), end=', ')
   print('Train EOT Loss : {:.3f}'.format(train_eot_loss), end=', ')
@@ -273,7 +273,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   if visualize_trajectory_flag == True and vis_signal == True:
       make_visualize(output_train_xyz=output_train_xyz, output_train_eot=output_train_eot, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_val_eot=output_val_eot, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
-  return train_loss, val_loss, hidden, cell_state
+  return train_loss.item(), val_loss.item(), hidden, cell_state, model
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -409,7 +409,7 @@ if __name__ == '__main__':
   n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
-  rnn_model = get_model(input_size=input_size, output_size=output_size, model_arch=args.model_arch)
+  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
   if args.model_path is None:
     # Create a model
     print('===>No trained model')

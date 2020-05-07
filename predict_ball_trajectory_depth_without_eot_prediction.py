@@ -48,15 +48,6 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
-    # print("X", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 0], output[i][:lengths[i]+1, 0])
-    # print(trajectory_gt[i][:lengths[i]+1, 0].shape, output[i][:lengths[i]+1, 0].shape)
-    # print("Y", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 1], output[i][:lengths[i]+1, 1])
-    # print(trajectory_gt[i][:lengths[i]+1, 1].shape, output[i][:lengths[i]+1, 1].shape)
-    # print("Z", lengths[i]+1)
-    # print(trajectory_gt[i][:lengths[i]+1, 2], output[i][:lengths[i]+1, 2])
-    # print(trajectory_gt[i][:lengths[i]+1, 2].shape, output[i][:lengths[i]+1, 2].shape)
     for col_idx in range(1, 3):
       fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MAE_3axis = {}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], mae_loss_3axis[i, :])), row=idx+1, col=col_idx)
       fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col_idx)

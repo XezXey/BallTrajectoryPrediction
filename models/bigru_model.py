@@ -27,7 +27,7 @@ class BiGRU(pt.nn.Module):
     self.input_size = input_size
     self.output_size = output_size
     self.hidden_dim = 32
-    self.n_layers = 1
+    self.n_layers = 2
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features

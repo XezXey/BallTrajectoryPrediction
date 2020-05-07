@@ -277,7 +277,7 @@ if __name__ == '__main__':
     packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
     # 2.RNN/LSTM model
     # 3.Unpack the packed
-    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-1)
+    unpacked = pt.nn.utils.rnn.padcalss_packed_sequence(packed, batch_first=True, padding_value=-1)
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
 
