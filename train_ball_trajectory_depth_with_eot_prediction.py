@@ -72,10 +72,13 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eot_gt *= mask
   # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
   output_eot = pt.sigmoid(output_eot)
-  pos_weight = 10
+  # Class weight for imbalance class problem
+  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
+  # Prevent of pt.log(-value)
+  eps = 1e-10
   # detach() for visualization
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot))), dim=1).cpu().detach().numpy()
+  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -225,7 +228,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   # Forward PASSING
   # Forward pass for training a model  
-  output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
+  output_train, (_, _) = model(input_trajectory_train[..., :-1], hidden, cell_state, lengths=input_trajectory_train_lengths)
   # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
   output_train_depth = pt.unsqueeze(output_train[..., 0], dim=2)
   output_train_eot = pt.unsqueeze(output_train[..., -1], dim=2)
@@ -237,7 +240,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Evaluating mode
   model.eval()
   # Forward pass for validate a model
-  output_val, (_, _) = model(input_trajectory_val, hidden, cell_state, lengths=input_trajectory_val_lengths)
+  output_val, (_, _) = model(input_trajectory_val[..., :-1], hidden, cell_state, lengths=input_trajectory_val_lengths)
   # Split the output to 2 variable ===> depth and end_of_trajectory flag and add the feature dimension using unsqueeze
   output_val_depth = pt.unsqueeze(output_val[..., 0], dim=2)
   output_val_eot = pt.unsqueeze(output_val[..., -1], dim=2)
@@ -406,7 +409,7 @@ if __name__ == '__main__':
 
   # Model definition
   n_output = 2 # Contain the depth information of the trajectory and the end_of_trajectory flag
-  n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
+  n_input = 2 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
   rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
