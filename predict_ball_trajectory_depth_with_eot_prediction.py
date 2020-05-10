@@ -30,6 +30,26 @@ from models.bilstm_model import BiLSTM
 from models.bigru_model import BiGRU
 from models.gru_model import GRU
 
+def make_visualize(output_test_xyz, output_test_eot, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag):
+    # Visualize by make a subplots of trajectory
+    n_vis = 5
+    fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{"colspan":2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+    # Random the index the be visualize
+    vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
+    # Visualize a trajectory
+    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
+    # Adjust the layout/axis
+    # AUTO SCALED/PITCH SCALED
+    fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
+    # Visualize a end-of-trajectory
+    visualize_eot(output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_xyz[..., -1], eot_startpos=output_trajectory_test_startpos[..., -1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., -1], fig=fig, flag='test', n_vis=n_vis, vis_idx=vis_idx)
+    fig = visualize_layout_update(fig=fig, n_vis=n_vis)
+    fig.show()
+    if animation_visualize_flag:
+      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
+    input("Continue plotting...")
+
+
 def visualize_layout_update(fig=None, n_vis=7):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   # fig.update_layout(height=1920, width=1080, margin=dict(l=0, r=0, b=5,t=5,pad=1), autosize=False)
@@ -66,11 +86,6 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2)+2
-    # row_idx += count
-    # if idx+1 > n_vis:
-      # For plot a second columns and the row_idx need to reset 
-      # col_idx = 2   # Plot on the second columns
-      # row_idx = idx-n_vis+1 # for idx of vis_idx [n_vis, n_vis+1, n_vis+2, ..., n_vis*2]
     cm_vis = confusion_matrix(y_pred=output_eot[i][:lengths[i]+1, :].reshape(-1) > 0.8, y_true=eot_gt[i][:lengths[i]+1, :].reshape(-1))
     tn, fp, fn, tp = cm_vis.ravel()
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=output_eot[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}, [TP={}, FP={}, TN={}, FN={}, Precision={}, Recall={}]".format(flag, i, eot_loss[i][0], tp, fp, tn, fn, tp/(tp+fp), tp/(tp+fn))), row=row_idx, col=col_idx)
@@ -255,23 +270,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
 
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
-    # Visualize by make a subplots of trajectory
-    n_vis = 3
-    fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{"colspan":2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-    # Random the index the be visualize
-    vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
-    # Visualize a trajectory
-    visualize_trajectory(output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
-    # Adjust the layout/axis
-    # AUTO SCALED/PITCH SCALED
-    fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
-    # Visualize a end-of-trajectory
-    visualize_eot(output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_xyz[..., -1], eot_startpos=output_trajectory_test_startpos[..., -1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., -1], fig=fig, flag='test', n_vis=n_vis, vis_idx=vis_idx)
-    fig = visualize_layout_update(fig=fig, n_vis=n_vis)
-    fig.show()
-    if animation_visualize_flag:
-      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
-    input("Continue plotting...")
+      make_visualize(output_test_xyz=output_test_xyz, output_test_eot=output_test_eot, output_trajectory_test_xyz=output_trajectory_test_xyz, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_temp=input_trajectory_test_temp, output_trajectory_test_mask=output_trajectory_test_mask, visualization_path=visualization_path, mae_loss_trajectory=mae_loss_trajectory, mae_loss_3axis=mae_loss_3axis, trajectory_type=trajectory_type, animation_visualize_flag=animation_visualize_flag)
 
   return accepted_3axis_loss, accepted_trajectory_loss, cm_batch, accepted_eot_trajectory
 
