@@ -256,7 +256,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
     # Visualize by make a subplots of trajectory
-    n_vis = 5
+    n_vis = 3
     fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{"colspan":2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
     # Random the index the be visualize
     vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
@@ -451,6 +451,7 @@ if __name__ == '__main__':
   print("===>Accepted trajectory by MAE Loss : {} from {}".format(n_accepted_trajectory_loss, n_trajectory))
   print("===>Accepted trajectory by 3axis MAE Loss : {} from {}".format(n_accepted_3axis_loss, n_trajectory))
   print("[##] End Of Trajectory Prediction")
+  print("===>Entire dataset : TP = {}, FP = {}, TN = {}, FN = {}".format(tp, fp, tn, fn))
   print("===>Accuracy = {}".format(acc))
   print("===>Recall = {}".format(recall))
   print("===>Precision = {}".format(precision))

@@ -325,6 +325,7 @@ if __name__ == '__main__':
 
   print("="*100)
   print("[#]Summary")
+  print("Entire Dataset : TP = {}, FP = {}, TN = {}, FN = {}".format(tp, fp, tn, fn))
   print("===>Accuracy = {}".format(acc))
   print("===>Recall = {}".format(recall))
   print("===>Precision = {}".format(precision))

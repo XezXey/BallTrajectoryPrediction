@@ -435,8 +435,8 @@ if __name__ == '__main__':
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
 
   # Training settings
-  n_epochs = 500
-  decay_cycle = int(n_epochs/10)
+  n_epochs = 1000
+  decay_cycle = int(n_epochs/20)
 
   for epoch in range(1, n_epochs+1):
     accumulate_val_loss = []
