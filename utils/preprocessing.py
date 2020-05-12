@@ -44,6 +44,19 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, tim
   for traj_type in trajectory_type:
     if traj_type=='Rolling' and force_zero_ground_flag is True:
       trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * 0.0
+    elif force_zero_ground_flag is True:    # Notice that this will effect to the outside trajectory(The pitch will getting bigger since instead reject outside trajectory by filter with -value, we force all to zero)
+      zero_threshold = 1e-3
+      mask_y = trajectory_df[traj_type].iloc[:, 1].values > zero_threshold
+      # print("Before froce zero ground")
+      # print(trajectory_df[traj_type].iloc[:, 0])
+      # print(trajectory_df[traj_type].iloc[:, 1])
+      # print(trajectory_df[traj_type].iloc[:, 2])
+      trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * mask_y
+      # print("After froce zero ground")
+      # print(trajectory_df[traj_type].iloc[:, 0])
+      # print(trajectory_df[traj_type].iloc[:, 1])
+      # print(trajectory_df[traj_type].iloc[:, 2])
+
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
     # Split each dataframe by using the flag == True as an index of starting point
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
@@ -158,7 +171,8 @@ if __name__ == '__main__':
   parser.add_argument('--dataset_path', type=str, help='Specify path to dataset', required=True)
   parser.add_argument('--split_by', type=str, help='Specify the flag for split', default='add_force_flag')
   parser.add_argument('--output_path', type=str, help='Specify output path to save dataset')
-  parser.add_argument('--force_zero_ground_flag', type=bool, help='Input the flag that make all rolling trajectory stay on the ground(Force y=0)', default=False)
+  parser.add_argument('--no_zero_ground', dest='force_zero_ground_flag', help='Input the flag that make all rolling trajectory stay on the ground(Force y=0)', action='store_false')
+  parser.add_argument('--zero_ground', dest='force_zero_ground_flag', help='Input the flag that make all rolling trajectory stay on the ground(Force y=0)', action='store_true')
   parser.add_argument('--num_continuous_trajectory', type=int, help='Keep the continuous of trajectory', default=1)
   parser.add_argument('--random_num_continuous', dest='random_sampling_mode', help='Generate the random number of continuous trajectory', action='store_true')
   parser.add_argument('--constant_num_continuous', dest='random_sampling_mode', help='Generate the constant number of continuous trajectory', action='store_false')
@@ -186,9 +200,9 @@ if __name__ == '__main__':
     trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
   print("Trial index : ", trial_index)
   if args.random_sampling_mode:
-    print("Mode : Random number of continuous trajectory with timelag = {}".format(args.timelag))
+    print("Mode : Random number of continuous trajectory with timelag = {} and force_zero_ground_flag = {}".format(args.timelag, args.force_zero_ground_flag))
   else:
-    print("Mode : Constant number of continuous trajectory with n = {} and timelag = {}".format(args.num_continuous_trajectory, args.timelag))
+    print("Mode : Constant number of continuous trajectory with n = {}, timelag = {} and force_zero_ground_flag = {}".format(args.num_continuous_trajectory, args.timelag, args.force_zero_ground_flag))
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])

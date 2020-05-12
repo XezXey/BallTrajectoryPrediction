@@ -501,6 +501,8 @@ if __name__ == '__main__':
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)
     train_loss_per_epoch = np.mean(accumulate_train_loss)
+    # Log the each epoch loss
+    wandb.log({'Epoch Train Loss':train_loss_per_epoch, 'Epoch Validation Loss':val_loss_per_epoch})
 
     # Decrease learning rate every n_epochs % decay_cycle batch
     if epoch % decay_cycle == 0:
