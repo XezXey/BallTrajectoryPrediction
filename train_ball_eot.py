@@ -150,7 +150,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = val_eot_loss
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  pt.nn.utils.clip_grad_value_(model.parameters(), 100)
+  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=2)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -297,7 +297,7 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.01
+  learning_rate = 0.0085
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)

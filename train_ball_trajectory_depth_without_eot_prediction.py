@@ -188,7 +188,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  pt.nn.utils.clip_grad_value_(model.parameters(), clip_value=100)
+  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=10)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -358,7 +358,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 500
-  decay_cycle = int(n_epochs/10)
+  decay_cycle = int(n_epochs/20)
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
