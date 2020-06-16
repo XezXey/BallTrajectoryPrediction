@@ -44,7 +44,7 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   output_eot *= mask
   eot_gt *= mask
   # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
@@ -54,6 +54,10 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eps = 1e-10
   # detach() for visualization
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  # Thresholding the EOT to be class True/False
+  threshold = 0.8
+  output_eot = output_eot > threshold
+
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -81,7 +85,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   output_eot *= mask
   eot_gt *= mask
 
@@ -95,9 +99,6 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   eps = 1e-10
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
 
-  threshold = 0.8
-  output_eot = output_eot > threshold
-
   return eot_loss * 100
 
 def evaluateModel(output_eot, eot_gt, eot_startpos, mask, lengths):
@@ -106,7 +107,7 @@ def evaluateModel(output_eot, eot_gt, eot_startpos, mask, lengths):
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   # Multiplied with mask
   output_eot *= mask
   eot_gt *= mask
@@ -134,7 +135,31 @@ def evaluateModel(output_eot, eot_gt, eot_startpos, mask, lengths):
   print("Each Batch : TP = {}, FP = {}, TN = {}, FN = {}".format(tp, fp, tn, fn), end=', ')
   return np.array(cm_batch), np.array(cm_each_trajectory), np.array(metrics_each_trajectory)
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_uv, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def append_inference(inference_batch, lengths, eot_startpos, output_eot, eot_gt, mask):
+  # Add the feature dimension using unsqueeze
+  eot_gt = pt.unsqueeze(eot_gt, dim=2)
+  mask = pt.unsqueeze(mask, dim=2)
+  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
+  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
+  # Multiplied with mask
+  output_eot *= mask
+  eot_gt *= mask
+  # Prediciton threshold
+  threshold = 0.8
+
+  # Each trajectory
+  output_eot_each_traj = pt.sigmoid(output_eot.clone()).cpu().detach().numpy() > threshold
+  eot_gt_each_traj = eot_gt.clone().cpu().detach().numpy()
+
+  output_eot = output_eot.cpu().detach().numpy()
+  inference_batch = [np.concatenate((inference_batch[i], output_eot_each_traj[i][:lengths[i]+1, :]), axis=1) for i in range(lengths.shape[0])]
+  # Print out to check the EOT flag
+  # for i in range(lengths[0]+1):
+    # print('{} - {}'.format(inference_batch[0][i, -1], eot_gt_each_traj[0][i]))
+  return inference_batch
+
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_uv, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, inference_batch, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   # Test a model
@@ -150,7 +175,10 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   hidden.detach()
   hidden = hidden.detach()
 
-  # Calculate loss of unprojected trajectory
+  # Stack the eot_pred
+  inference_batch = append_inference(inference_batch=inference_batch, lengths=output_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1], output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_uv[..., -1], mask=output_trajectory_test_mask[..., -1])
+
+  # Calculate End of trajectory Loss
   test_eot_loss = EndOfTrajectoryLoss(output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_uv[..., -1], mask=output_trajectory_test_mask[..., -1], lengths=output_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1])
   test_loss = test_eot_loss
   cm_batch, cm_each_trajectory, metrics_each_trajectory = evaluateModel(output_eot=output_test_eot.clone(), eot_gt=output_trajectory_test_uv[..., -1], mask=output_trajectory_test_mask[..., -1], lengths=output_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1])
@@ -164,8 +192,9 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
     make_visualize(output_test_eot=output_test_eot, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, output_trajectory_test_maks=output_trajectory_test_mask, visualization_path=visualization_path)
     input("\nContinue plotting...")
 
-  # Calculate the EOT prediction accuracy
-  return cm_batch, accepted_trajectory
+
+  # Calculate the EOT prediction accuracy, return the inference_batch stacked with the eot_pred
+  return cm_batch, accepted_trajectory, inference_batch
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -174,6 +203,7 @@ def initialize_folder(path):
 def collate_fn_padd(batch):
     '''
     Padding batch of variable length
+    - The inference_batch will contain all other features (x,r y, z, u, v, depth, eot_pred, eot_gt). This will enabled in save_eot and will write the file into numpy array to be used in other models
     '''
     ## Get sequence lengths
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
@@ -187,7 +217,7 @@ def collate_fn_padd(batch):
     ## Compute mask
     input_mask = (input_batch != -1)
 
-    # Output features : columns 6 cotain depth from camera to projected screen
+    # Output features : columns -2 cotain EOT ground truth
     ## Padding
     output_batch = [pt.Tensor(trajectory[1:, -2]) for trajectory in batch]
     output_batch = pad_sequence(output_batch, batch_first=True)
@@ -199,13 +229,22 @@ def collate_fn_padd(batch):
     output_uv = pad_sequence(output_uv, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_uv != -1)
+    # Output mask is all trajectory points but input mask is get rid of startpos version
+    # print("Input mask : ", input_mask[0][:lengths[0]+1])
+    # print("Output mask : ", output_mask[0][:lengths[0]+2])
+    # exit()
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
     output_uv = pt.cat((pt.cumsum(output_uv[..., :-1], dim=1), pt.unsqueeze(output_uv[..., -1], dim=2)), dim=2)
 
+    # Inference features : thie is an output from inference that will take [x, y, z, u, v, depth, eot_gt, eot_pred] and write to npy file for futher prediction of 3D trajectory reconstruction
+    # - eot_pred will append to the array once the inference is done.
+    inference_batch = [pt.Tensor(trajectory[:, [0, 1, 2, 4, 5, 6, -2]]) for trajectory in batch]
+
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
-            'output':[output_batch, lengths, output_mask, output_startpos, output_uv]}
+            'output':[output_batch, lengths, output_mask, output_startpos, output_uv],
+            'inference':[inference_batch]}
 
 def get_model(input_size, output_size, model_arch):
   if model_arch=='gru':
@@ -236,6 +275,7 @@ if __name__ == '__main__':
   parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
+  parser.add_argument('--save_eot_path', dest='save_eot_path', type=str, default=None, help='Path to save the inference output , if this is None so it will not save')
   args = parser.parse_args()
 
   # Initialize folder
@@ -290,6 +330,7 @@ if __name__ == '__main__':
   n_trajectory = 0
   n_accepted_trajectory = 0 # Perfect trajectory without any misclassification (No FN, FP)
   cm_entire_dataset = np.zeros(4)
+  inference_output = []
   # Testing a model iterate over dataloader to get each batch and pass to predict function
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     # testing set (Each index in batch_test came from the collate_fn_padd)
@@ -302,19 +343,28 @@ if __name__ == '__main__':
     output_trajectory_test_mask = batch_test['output'][2].to(device)
     output_trajectory_test_startpos = batch_test['output'][3].to(device)
     output_trajectory_test_uv = batch_test['output'][4].to(device)
+    inference_batch = batch_test['inference'][0]
 
     # Call function to test
-    cm_batch, accepted_trajectory  = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
-                                               output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos,
-                                               output_trajectory_test_uv=output_trajectory_test_uv,
-                                               input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
-                                               input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
-                                               model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag)
+    cm_batch, accepted_trajectory, inference_batch  = predict(output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
+                                                              output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos,
+                                                              output_trajectory_test_uv=output_trajectory_test_uv,
+                                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
+                                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
+                                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                                              inference_batch=inference_batch)
 
+    # Append the inference results into inference output list in shape of (n_trajectory, sequence_length, n_features(x, y, z, u, v, depth, eot_gt, eot_pred))
+    inference_output.append(inference_batch)
 
     cm_entire_dataset += np.array(cm_batch)
     n_accepted_trajectory += accepted_trajectory
     n_trajectory += input_trajectory_test_lengths.shape[0]
+
+  print("Saving the inference output to .npy format... : ", np.array(inference_output).shape)
+  # Saving the npy inference output
+  if args.save_eot_path is not None:
+    np.save(inference_output)
 
   # Calculate the metrics to summary
   tn, fp, fn, tp = cm_entire_dataset.ravel()

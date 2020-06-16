@@ -183,8 +183,8 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
   depth = depth.view(-1)
-  screen_width = 1920.
-  screen_height = 1080.
+  screen_width = 1664.
+  screen_height = 1088.
   screen_space = pt.div(screen_space, pt.tensor([screen_width, screen_height]).to(device)) # Normalize : (width, height) -> (-1, 1)
   screen_space = (screen_space * 2.0) - pt.ones(size=(screen_space.size()), dtype=pt.float32).to(device) # Normalize : (width, height) -> (-1, 1)
   screen_space = (screen_space.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth)

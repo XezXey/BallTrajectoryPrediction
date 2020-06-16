@@ -49,7 +49,7 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
   output_eot *= mask
   eot_gt *= mask
@@ -61,6 +61,10 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eps = 1e-10
   # Calculate the EOT loss for each trajectory
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  # Thresholding the EOT to be class True/False
+  threshold = 0.8
+  output_eot = output_eot > threshold
+
   # detach() for visualization
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
@@ -75,6 +79,7 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
+    # print(output_eot[i][:lengths[i]+1, :])
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=output_eot[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}".format(flag, i, eot_loss[i][0])), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=eot_gt[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=idx+1, col=col)
 
@@ -96,7 +101,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='t
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
   output_eot *= mask
   eot_gt *= mask
@@ -297,7 +302,7 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.0085
+  learning_rate = 0.01
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.96
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)

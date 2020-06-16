@@ -48,14 +48,8 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, tim
       zero_threshold = 1e-3
       mask_y = trajectory_df[traj_type].iloc[:, 1].values > zero_threshold
       # print("Before froce zero ground")
-      # print(trajectory_df[traj_type].iloc[:, 0])
-      # print(trajectory_df[traj_type].iloc[:, 1])
-      # print(trajectory_df[traj_type].iloc[:, 2])
       trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * mask_y
       # print("After froce zero ground")
-      # print(trajectory_df[traj_type].iloc[:, 0])
-      # print(trajectory_df[traj_type].iloc[:, 1])
-      # print(trajectory_df[traj_type].iloc[:, 2])
 
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
     # Split each dataframe by using the flag == True as an index of starting point

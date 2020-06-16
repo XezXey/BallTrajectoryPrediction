@@ -118,13 +118,26 @@ def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=Tru
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   depth = depth.view(-1)
-  screen_width = 1920.
-  screen_height = 1080.
+  screen_width = 1664.
+  screen_height = 1088.
+  # The inverse of rotation matrix isn't effect too much, just an axis will be invert
+  # print(camera_to_world_matrix)
+  # print(camera_to_world_matrix)
+  camera_to_world_matrix[:, 0] *= -1
+  # Screnn space -> NDC space
+  # print("SCREEN : ", screen_space)
+  # print("DEPTH : ", depth)
   screen_space = pt.div(screen_space, pt.tensor([screen_width, screen_height]).to(device)) # Normalize : (width, height) -> (-1, 1)
+  # print("NDC : ", screen_space)
+  # NDC space -> CAMERA space
   screen_space = (screen_space * 2.0) - pt.ones(size=(screen_space.size()), dtype=pt.float32).to(device) # Normalize : (width, height) -> (-1, 1)
+  # print("SCREEN : ", screen_space)
   screen_space = (screen_space.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth)
+  # print("CAMERA : ", screen_space)
   screen_space = pt.stack((screen_space[:, 0], screen_space[:, 1], depth, pt.ones(depth.shape[0], dtype=pt.float32).to(device)), axis=1) # Stack the screen with depth and w ===> (x, y, depth, 1)
-  screen_space = ((camera_to_world_matrix @ projection_matrix) @ screen_space.t()).t() # Reprojected
+  # print("CAMERA : ", screen_space)
+  screen_space = (camera_to_world_matrix @ projection_matrix @ screen_space.t()).t() # Reprojected
+  # print("WORLD : ", screen_space)
   return screen_space[:, :3]
 
 def cumsum_trajectory(output, trajectory, trajectory_startpos):
@@ -267,7 +280,7 @@ if __name__ == '__main__':
 
   # Create Datasetloader for test
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True)#, drop_last=True)
+  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True)#, drop_last=True)
 
   # Dataset format
   # Trajectory path : (x0, y0) ... (xn, yn)

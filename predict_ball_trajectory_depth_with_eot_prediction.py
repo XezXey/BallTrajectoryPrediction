@@ -56,7 +56,7 @@ def visualize_layout_update(fig=None, n_vis=7):
   for i in range(n_vis*2):
     if i%2==0:
       # Set the figure in column 1 (fig0, 2, 4, ...) into a pitch scaled
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-28, 32],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-15, 15],),)
   return fig
 
 def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
@@ -155,12 +155,14 @@ def evaluateModelTrajectory(output, trajectory_gt, mask, lengths, threshold=1, d
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   depth = depth.view(-1)
-  screen_width = 1920.
-  screen_height = 1080.
+  screen_width = 1664.
+  screen_height = 1088.
+  # SCREEN space -> NDC space
+  # camera_to_world_matrix[:, 0] *= -1
   screen_space = pt.div(screen_space, pt.tensor([screen_width, screen_height]).to(device)) # Normalize : (width, height) -> (-1, 1)
   screen_space = (screen_space * 2.0) - pt.ones(size=(screen_space.size()), dtype=pt.float32).to(device) # Normalize : (width, height) -> (-1, 1)
-  screen_space = (screen_space.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth)
-  screen_space = pt.stack((screen_space[:, 0], screen_space[:, 1], depth, pt.ones(depth.shape[0], dtype=pt.float32).to(device)), axis=1) # Stack the screen with depth and w ===> (x, y, depth, 1)
+  screen_space = (screen_space.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth) ===> camera space of x, y
+  screen_space = pt.stack((screen_space[:, 0], screen_space[:, 1], depth, pt.ones(depth.shape[0], dtype=pt.float32).to(device)), axis=1) # Stack the screen with depth and w ===> (x, y, depth, 1) ===> camera space
   screen_space = ((camera_to_world_matrix @ projection_matrix) @ screen_space.t()).t() # Reprojected
   return screen_space[:, :3]
 
@@ -366,6 +368,7 @@ if __name__ == '__main__':
   projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
   projection_matrix = pt.tensor([projection_matrix[0, :], projection_matrix[1, :], projection_matrix[3, :], [0, 0, 0, 1]], dtype=pt.float32)
   projection_matrix = pt.inverse(projection_matrix).to(device)
+  print(projection_matrix)
   camera_to_world_matrix = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
 
   # Create Datasetloader for test
