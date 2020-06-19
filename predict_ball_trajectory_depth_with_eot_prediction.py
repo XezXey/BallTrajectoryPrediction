@@ -75,6 +75,8 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eps = 1e-10
   # detach() for visualization
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  threshold = 0.8
+  output_eot = pt.sigmoid(output_eot) > threshold
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -288,23 +290,23 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v, end_of_trajectory)
+    input_batch = [pt.Tensor(trajectory[1:, [3, 4, -1]]) for trajectory in batch] # (4, 5, -2) = (u, v, end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -1]]) for trajectory in batch])
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != -1)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
-    output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch]
+    output_batch = [pt.Tensor(trajectory[:, [5, -2]]) for trajectory in batch]
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch])
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -1]]) for trajectory in batch])
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -1]]) for trajectory in batch]
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)

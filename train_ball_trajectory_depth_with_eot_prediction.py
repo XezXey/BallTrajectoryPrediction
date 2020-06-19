@@ -67,11 +67,10 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # eot_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
   output_eot *= mask
   eot_gt *= mask
   # print(pt.cat((output_eot[0][:lengths[0]+1], pt.sigmoid(output_eot)[0][:lengths[0]+1], eot_gt[0][:lengths[0]+1], ), dim=1))
-  output_eot = pt.sigmoid(output_eot)
   # Class weight for imbalance class problem
   pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
   neg_weight = 1
@@ -79,6 +78,8 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   eps = 1e-10
   # detach() for visualization
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  threshold = 0.8
+  output_eot = pt.sigmoid(output_eot) > threshold
   output_eot = output_eot.cpu().detach().numpy()
   eot_gt = eot_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
@@ -161,7 +162,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths):
   mask = pt.unsqueeze(mask, dim=2)
   eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
   # output_gt : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([output_eot[i], eot_startpos[i]]) for i in range(eot_startpos.shape[0])])
+  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
 
   # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
   output_eot *= mask
@@ -436,7 +437,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 500
-  decay_cycle = int(n_epochs/20)
+  decay_cycle = int(n_epochs/40)
 
   for epoch in range(1, n_epochs+1):
     accumulate_val_loss = []
