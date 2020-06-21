@@ -7,6 +7,9 @@ import tqdm
 import glob
 import os
 import re
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
 
 def computeDisplacement(trajectory_split, trajectory_type):
   # Compute the displacement
@@ -40,24 +43,18 @@ def remove_below_ground_trajectory(trajectory, traj_type):
   return trajectory
 
 def visualize_noise(trajectory):
+  # Function for visualzie the trajectory given original dataset 
+  marker_dict_u = dict(color='rgba(255, 0, 0, 0.2)', size=4)
+  marker_dict_v = dict(color='rgba(0, 255, 0, 0.4)', size=4)
+  marker_dict_depth = dict(color='rgba(0, 0, 255, 0.4)', size=4)
+  marker_dict_uv = dict(color='rgba(255, 0, 0, 0.4)', size=4)
+  marker_dict_xyz = dict(color='rgba(0, 0, 255, 0.4)', size=4)
   fig = make_subplots(rows=2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter'}], [{'type':'scatter'}, {'type':'scatter'}]])
-  if plot_sets is not None:
-    for plot_index in plot_sets:
-      fig.add_trace(go.Scatter3d(x=trajectory[plot_index][:, 0], y=trajectory[plot_index][:, 1], z=trajectory[plot_index][:, 2], marker=marker_dict_xyz, mode='markers'), row=1, col=1)
-      fig.add_trace(go.Scatter(x=trajectory[plot_index][:, 4], y=trajectory[plot_index][:, 5], marker=marker_dict_uv, mode='markers'), row=1, col=2)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 4]).shape[0]), y=np.diff(trajectory[plot_index][:, 4]), marker=marker_dict_u, mode='lines'), row=2, col=1)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 5]).shape[0]), y=np.diff(trajectory[plot_index][:, 5]), marker=marker_dict_v, mode='lines'), row=2, col=1)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 6]).shape[0]), y=np.diff(trajectory[plot_index][:, 6]), marker=marker_dict_depth, mode='lines'), row=2, col=1)
-
-  else:
-    for i in range(n_plot):
-      plot_index = np.random.randint(0, trajectory.shape[0])
-      fig.add_trace(go.Scatter3d(x=trajectory[plot_index][:, 0], y=trajectory[plot_index][:, 1], z=trajectory[plot_index][:, 2], marker=marker_dict_xyz, mode='markers'), row=1, col=1)
-      fig.add_trace(go.Scatter(x=trajectory[plot_index][:, 4], y=trajectory[plot_index][:, 5], marker=marker_dict_uv, mode='markers'), row=1, col=2)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 4]).shape[0]), y=np.diff(trajectory[plot_index][:, 4]), marker=marker_dict_u, mode='lines'), row=2, col=1)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 5]).shape[0]), y=np.diff(trajectory[plot_index][:, 5]), marker=marker_dict_v, mode='lines'), row=2, col=1)
-      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 6]).shape[0]), y=np.diff(trajectory[plot_index][:, 6]), marker=marker_dict_depth, mode='lines'), row=2, col=1)
-
+  fig.add_trace(go.Scatter3d(x=trajectory.iloc[:, 0], y=trajectory.iloc[:, 1], z=trajectory.iloc[:, 2], marker=marker_dict_xyz, mode='markers'), row=1, col=1)
+  fig.add_trace(go.Scatter(x=trajectory.iloc[:, 4], y=trajectory.iloc[:, 5], marker=marker_dict_uv, mode='markers'), row=1, col=2)
+  fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory.iloc[:, 4]).shape[0]), y=np.diff(trajectory.iloc[:, 4]), marker=marker_dict_u, mode='lines'), row=2, col=1)
+  fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory.iloc[:, 5]).shape[0]), y=np.diff(trajectory.iloc[:, 5]), marker=marker_dict_v, mode='lines'), row=2, col=1)
+  fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory.iloc[:, 6]).shape[0]), y=np.diff(trajectory.iloc[:, 6]), marker=marker_dict_depth, mode='lines'), row=2, col=1)
   fig.show()
 
 def worldToScreen(world, camera_config):
@@ -80,17 +77,29 @@ def worldToScreen(world, camera_config):
     screen_space = ndc_space.copy()
     screen_space[:, 0] = (ndc_space[:, 0]/ndc_space[:, 2] + 1) * 0.5 * width
     screen_space[:, 1] = (ndc_space[:, 1]/ndc_space[:, 2] + 1) * 0.5 * height
+    print(screen_space[:, :2])
     return screen_space
 
 def add_noise(trajectory_split, trajectory_type, camera_config):
   for traj_type in trajectory_type:
-    if 
-    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.5, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    # Visualize before an effect of noise
+    if args.vis_noise:
+      vis_idx = np.random.randint(0, len(trajectory_split[traj_type]))
+      visualize_noise(trajectory_split[traj_type][vis_idx])
+    # Get the noisy world space
+    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.0007, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    # Get the noisy screen space
     noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
+    # Assign it to original trajectory_split variable
     for i in tqdm.tqdm(range(len(trajectory_split[traj_type])), desc="Replace the nosied pixel space"):
-      # Replace only pixel
+      # Replace only screen space columns
       trajectory_split[traj_type][i].iloc[:, 4:6] = noisy_uv[i][:, :2]
-
+    # Visualize after an effect of noise
+    if args.vis_noise:
+      temp_plot_trajectory = trajectory_split[traj_type][vis_idx].copy()
+      temp_plot_trajectory.iloc[:, :3] = noisy_world[vis_idx]
+      visualize_noise(temp_plot_trajectory)
+    exit()
 
 def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, timelag, flag='add_force_flag', force_zero_ground_flag=False, random_sampling_mode=False):
   trajectory_split = trajectory_df
@@ -231,6 +240,9 @@ if __name__ == '__main__':
   parser.add_argument('--process_trial_index', dest='process_trial_index', help='Process trial at given idx only', default=None)
   parser.add_argument('--noise', dest='noise', help='Noise flag for adding noise and project to get noised pixel coordinates', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise flag for adding noise and project to get noised pixel coordinates', action='store_false')
+  parser.add_argument('--vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_true')
+  parser.add_argument('--no_vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_false')
+
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
