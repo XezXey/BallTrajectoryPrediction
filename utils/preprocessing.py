@@ -39,6 +39,59 @@ def remove_below_ground_trajectory(trajectory, traj_type):
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   return trajectory
 
+def visualize_noise(trajectory):
+  fig = make_subplots(rows=2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter'}], [{'type':'scatter'}, {'type':'scatter'}]])
+  if plot_sets is not None:
+    for plot_index in plot_sets:
+      fig.add_trace(go.Scatter3d(x=trajectory[plot_index][:, 0], y=trajectory[plot_index][:, 1], z=trajectory[plot_index][:, 2], marker=marker_dict_xyz, mode='markers'), row=1, col=1)
+      fig.add_trace(go.Scatter(x=trajectory[plot_index][:, 4], y=trajectory[plot_index][:, 5], marker=marker_dict_uv, mode='markers'), row=1, col=2)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 4]).shape[0]), y=np.diff(trajectory[plot_index][:, 4]), marker=marker_dict_u, mode='lines'), row=2, col=1)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 5]).shape[0]), y=np.diff(trajectory[plot_index][:, 5]), marker=marker_dict_v, mode='lines'), row=2, col=1)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 6]).shape[0]), y=np.diff(trajectory[plot_index][:, 6]), marker=marker_dict_depth, mode='lines'), row=2, col=1)
+
+  else:
+    for i in range(n_plot):
+      plot_index = np.random.randint(0, trajectory.shape[0])
+      fig.add_trace(go.Scatter3d(x=trajectory[plot_index][:, 0], y=trajectory[plot_index][:, 1], z=trajectory[plot_index][:, 2], marker=marker_dict_xyz, mode='markers'), row=1, col=1)
+      fig.add_trace(go.Scatter(x=trajectory[plot_index][:, 4], y=trajectory[plot_index][:, 5], marker=marker_dict_uv, mode='markers'), row=1, col=2)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 4]).shape[0]), y=np.diff(trajectory[plot_index][:, 4]), marker=marker_dict_u, mode='lines'), row=2, col=1)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 5]).shape[0]), y=np.diff(trajectory[plot_index][:, 5]), marker=marker_dict_v, mode='lines'), row=2, col=1)
+      fig.add_trace(go.Scatter(x=np.arange(np.diff(trajectory[plot_index][:, 6]).shape[0]), y=np.diff(trajectory[plot_index][:, 6]), marker=marker_dict_depth, mode='lines'), row=2, col=1)
+
+  fig.show()
+
+def worldToScreen(world, camera_config):
+  projectionMatrix = camera_config['projectionMatrix'].copy()
+  worldToCameraMatrix = camera_config['worldToCameraMatrix'].copy()
+  width = camera_config['width']
+  height = camera_config['height']
+  # Remove the clipping stuff from projectionMatrix
+  projectionMatrix[2, :] = projectionMatrix[3, :]
+  projectionMatrix[3, :] = np.array([0, 0, 0, 1])
+  # world space
+  temp = np.ones((world.shape[0], world.shape[1]+1))
+  temp[:, :-1] = world
+  # NDC space
+  ndc_space = (temp @ (projectionMatrix @ worldToCameraMatrix).T)
+  if (np.all(ndc_space[:, -1] == 0)):
+    # Points is exaclty on the camera focus, screen point is undefined, unity handles this by returning (0, 0, 0)
+    return np.zeros(shape=ndc_space[:, :3].shape)
+  else:
+    screen_space = ndc_space.copy()
+    screen_space[:, 0] = (ndc_space[:, 0]/ndc_space[:, 2] + 1) * 0.5 * width
+    screen_space[:, 1] = (ndc_space[:, 1]/ndc_space[:, 2] + 1) * 0.5 * height
+    return screen_space
+
+def add_noise(trajectory_split, trajectory_type, camera_config):
+  for traj_type in trajectory_type:
+    if 
+    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.5, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
+    for i in tqdm.tqdm(range(len(trajectory_split[traj_type])), desc="Replace the nosied pixel space"):
+      # Replace only pixel
+      trajectory_split[traj_type][i].iloc[:, 4:6] = noisy_uv[i][:, :2]
+
+
 def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, timelag, flag='add_force_flag', force_zero_ground_flag=False, random_sampling_mode=False):
   trajectory_split = trajectory_df
   for traj_type in trajectory_type:
@@ -138,8 +191,6 @@ def get_timelag_offset(trajectory_df, traj_type, index_split_by_flag, end_index,
       timelag_offset = int(timelag)
   return timelag_offset
 
-
-
 def addGravityColumns(trajectory_npy):
   stacked_gravity = [np.concatenate((trajectory_npy[i], np.array([-9.81]*len(trajectory_npy[i])).reshape(-1, 1)), axis=1) for i in range(trajectory_npy.shape[0])]
   stacked_gravity = np.array(stacked_gravity)
@@ -147,8 +198,14 @@ def addGravityColumns(trajectory_npy):
 
 def get_col_names(dataset_folder, i):
   with open(dataset_folder + '/configFile_camParams_Trial{}.json'.format(i)) as json_file:
-    col_names = json.load(json_file)["col_names"]
-    return col_names
+    loaded_config = json.load(json_file)
+    col_names = loaded_config["col_names"]
+    projectionMatrix = np.array(loaded_config["mainCameraParams"]["projectionMatrix"]).reshape(4, 4)
+    worldToCameraMatrix = np.array(loaded_config["mainCameraParams"]["worldToCameraMatrix"]).reshape(4, 4)
+    width = loaded_config["mainCameraParams"]["width"]
+    height = loaded_config["mainCameraParams"]["height"]
+
+    return col_names, {'projectionMatrix':projectionMatrix, 'worldToCameraMatrix':worldToCameraMatrix, 'width':width, 'height':height}
 
 def get_savepath(output_path, dataset_folder):
   if output_path == None:
@@ -172,6 +229,8 @@ if __name__ == '__main__':
   parser.add_argument('--constant_num_continuous', dest='random_sampling_mode', help='Generate the constant number of continuous trajectory', action='store_false')
   parser.add_argument('--timelag', dest='timelag', help='Timelag for input some part of next trajectory', default=0)
   parser.add_argument('--process_trial_index', dest='process_trial_index', help='Process trial at given idx only', default=None)
+  parser.add_argument('--noise', dest='noise', help='Noise flag for adding noise and project to get noised pixel coordinates', action='store_true')
+  parser.add_argument('--no_noise', dest='noise', help='Noise flag for adding noise and project to get noised pixel coordinates', action='store_false')
   args = parser.parse_args()
   # List trial in directory
   dataset_folder = sorted(glob.glob(args.dataset_path + "/*/"))
@@ -194,14 +253,14 @@ if __name__ == '__main__':
     trial_index = [re.findall(r'[0-9]+', re.findall(pattern, dataset_folder[i])[0])[0] for i in range(len(dataset_folder))]
   print("Trial index : ", trial_index)
   if args.random_sampling_mode:
-    print("Mode : Random number of continuous trajectory with timelag = {} and force_zero_ground_flag = {}".format(args.timelag, args.force_zero_ground_flag))
+    print("Mode : Random number of continuous trajectory with timelag = {}, force_zero_ground_flag = {} and noise flag = {}".format(args.timelag, args.force_zero_ground_flag, args.noise))
   else:
-    print("Mode : Constant number of continuous trajectory with n = {}, timelag = {} and force_zero_ground_flag = {}".format(args.num_continuous_trajectory, args.timelag, args.force_zero_ground_flag))
+    print("Mode : Constant number of continuous trajectory with n = {}, timelag = {}, force_zero_ground_flag = {} and noise flag = {}".format(args.num_continuous_trajectory, args.timelag, args.force_zero_ground_flag, args.noise))
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])
     # Read json for column names
-    col_names = get_col_names(dataset_folder[i], trial_index[i])
+    col_names, camera_config = get_col_names(dataset_folder[i], trial_index[i])
     trajectory_df = {}
     for traj_type in trajectory_type:
       if os.path.isfile(dataset_folder[i] + "/{}Trajectory_Trial{}.csv".format(traj_type, trial_index[i])):
@@ -210,6 +269,10 @@ if __name__ == '__main__':
 
     # Split the trajectory by flag
     trajectory_split = split_by_flag(trajectory_df=trajectory_df, trajectory_type=trajectory_df.keys(), flag="add_force_flag", force_zero_ground_flag=args.force_zero_ground_flag, num_continuous_trajectory=args.num_continuous_trajectory, random_sampling_mode=args.random_sampling_mode, timelag=args.timelag)
+
+    if args.noise:
+      # Add gaussian noise to the trajectory
+      trajectory_split = add_noise(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys(), camera_config=camera_config)
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys())
     # Save to npy format
