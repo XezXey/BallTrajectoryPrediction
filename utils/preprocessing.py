@@ -32,10 +32,11 @@ def remove_below_ground_trajectory(trajectory, traj_type):
   # Loop over the trajectory to remove any trajectory that goes below the ground
   # Also remove the trajectory that is outside the field and droping to the ground
   count=0
+  eps = np.finfo(float).eps
   remove_idx = []
   for idx in range(trajectory.shape[0]):
-    traj_cumsum_temp = np.cumsum(trajectory[idx][:, 1], axis=0)
-    if np.any(traj_cumsum_temp <= -1) == True:
+    traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
+    if (np.any(traj_cumsum_temp[:, 1] <= -0.01)):
       remove_idx.append(idx)
       count+=1
   print("\n{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
@@ -77,7 +78,6 @@ def worldToScreen(world, camera_config):
     screen_space = ndc_space.copy()
     screen_space[:, 0] = (ndc_space[:, 0]/ndc_space[:, 2] + 1) * 0.5 * width
     screen_space[:, 1] = (ndc_space[:, 1]/ndc_space[:, 2] + 1) * 0.5 * height
-    print(screen_space[:, :2])
     return screen_space
 
 def add_noise(trajectory_split, trajectory_type, camera_config):
@@ -87,7 +87,7 @@ def add_noise(trajectory_split, trajectory_type, camera_config):
       vis_idx = np.random.randint(0, len(trajectory_split[traj_type]))
       visualize_noise(trajectory_split[traj_type][vis_idx])
     # Get the noisy world space
-    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.0007, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.00047, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
     # Get the noisy screen space
     noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
     # Assign it to original trajectory_split variable
@@ -99,7 +99,8 @@ def add_noise(trajectory_split, trajectory_type, camera_config):
       temp_plot_trajectory = trajectory_split[traj_type][vis_idx].copy()
       temp_plot_trajectory.iloc[:, :3] = noisy_world[vis_idx]
       visualize_noise(temp_plot_trajectory)
-    exit()
+
+  return trajectory_split
 
 def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, timelag, flag='add_force_flag', force_zero_ground_flag=False, random_sampling_mode=False):
   trajectory_split = trajectory_df
@@ -255,8 +256,8 @@ if __name__ == '__main__':
       trial_index = f.readlines()[-1].split()
       # Create the pattern for regex following this : (10)|(11)|(12) ===> match the any trial from 10, 11 or 12
       pattern_trial_index= ['({})'.format(trial_index[i]) for i in range(len(trial_index))]
-      # Add it into full pattern of regex : r'(Trial_((10)|(11)|(12))+)+'
-      pattern_trial_index = r'(Trial_({})+)+'.format('|'.join(pattern_trial_index))
+      # Add it into full pattern of regex : r'(Trial_((10)|(11)|(12))+)+/' ===> Need to add '/' alphabet to prevent the regex match Trial_1=Trial_10 instead of only Trial_1
+      pattern_trial_index = r'(Trial_({})+)+'.format('|'.join(pattern_trial_index)) + '/'
       # filter the dataset folder which is not in the trial_index
       filter_trial_index = [re.search(pattern_trial_index, dataset_folder[i]) for i in range(len(dataset_folder))]
       dataset_folder = [dataset_folder[i] for i in range(len(filter_trial_index)) if filter_trial_index[i] is not None]
@@ -269,6 +270,7 @@ if __name__ == '__main__':
   else:
     print("Mode : Constant number of continuous trajectory with n = {}, timelag = {}, force_zero_ground_flag = {} and noise flag = {}".format(args.num_continuous_trajectory, args.timelag, args.force_zero_ground_flag, args.noise))
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
+  print(dataset_folder)
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):
     output_path = get_savepath(args.output_path, dataset_folder[i])
     # Read json for column names

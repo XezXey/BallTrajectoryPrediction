@@ -112,7 +112,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
   mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
-  return mse_loss
+  return mse_loss * 100
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
@@ -188,7 +188,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=10)
+  # pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=10)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -347,7 +347,7 @@ if __name__ == '__main__':
   # Define optimizer parameters
   learning_rate = 0.01
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
-  decay_rate = 0.96
+  decay_rate = 0.98
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
   wandb.watch(rnn_model)
@@ -358,7 +358,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 500
-  decay_cycle = int(n_epochs/20)
+  decay_cycle = int(n_epochs/25)
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
