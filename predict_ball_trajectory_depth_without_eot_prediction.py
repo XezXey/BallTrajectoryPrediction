@@ -29,14 +29,14 @@ from models.bilstm_model import BiLSTM
 from models.bigru_model import BiGRU
 from models.gru_model import GRU
 
-def make_visualize(output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag):
+def make_visualize(output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag, input_eot):
     # Visualize by make a subplots of trajectory
     n_vis = 5
     fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{'colspan':2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
     # Random the index the be visualize
     vis_idx = np.random.randint(low=0, high=input_trajectory_test_startpos.shape[0], size=(n_vis))
     # Visualize a trajectory
-    visualize_trajectory(input=input_trajectory_test_temp, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx)
+    visualize_trajectory(input=input_trajectory_test_temp, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx, input_eot=input_eot)
     # Adjust the layout/axis
     # AUTO SCALED/PITCH SCALED
     fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
@@ -52,21 +52,25 @@ def visualize_layout_update(fig=None, n_vis=7):
   for i in range(n_vis*2):
     if i%2==0:
       # Set the figure in column 1 (fig0, 2, 4, ...) into a pitch scaled
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-5, 5],), yaxis = dict(nticks=5, range=[-2, 4],), zaxis = dict(nticks=10, range=[-5, 5],),)
+    fig['layout']['scene{}'.format(i+1)]['camera'].update(projection=dict(type="perspective"))
   return fig
 
-def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, input_eot, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.2)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=3)
   # Visualize the displacement
-  marker_dict_u = dict(color='rgba(255, 0, 0, 0.2)', size=4)
-  marker_dict_v = dict(color='rgba(0, 255, 0, 0.4)', size=4)
-  marker_dict_depth = dict(color='rgba(0, 0, 255, 0.4)', size=4)
+  marker_dict_u = dict(color='rgba(255, 0, 0, 0.7)', size=4)
+  marker_dict_v = dict(color='rgba(0, 255, 0, 0.7)', size=4)
+  marker_dict_depth = dict(color='rgba(0, 0, 255, 0.5)', size=4)
+  marker_dict_eot = dict(color='rgba(0, 0, 255, 0.5)', size=3)
 
   # MAE Loss
   # detach() for visualization
   input = input.cpu().detach().numpy()
+  input_eot = input_eot.cpu().detach().numpy()
+  input_eot *= 0.1
   output = output.cpu().detach().numpy()
   trajectory_gt = trajectory_gt.cpu().detach().numpy()
   # Iterate to plot each trajectory
@@ -81,10 +85,12 @@ def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, leng
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2) + 2
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i], 0].shape[0]-1), y=np.diff(input[i][:lengths[i], 0]), marker=marker_dict_u, mode='lines'), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i], 1].shape[0]-1), y=np.diff(input[i][:lengths[i], 1]), marker=marker_dict_v, mode='lines'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input_eot[i][:lengths[i]].shape[0]), y=input_eot[i][:lengths[i]], marker=marker_dict_eot, mode='markers+lines'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 0].shape[0]), y=np.diff(input[i][:lengths[i]+1, 0]), marker=marker_dict_u, mode='lines'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 1].shape[0]), y=np.diff(input[i][:lengths[i]+1, 1]), marker=marker_dict_v, mode='lines'), row=row_idx, col=col_idx)
     # fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i], 2].shape[0]), y=input[i][:lengths[i], 2], marker=marker_dict_depth, mode='lines'), row=row_idx, col=col_idx)
 
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth.html'.format(args.visualization_path), auto_open=True)
   return vis_idx
 
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
@@ -95,8 +101,6 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   kernel_weight = pt.tensor([-1., 0., 1.], dtype=pt.float32).view(1, 1, -1).to(device)
   # Apply Gaussian blur and finite difference to trajectory_gt
   for i in range(trajectory_gt.shape[0]):
-    # print(trajectory_gt[i][:lengths[i]+1, 1])
-    # print(trajectory_gt[i][:lengths[i]+1, 1].shape)
     if trajectory_gt[i][:lengths[i]+1, 1].shape[0] < 6:
       print("The trajectory is too shorter to perform a convolution")
       continue
@@ -134,8 +138,8 @@ def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=Tru
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   depth = depth.view(-1)
-  screen_width = 1664.
-  screen_height = 1088.
+  screen_width = 1920.
+  screen_height = 1080.
   # Screnn space -> NDC space
   # print("SCREEN : ", screen_space)
   # print("DEPTH : ", depth)
@@ -181,7 +185,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   model.eval()
   # Test a model on a testing batch
   # Forward PASSING
-  # Forward pass for testing a model  
+  # Forward pass for testing a model
   output_test, (_, _) = model(input_trajectory_test, hidden, cell_state, lengths=input_trajectory_test_lengths)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
@@ -195,7 +199,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
 
   print('===>Test Loss : {:.3f}'.format(test_loss.item()))
   if visualize_trajectory_flag == True:
-      make_visualize(output_test_xyz=output_test_xyz, output_trajectory_test_xyz=output_trajectory_test_xyz, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_temp=input_trajectory_test_temp, output_trajectory_test_mask=output_trajectory_test_mask, visualization_path=visualization_path, mae_loss_trajectory=mae_loss_trajectory, mae_loss_3axis=mae_loss_3axis, trajectory_type=trajectory_type, animation_visualize_flag=animation_visualize_flag)
+      make_visualize(output_test_xyz=output_test_xyz, output_trajectory_test_xyz=output_trajectory_test_xyz, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_temp=input_trajectory_test_temp, output_trajectory_test_mask=output_trajectory_test_mask, visualization_path=visualization_path, mae_loss_trajectory=mae_loss_trajectory, mae_loss_3axis=mae_loss_3axis, trajectory_type=trajectory_type, animation_visualize_flag=animation_visualize_flag, input_eot=input_trajectory_test[..., -1])
 
   return accepted_3axis_loss, accepted_trajectory_loss
 
@@ -211,29 +215,34 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [3, 4, -1]]) for trajectory in batch] # (4, 5, -2) = (u, v, end_of_trajectory)
+    # input_batch = [pt.Tensor(trajectory[1:, [3, 4, -2]]) for trajectory in batch] # Mocap
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # Unity (4, 5, -2) = (u, v, end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -1]]) for trajectory in batch])
+    # input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -2]]) for trajectory in batch]) # Mocap
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch]) # Unity
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != -1)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
-    output_batch = [pt.Tensor(trajectory[:, [5, -1]]) for trajectory in batch]
+    # output_batch = [pt.Tensor(trajectory[:, [5, -2]]) for trajectory in batch] # Mocap
+    output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch] # Unity
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -1]]) for trajectory in batch])
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch])
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -1]]) for trajectory in batch]
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
     ## Compute mask
     output_mask = (output_xyz != -1)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
     output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
+    print(output_xyz.shape)
+    print(lengths)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],

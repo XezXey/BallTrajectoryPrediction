@@ -30,7 +30,7 @@ from models.gru_model import GRU
 def visualize_layout_update(fig=None, n_vis=5):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[4, 4],), yaxis = dict(nticks=5, range=[-2, 3],), zaxis = dict(nticks=10, range=[-4, 4],),)
   return fig
 
 def make_visualize(output_train_xyz, output_train_eot, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_val_eot, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
@@ -437,7 +437,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 500
-  decay_cycle = int(n_epochs/40)
+  decay_cycle = int(n_epochs/50)
 
   for epoch in range(1, n_epochs+1):
     accumulate_val_loss = []

@@ -36,7 +36,7 @@ def remove_below_ground_trajectory(trajectory, traj_type):
   remove_idx = []
   for idx in range(trajectory.shape[0]):
     traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
-    if (np.any(traj_cumsum_temp[:, 1] <= -0.01)):
+    if (np.any(traj_cumsum_temp[:, 1] <= -0.1)):
       remove_idx.append(idx)
       count+=1
   print("\n{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
@@ -86,14 +86,21 @@ def add_noise(trajectory_split, trajectory_type, camera_config):
     if args.vis_noise:
       vis_idx = np.random.randint(0, len(trajectory_split[traj_type]))
       visualize_noise(trajectory_split[traj_type][vis_idx])
-    # Get the noisy world space
-    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].values + np.random.normal(loc=0.0, scale=0.00047, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    # Get the noise offset
+    noise = [np.random.normal(loc=0.0, scale=47e-3, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    if args.masking:
+      mask = [np.random.random(size=trajectory_split[traj_type][i].iloc[:, :3].shape) < 0.20 for i in range(len(trajectory_split[traj_type]))]
+      noise = [noise[i] * mask[i] for i in range(len(trajectory_split[traj_type]))]
+
+    # Apply noise to world space
+    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].copy().values + noise[i]  for i in range(len(trajectory_split[traj_type]))]
     # Get the noisy screen space
     noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
     # Assign it to original trajectory_split variable
     for i in tqdm.tqdm(range(len(trajectory_split[traj_type])), desc="Replace the nosied pixel space"):
       # Replace only screen space columns
       trajectory_split[traj_type][i].iloc[:, 4:6] = noisy_uv[i][:, :2]
+      trajectory_split[traj_type][i].iloc[:, :3] = noisy_world[i][:, :3]
     # Visualize after an effect of noise
     if args.vis_noise:
       temp_plot_trajectory = trajectory_split[traj_type][vis_idx].copy()
@@ -243,6 +250,8 @@ if __name__ == '__main__':
   parser.add_argument('--no_noise', dest='noise', help='Noise flag for adding noise and project to get noised pixel coordinates', action='store_false')
   parser.add_argument('--vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_true')
   parser.add_argument('--no_vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_false')
+  parser.add_argument('--masking', dest='masking', help='Masking of Noise', action='store_true')
+  parser.add_argument('--no_masking', dest='masking', help='Masking of Noise', action='store_false')
 
   args = parser.parse_args()
   # List trial in directory
@@ -255,11 +264,14 @@ if __name__ == '__main__':
       # Split the text input of interested trial index into list of trial index
       trial_index = f.readlines()[-1].split()
       # Create the pattern for regex following this : (10)|(11)|(12) ===> match the any trial from 10, 11 or 12
-      pattern_trial_index= ['({})'.format(trial_index[i]) for i in range(len(trial_index))]
+      pattern_trial_index= ['({}\/)'.format(trial_index[i]) for i in range(len(trial_index))]
       # Add it into full pattern of regex : r'(Trial_((10)|(11)|(12))+)+/' ===> Need to add '/' alphabet to prevent the regex match Trial_1=Trial_10 instead of only Trial_1
-      pattern_trial_index = r'(Trial_({})+)+'.format('|'.join(pattern_trial_index)) + '/'
+      pattern_trial_index = r'(Trial_({})+)+'.format('|'.join(pattern_trial_index))
       # filter the dataset folder which is not in the trial_index
       filter_trial_index = [re.search(pattern_trial_index, dataset_folder[i]) for i in range(len(dataset_folder))]
+      # for i in range(len(filter_trial_index)):
+        # print(filter_trial_index[i])
+
       dataset_folder = [dataset_folder[i] for i in range(len(filter_trial_index)) if filter_trial_index[i] is not None]
   else :
     # Use all trial
@@ -269,6 +281,7 @@ if __name__ == '__main__':
     print("Mode : Random number of continuous trajectory with timelag = {}, force_zero_ground_flag = {} and noise flag = {}".format(args.timelag, args.force_zero_ground_flag, args.noise))
   else:
     print("Mode : Constant number of continuous trajectory with n = {}, timelag = {}, force_zero_ground_flag = {} and noise flag = {}".format(args.num_continuous_trajectory, args.timelag, args.force_zero_ground_flag, args.noise))
+
   trajectory_type = ["Rolling", "Projectile", "MagnusProjectile", "Mixed"]
   print(dataset_folder)
   for i in tqdm.tqdm(range(len(dataset_folder)), desc="Loading dataset"):

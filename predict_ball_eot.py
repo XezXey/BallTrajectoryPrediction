@@ -116,7 +116,10 @@ def evaluateModel(output_eot, eot_gt, eot_startpos, mask, lengths):
 
   # Each trajectory
   output_eot_each_traj = pt.sigmoid(output_eot.clone()).cpu().detach().numpy() > threshold
+  # print(output_eot_each_traj)
   eot_gt_each_traj = eot_gt.clone().cpu().detach().numpy()
+  print(eot_gt_each_traj)
+  # print(eot_gt_each_traj)
   # Confusion matrix of each sample : Output from confusion_matrix.ravel() would be [TN, FP, FN, TP]
   cm_each_trajectory = [confusion_matrix(y_pred=output_eot_each_traj[i][:lengths[i]+1, :], y_true=eot_gt_each_traj[i][:lengths[i]+1, :]).ravel() for i in range(lengths.shape[0])]
   # Metrics of each sameple : precision_recall_fscore_support is Precision, Recall, Fbeta_score, support(#N of each label) with 2D array in format of [negative class, positive class]
@@ -188,7 +191,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
 
   print('===> Test Loss (BCELogits Loss) : {:.3f}'.format(test_loss.item()))
 
-  if visualize_trajectory_flag == True:
+  if visualize_trajectory_flag:
     make_visualize(input_trajectory_test=input_trajectory_test, output_test_eot=output_test_eot, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, output_trajectory_test_maks=output_trajectory_test_mask, visualization_path=visualization_path)
     input("\nContinue plotting...")
 

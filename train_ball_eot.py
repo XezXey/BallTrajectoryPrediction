@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 300
-  decay_cycle = int(n_epochs/10)
+  decay_cycle = int(n_epochs/30)
   for epoch in range(1, n_epochs+1):
     accumulate_val_loss = []
     accumulate_train_loss = []

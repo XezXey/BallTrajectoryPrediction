@@ -94,6 +94,7 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
     # Compute the penalize term
     # print(trajectory_gt_yaxis_2nd_finite_difference, output_yaxis_2nd_finite_difference)
     gravity_constraint_penalize += ((pt.sum(trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)))**2
+
   return gravity_constraint_penalize
 
 def compute_below_ground_constraint_penalize(output, mask, lengths):
@@ -111,8 +112,9 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + gravity_constraint_penalize # + below_ground_constraint_penalize
-  return mse_loss * 100
+  mse_loss = ((pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+
+  return mse_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
   # print(screen_space.shape, depth.shape)
@@ -149,7 +151,6 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
@@ -161,7 +162,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   model.train()
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   # Forward PASSING
-  # Forward pass for training a model  
+  # Forward pass for training a model
   output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
@@ -212,7 +213,7 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -1) = (u, v ,end_of_trajectory)
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
     ## Retrieve initial position (u, v, depth)
     input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
@@ -274,6 +275,7 @@ if __name__ == '__main__':
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
+  parser.add_argument('--truncated_size', dest='truncated_size', type=int, help='Truncated length for TBPTT', required=True)
   args = parser.parse_args()
 
   # Init wandb
@@ -358,7 +360,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 500
-  decay_cycle = int(n_epochs/25)
+  decay_cycle = int(n_epochs/20)
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
