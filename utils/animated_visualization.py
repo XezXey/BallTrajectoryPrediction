@@ -10,8 +10,8 @@ import plotly
 import tqdm
 
 def trajectory_animation(output_xyz, gt_xyz, input_uv, lengths, n_vis, vis_idx, html_savepath='./', mask=None):
-  # print(output_xyz.shape, gt_xyz.shape, input_uv.shape, lengths.shape, mask.shape)
-  # print(n_vis, vis_idx)
+  print(output_xyz.shape, gt_xyz.shape, input_uv.shape, lengths.shape, mask.shape)
+  print(n_vis, vis_idx)
   # Detach from GPU tensor object
   output_xyz = output_xyz.cpu().detach().numpy()
   gt_xyz = gt_xyz.cpu().detach().numpy()

@@ -18,7 +18,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers):
-  return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True)
+  return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, )
 
 class GRU(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -26,12 +26,12 @@ class GRU(pt.nn.Module):
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 32
-    self.n_layers = 2
+    self.hidden_dim = 256
+    self.n_layers = 1
     # This will create the Recurrent blocks by specify the input/output features
-    self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim, self.hidden_dim, self.hidden_dim, self.hidden_dim]
+    self.recurrent_stacked = [self.input_size, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim, 32, 16, 8, 4, self.output_size]
+    self.fc_size = [self.hidden_dim, 64, 16, 8, self.output_size]
     # Define the layers
     # RNN layer
     self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers)
