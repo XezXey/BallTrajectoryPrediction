@@ -66,7 +66,8 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
-    fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
+# MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i])
+    fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, 0)), row=idx+1, col=col)
     fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col)
 
 def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
@@ -78,9 +79,8 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
   # Apply Gaussian blur and finite difference to trajectory_gt
   for i in range(trajectory_gt.shape[0]):
     # print(trajectory_gt[i][:lengths[i]+1, 1])
-    # print(trajectory_gt[i][:lengths[i]+1, 1].shape)
-    if trajectory_gt[i][:lengths[i]+1, 1].shape[0] < 6:
-      print("The trajectory is too shorter to perform a convolution")
+    if trajectory_gt[i][:lengths[i]+1, 1].shape[0] <= 8:
+      # print("The trajectory is too shorter to perform a convolution")
       continue
     trajectory_gt_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt[i][:lengths[i]+1, 1].view(1, 1, -1), gaussian_blur)
     trajectory_gt_yaxis_1st_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_gaussian_blur, kernel_weight)
@@ -104,7 +104,7 @@ def compute_below_ground_constraint_penalize(output, mask, lengths):
   return below_ground_constraint_penalize
 
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
-  if lengths is None :
+  if lengths is None:
     gravity_constraint_penalize = pt.tensor(0).to(device)
     # below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
@@ -112,7 +112,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = ((pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
 
   return mse_loss
 
@@ -136,8 +136,8 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   2. trajectory : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
   3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
   Output :
-  1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
-  2. trajectory_temp : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
+  1. output (Depth) : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
+  2. trajectory_temp (u, v) : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
   '''
   # Apply cummulative summation to output
   # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
@@ -187,17 +187,28 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # For testing the get_truncated function
   # input_trajectory_train = np.cumsum(np.ones((256, 456, 3)), axis=1)
   # print(input_trajectory_train)
+  truncated_start_pos = [input_trajectory_train_startpos]    # Keep the start pos for each truncated sequence by initialize it with original start pos and create the list of truncated : (batch_size, 1, n_features) * n_truncated
+
+  # Keep start pos to for concatenate later
+  output_train_xyz = [output_trajectory_train_xyz[:, 0, :-1].unsqueeze(dim=1)]
+  # Remove the start position of xyz (This will prevent the sequence lengths are not equal to predicted)
+  # output_trajectory_train_xyz = output_trajectory_train_xyz[:, 1:, :].clone()
+  # output_trajectory_train_mask = output_trajectory_train_mask[:, 1:, :].clone()
   for idx, truncated in enumerate(range(0, input_trajectory_train.shape[1]-1, args.truncated_size)):
     truncated_input_train = get_truncated(input_trajectory_train, truncated)
-    truncated_mask_train = get_truncated(input_trajectory_train, truncated)
-    truncated_output_train = get_truncated(input_trajectory_train, truncated)
+    truncated_mask_train = get_truncated(output_trajectory_train_mask[:, 1:, :].clone(), truncated)
+    truncated_gt_train = get_truncated(output_trajectory_train_xyz[:, 1:, :].clone(), truncated)
+    # print("\nInput : ", input_trajectory_train.shape)
+    # print("GT : ", output_trajectory_train_xyz.shape)
+    # print("Truncated GT : ", truncated_gt_train.shape)
     # print("Truncated input : ", truncated_input_train.shape)
     # print("Truncated mask : ", truncated_mask_train.shape)
-    # print("Truncated output : ", truncated_output_train.shape)
-    # print(pt.tensor([truncated_trajectory.shape[0] for truncated_trajectory in truncated_input_train]))
+
     optimizer.zero_grad() # Clear existing gradients from previous epoch
     hidden = repackage_hidden(hidden)
     cell_state = repackage_hidden(cell_state)
+    # hidden = hidden.detach()
+    # cell_state = cell_state.detach()
     # Forward PASSING
     # Forward pass for training a model
     output_truncated_train, (hidden, cell_state) = model(truncated_input_train, hidden, cell_state,
@@ -205,16 +216,43 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
-    output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_truncated_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+    output_truncated_train, input_truncated_train_temp = cumsum_trajectory(output=output_truncated_train, trajectory=truncated_input_train[..., :-1], trajectory_startpos=truncated_start_pos[idx][..., :-1])
+
+    # Remove the start position that stacked to the truncation sequence
+    output_truncated_train = output_truncated_train[:, 1:, :]
+    input_truncated_train_temp = input_truncated_train_temp[:, 1:, :]
+
+    # Append the last cummulative u, v and depth to be the start pos of next truncated sequence
+    truncated_start_pos.append(pt.cat((input_truncated_train_temp[:, -1, :], output_truncated_train[:, -1, :], pt.zeros(output_truncated_train[:, -1, :].shape).to(device)), axis=-1).unsqueeze(dim=1))
+
     # Project the (u, v, depth) to world space
-    output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
+    output_truncated_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_truncated_train_temp[i], depth=output_truncated_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_truncated_train.shape[0])])
+
+    # print("GT : ", truncated_gt_train.shape)
+    # print("Predicted : ", output_truncated_train_xyz.shape)
+    # print("START POS : ", truncated_start_pos[idx][0][:3, :-1])
+    # print("INPUT UV : ", input_truncated_train_temp[0][:3])
+    # print("INPUT DEPTH : ", output_truncated_train[0][:3])
+    # print("GT : ", truncated_gt_train[0][:3], "\n", truncated_gt_train[0][-3:])
+    # print("OUTPUT : ", output_truncated_train_xyz[0][:3], "\n",  output_truncated_train_xyz[0][-3:])
+
     # Calculate the loss
-    train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
-    total_loss += train_loss.item()
+    train_loss = MSELoss(output=output_truncated_train_xyz, trajectory_gt=truncated_gt_train[..., :-1], mask=truncated_mask_train[..., :-1], lengths=pt.tensor([truncated_trajectory.shape[0] for truncated_trajectory in truncated_input_train]))
+
     # Backward
-    train_loss.backward() # Perform a backpropagation and calculates gradients
+    train_loss.backward(retain_graph=True) # Perform a backpropagation and calculates gradients
     pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
     optimizer.step() # Updates the weights accordingly to the gradients
+    # Keep the total loss for each truncated sequence
+    total_loss += train_loss.item()
+    # Concatenate the trajectory for visualization
+    output_train_xyz.append(output_truncated_train_xyz)
+
+
+  # print([x.shape for x in output_train_xyz])
+  output_train_xyz = pt.cat(output_train_xyz, dim=1)
+  # print(output_train_xyz.shape)
+  # exit()
 
   # Evaluating mode
   model.eval()
@@ -227,7 +265,6 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
 
   # Calculate loss of unprojected trajectory
-  train_loss = MSELoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
 
@@ -238,7 +275,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   if visualize_trajectory_flag == True and vis_signal == True:
     make_visualize(output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
-  return train_loss.item(), val_loss.item(), hidden, cell_state, model
+  return total_loss, val_loss.item(), hidden, cell_state, model
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -253,12 +290,12 @@ def collate_fn_padd(batch):
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
     input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
-    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
+    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-100)
     ## Retrieve initial position (u, v, depth)
     input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
-    input_mask = (input_batch != -1)
+    input_mask = (input_batch != -100)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
@@ -269,9 +306,9 @@ def collate_fn_padd(batch):
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
     output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
-    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
+    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-100)
     ## Compute mask
-    output_mask = (output_xyz != -1)
+    output_mask = (output_xyz != -100)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
     output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
@@ -367,7 +404,7 @@ if __name__ == '__main__':
     packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
     # 2.RNN/LSTM model
     # 3.Unpack the packed
-    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-1)
+    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-100)
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
 
