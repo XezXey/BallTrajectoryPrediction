@@ -110,9 +110,10 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   else:
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
+    # print("\nGRAVITY CONSTRAINT : ", gravity_constraint_penalize)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)))# + (gravity_constraint_penalize) # + below_ground_constraint_penalizea
 
   return mse_loss
 
@@ -167,12 +168,29 @@ def get_truncated(seq, start_idx):
 def repackage_hidden(state):
   """Wraps hidden states/cell states into new Tensors, and detach them from their history."""
   if isinstance(state, pt.Tensor):
-    return state.detach()
+    return state.clone().detach()
   else:
     return tuple(repackage_hidden(v) for v in state)
 
+def add_noise(input_trajectory, start_pos, lengths):
+  # Perform the cummulative summation and add noise
+  print(input_trajectory.shape, start_pos.shape)
+  input_trajectory = pt.cat((start_pos[..., [0, 1, -1]], input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  noise_uv = pt.normal(mean=0.0, std=10e-2, size=input_trajectory[..., :-1].shape).to(device)
+  plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  input_trajectory[..., :-1] += noise_uv
+  plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  plt.show()
+  print(input_trajectory.shape)
+  print(input_trajectory)
+  exit()
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, lr, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+  # print(input_trajectory_train_lengths)
   # Training RNN/LSTM model
   # Run over each example
   # Initial hidden layer for the first RNN Cell
@@ -191,39 +209,40 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
   # Keep start pos to for concatenate later
   output_train_xyz = [output_trajectory_train_xyz[:, 0, :-1].unsqueeze(dim=1)]
+
+  if args.noise :
+    input_trajectory_train = add_noise(input_trajectory_train, input_trajectory_train_startpos, input_trajectory_train_lengths)
   # Remove the start position of xyz (This will prevent the sequence lengths are not equal to predicted)
   # output_trajectory_train_xyz = output_trajectory_train_xyz[:, 1:, :].clone()
   # output_trajectory_train_mask = output_trajectory_train_mask[:, 1:, :].clone()
   for idx, truncated in enumerate(range(0, input_trajectory_train.shape[1]-1, args.truncated_size)):
     truncated_input_train = get_truncated(input_trajectory_train, truncated)
-    truncated_mask_train = get_truncated(output_trajectory_train_mask[:, 1:, :].clone(), truncated)
-    truncated_gt_train = get_truncated(output_trajectory_train_xyz[:, 1:, :].clone(), truncated)
+    truncated_mask_train = get_truncated(output_trajectory_train_mask[:, 1:, :], truncated)
+    truncated_gt_train = get_truncated(output_trajectory_train_xyz[:, 1:, :], truncated)
+    # truncated_lengths_train = get_truncated(
     # print("\nInput : ", input_trajectory_train.shape)
     # print("GT : ", output_trajectory_train_xyz.shape)
     # print("Truncated GT : ", truncated_gt_train.shape)
     # print("Truncated input : ", truncated_input_train.shape)
     # print("Truncated mask : ", truncated_mask_train.shape)
 
-    optimizer.zero_grad() # Clear existing gradients from previous epoch
+    model.zero_grad() # Clear existing gradients from previous epoch
     hidden = repackage_hidden(hidden)
     cell_state = repackage_hidden(cell_state)
-    # hidden = hidden.detach()
-    # cell_state = cell_state.detach()
     # Forward PASSING
     # Forward pass for training a model
     output_truncated_train, (hidden, cell_state) = model(truncated_input_train, hidden, cell_state,
                                                     lengths=pt.tensor([truncated_trajectory.shape[0] for truncated_trajectory in truncated_input_train]))
-
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
     output_truncated_train, input_truncated_train_temp = cumsum_trajectory(output=output_truncated_train, trajectory=truncated_input_train[..., :-1], trajectory_startpos=truncated_start_pos[idx][..., :-1])
 
     # Remove the start position that stacked to the truncation sequence
-    output_truncated_train = output_truncated_train[:, 1:, :]
-    input_truncated_train_temp = input_truncated_train_temp[:, 1:, :]
+    output_truncated_train = output_truncated_train[:, 1:, :].clone()
+    input_truncated_train_temp = input_truncated_train_temp[:, 1:, :].clone()
 
     # Append the last cummulative u, v and depth to be the start pos of next truncated sequence
-    truncated_start_pos.append(pt.cat((input_truncated_train_temp[:, -1, :], output_truncated_train[:, -1, :], pt.zeros(output_truncated_train[:, -1, :].shape).to(device)), axis=-1).unsqueeze(dim=1))
+    truncated_start_pos.append(pt.cat((input_truncated_train_temp[:, -1, :].clone().detach(), output_truncated_train[:, -1, :].clone().detach(), pt.zeros(output_truncated_train[:, -1, :].shape).to(device)), axis=-1).unsqueeze(dim=1))
 
     # Project the (u, v, depth) to world space
     output_truncated_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_truncated_train_temp[i], depth=output_truncated_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_truncated_train.shape[0])])
@@ -240,9 +259,12 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     train_loss = MSELoss(output=output_truncated_train_xyz, trajectory_gt=truncated_gt_train[..., :-1], mask=truncated_mask_train[..., :-1], lengths=pt.tensor([truncated_trajectory.shape[0] for truncated_trajectory in truncated_input_train]))
 
     # Backward
-    train_loss.backward(retain_graph=True) # Perform a backpropagation and calculates gradients
-    pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
-    optimizer.step() # Updates the weights accordingly to the gradients
+    train_loss.backward() # Perform a backpropagation and calculates gradients
+    # pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
+    optimizer.step()
+
+
+    # optimizer.step() # Updates the weights accordingly to the gradients
     # Keep the total loss for each truncated sequence
     total_loss += train_loss.item()
     # Concatenate the trajectory for visualization
@@ -353,6 +375,8 @@ if __name__ == '__main__':
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
   parser.add_argument('--truncated_size', dest='truncated_size', type=int, help='Truncated length for TBPTT', required=True)
   parser.add_argument('--clip', dest='clip', type=int, help='Norm of clipping gradients', required=True)
+  parser.add_argument('--noise', dest='noise', help='Noise on the fly!!!', action='store_true')
+  parser.add_argument('--no_noise', dest='noise', help='Noise on the fly!!!', action='store_false')
   args = parser.parse_args()
 
   # Init wandb
@@ -461,6 +485,7 @@ if __name__ == '__main__':
 
     # Log the learning rate
     for param_group in optimizer.param_groups:
+      learning_rate = param_group['lr']
       print("[#]Learning rate : ", param_group['lr'])
       wandb.log({'Learning Rate':param_group['lr']})
 
@@ -492,7 +517,7 @@ if __name__ == '__main__':
                                                                  input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                                                  model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
-                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal)
+                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, lr=learning_rate)
 
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)

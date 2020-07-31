@@ -87,20 +87,24 @@ def add_noise(trajectory_split, trajectory_type, camera_config):
       vis_idx = np.random.randint(0, len(trajectory_split[traj_type]))
       visualize_noise(trajectory_split[traj_type][vis_idx])
     # Get the noise offset
-    noise = [np.random.normal(loc=0.0, scale=47e-3, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    noise_world = [np.random.normal(loc=0.0, scale=47e-3, size=trajectory_split[traj_type][i].iloc[:, :3].shape) for i in range(len(trajectory_split[traj_type]))]
+    noise_uv = [np.random.normal(loc=0.0, scale=75e-2, size=trajectory_split[traj_type][i].iloc[:, 4:6].shape) for i in range(len(trajectory_split[traj_type]))]
     if args.masking:
-      mask = [np.random.random(size=trajectory_split[traj_type][i].iloc[:, :3].shape) < 0.20 for i in range(len(trajectory_split[traj_type]))]
-      noise = [noise[i] * mask[i] for i in range(len(trajectory_split[traj_type]))]
+      mask_world = [np.random.random(size=trajectory_split[traj_type][i].iloc[:, :3].shape) < 0.40 for i in range(len(trajectory_split[traj_type]))]
+      mask_uv = [np.random.random(size=trajectory_split[traj_type][i].iloc[:, 4:6].shape) < 0.1 for i in range(len(trajectory_split[traj_type]))]
+      noise_uv = [noise_uv[i] * mask_uv[i] for i in range(len(trajectory_split[traj_type]))]
+      noise_world = [noise_world[i] * mask_world[i] for i in range(len(trajectory_split[traj_type]))]
 
     # Apply noise to world space
-    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].copy().values + noise[i]  for i in range(len(trajectory_split[traj_type]))]
+    # noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].copy().values + noise[i]  for i in range(len(trajectory_split[traj_type]))]
     # Get the noisy screen space
-    noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
+    noisy_world = [trajectory_split[traj_type][i].iloc[:, :3].copy().values + noise_world[i]  for i in range(len(trajectory_split[traj_type]))]
+    # noisy_uv = [worldToScreen(world=noisy_world[i], camera_config=camera_config) for i in range(len(trajectory_split[traj_type]))]
     # Assign it to original trajectory_split variable
     for i in tqdm.tqdm(range(len(trajectory_split[traj_type])), desc="Replace the nosied pixel space"):
       # Replace only screen space columns
-      trajectory_split[traj_type][i].iloc[:, 4:6] = noisy_uv[i][:, :2]
-      trajectory_split[traj_type][i].iloc[:, :3] = noisy_world[i][:, :3]
+      trajectory_split[traj_type][i].iloc[:, 4:6] += noise_uv[i]
+      # trajectory_split[traj_type][i].iloc[:, :3] = noisy_world[i][:, :3]
     # Visualize after an effect of noise
     if args.vis_noise:
       temp_plot_trajectory = trajectory_split[traj_type][vis_idx].copy()
