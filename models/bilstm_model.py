@@ -18,7 +18,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers):
-  return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.7)
+  return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
 
 class BiLSTM(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -51,7 +51,7 @@ class BiLSTM(pt.nn.Module):
     for recurrent_block in self.recurrent_blocks:
       # Pass the packed sequence to the recurrent blocks 
       out_packed, (hidden, cell_state) = recurrent_block(out_packed, (hidden, cell_state))
-    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-1)[0]
+    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
     out = self.fc_blocks(out_unpacked)
     return out, (hidden, cell_state)

@@ -27,7 +27,7 @@ from models.bilstm_model import BiLSTM
 from models.gru_model import GRU
 from models.bigru_model import BiGRU
 
-def visualize_layout_update(fig=None, n_vis=5):
+def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
@@ -35,7 +35,7 @@ def visualize_layout_update(fig=None, n_vis=5):
 
 def make_visualize(output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
   # Visualize by make a subplots of trajectory
-  n_vis = 5
+  n_vis = 3
   # Random the index the be visualize
   train_vis_idx = np.random.randint(low=0, high=input_trajectory_train_startpos.shape[0], size=(n_vis))
   val_vis_idx = np.random.randint(low=0, high=input_trajectory_val_startpos.shape[0], size=(n_vis))
@@ -51,8 +51,8 @@ def make_visualize(output_train_xyz, output_trajectory_train_xyz, output_traject
   wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig, n_vis=n_vis)
-  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
-  wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
+  # plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
+  # wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # marker_dict for contain the marker properties
@@ -112,15 +112,15 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = ((pt.sum((((trajectory_gt - output)*10)**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
 
   return mse_loss
 
-def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
+def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix, width, height):
   # print(screen_space.shape, depth.shape)
   depth = depth.view(-1)
-  screen_width = 1664.
-  screen_height = 1088.
+  screen_width = width
+  screen_height = height
   screen_space = pt.div(screen_space, pt.tensor([screen_width, screen_height]).to(device)) # Normalize : (width, height) -> (-1, 1)
   screen_space = (screen_space * 2.0) - pt.ones(size=(screen_space.size()), dtype=pt.float32).to(device) # Normalize : (width, height) -> (-1, 1)
   screen_space = (screen_space.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth) : Camera space (x', y', d, 1)
@@ -151,7 +151,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
   # Initial hidden layer for the first RNN Cell
@@ -168,7 +168,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Apply cummulative summation to output using cumsum_trajectory function
   output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
   # Project the (u, v, depth) to world space
-  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_train.shape[0])])
+  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
   # Evaluating mode
   model.eval()
   # Forward pass for validate a model
@@ -177,7 +177,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Apply cummulative summation to output using cumsum_trajectory function
   output_val, input_trajectory_val_temp = cumsum_trajectory(output=output_val, trajectory=input_trajectory_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
   # Project the (u, v, depth) to world space
-  output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_val.shape[0])])
+  output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_temp[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val.shape[0])])
   # Detach for use hidden as a weights in next batch
   cell_state.detach()
   cell_state = cell_state.detach()
@@ -189,7 +189,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  # pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=10)
+  # pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -209,17 +209,18 @@ def collate_fn_padd(batch):
     '''
     Padding batch of variable length
     '''
+    padding_value = -10
     ## Get sequence lengths
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
     input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
-    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
+    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
     ## Retrieve initial position (u, v, depth)
     input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
-    input_mask = (input_batch != -1)
+    input_mask = (input_batch != padding_value)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
@@ -230,9 +231,9 @@ def collate_fn_padd(batch):
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
     output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
-    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
+    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
-    output_mask = (output_xyz != -1)
+    output_mask = (output_xyz != padding_value)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
     output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
@@ -275,7 +276,7 @@ if __name__ == '__main__':
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
-  parser.add_argument('--truncated_size', dest='truncated_size', type=int, help='Truncated length for TBPTT', required=True)
+  parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
   args = parser.parse_args()
 
   # Init wandb
@@ -301,11 +302,13 @@ if __name__ == '__main__':
   # Load camera parameters : ProjectionMatrix and WorldToCameraMatrix
   with open(args.cam_params_file) as cam_params_json:
     cam_params_file = json.load(cam_params_json)
-    cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix']})
+    cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix'], 'width':cam_params_file['mainCameraParams']['width'], 'height':cam_params_file['mainCameraParams']['height']})
   projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
   projection_matrix = pt.tensor([projection_matrix[0, :], projection_matrix[1, :], projection_matrix[3, :], [0, 0, 0, 1]], dtype=pt.float32)
   projection_matrix = pt.inverse(projection_matrix).to(device)
   camera_to_world_matrix = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
+  width = cam_params['width']
+  height = cam_params['height']
 
   # Create Datasetloader for train and validation
   trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
@@ -327,7 +330,7 @@ if __name__ == '__main__':
     packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
     # 2.RNN/LSTM model
     # 3.Unpack the packed
-    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-1)
+    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-10)
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
 
@@ -415,7 +418,7 @@ if __name__ == '__main__':
                                                                  input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
                                                                  model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
-                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal)
+                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
 
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
