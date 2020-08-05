@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def create_fc_block(in_f, out_f, is_last_layer=False):
   # Auto create the FC blocks
   if is_last_layer:
-    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True))
+    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=False))
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
@@ -26,8 +26,8 @@ class GRU(pt.nn.Module):
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 256
-    self.n_layers = 1
+    self.hidden_dim = 32
+    self.n_layers = 2
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features

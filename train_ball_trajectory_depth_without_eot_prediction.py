@@ -12,6 +12,7 @@ from torch.utils.data import Dataset, DataLoader, RandomSampler
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
 import PIL.Image
 import io
+from wandb import magic
 import wandb
 import plotly
 from plotly.subplots import make_subplots
@@ -26,33 +27,61 @@ from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.gru_model import GRU
 from models.bigru_model import BiGRU
+from models.bigru_model_residual import BiGRUResidual
+from models.bigru_model_densely import BiGRUDensely
+from torch.utils.tensorboard import SummaryWriter
 
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-50, 50],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-30, 30],),)
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-30, 30],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-25, 25],),)
   return fig
 
-def make_visualize(output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
+def make_visualize(input_trajectory_train, output_train, input_trajectory_val, output_val, output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
   # Visualize by make a subplots of trajectory
   n_vis = 3
   # Random the index the be visualize
   train_vis_idx = np.random.randint(low=0, high=input_trajectory_train_startpos.shape[0], size=(n_vis))
   val_vis_idx = np.random.randint(low=0, high=input_trajectory_val_startpos.shape[0], size=(n_vis))
-  fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+
+  # Visualize the displacement
+  fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+  visualize_displacement(in_f=input_trajectory_train, out_f=output_train, mask=input_trajectory_train_mask, lengths=input_trajectory_train_lengths, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train')
+  visualize_displacement(in_f=input_trajectory_val, out_f=output_val, mask=input_trajectory_val_mask, lengths=input_trajectory_val_lengths, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation')
+  wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
+
+  # Visualize the trajectory
+  fig_traj = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
   # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-  visualize_trajectory(output=pt.mul(output_train_xyz, output_trajectory_train_mask[..., :-1]), trajectory_gt=output_trajectory_train_xyz[..., :-1], trajectory_startpos=output_trajectory_train_startpos[..., :-1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., :-1], fig=fig, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_trajectory(output=pt.mul(output_val_xyz, output_trajectory_val_mask[..., :-1]), trajectory_gt=output_trajectory_val_xyz[..., :-1], trajectory_startpos=output_trajectory_val_startpos[..., :-1], lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask[..., :-1], fig=fig, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+  visualize_trajectory(output=pt.mul(output_train_xyz, output_trajectory_train_mask[..., :-1]), trajectory_gt=output_trajectory_train_xyz[..., :-1], trajectory_startpos=output_trajectory_train_startpos[..., :-1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., :-1], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+  visualize_trajectory(output=pt.mul(output_val_xyz, output_trajectory_val_mask[..., :-1]), trajectory_gt=output_trajectory_val_xyz[..., :-1], trajectory_startpos=output_trajectory_val_startpos[..., :-1], lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask[..., :-1], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
   # Adjust the layout/axis
   # For an AUTO SCALED
-  fig.update_layout(height=1920, width=1500, autosize=True)
-  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path), auto_open=False)
+  fig_traj.update_layout(height=1920, width=1500, autosize=True)
+  plotly.offline.plot(fig_traj, filename='./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path), auto_open=False)
   wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path)))})
   # For a PITCH SCALED
-  fig = visualize_layout_update(fig=fig, n_vis=n_vis)
+  fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
   # plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
   # wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
+
+def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='train', n_vis=3):
+  in_f = in_f.cpu().detach().numpy()
+  out_f = np.diff(out_f.cpu().detach().numpy(), axis=1)
+  lengths = lengths.cpu().detach().numpy()
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
+  marker_dict_eot = dict(color='rgba(0, 255, 0, 0.7)', size=3)
+  # Change the columns for each set
+  if flag == 'Train': col = 1
+  elif flag == 'Validation': col=2
+  # Iterate to plot each trajectory
+  for idx, i in enumerate(vis_idx):
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT'.format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # marker_dict for contain the marker properties
@@ -112,7 +141,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
 
   return mse_loss
 
@@ -151,6 +180,25 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
+def add_noise(input_trajectory, startpos, lengths):
+  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-1].shape).to(device)
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  n_ideal = int(args.batch_size * 0.8)
+  noise_idx = np.random.choice(a=args.batch_size, size=(n_ideal,), replace=False)
+  input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  # plt.show()
+  # exit()
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+  return input_trajectory
+
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
@@ -161,12 +209,21 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Training mode
   model.train()
   optimizer.zero_grad() # Clear existing gradients from previous epoch
+  # Add noise on the fly
+  input_trajectory_train_gt = input_trajectory_train.clone()
+  input_trajectory_val_gt = input_trajectory_val.clone()
+  if args.noise:
+    input_trajectory_train = add_noise(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths)
+    input_trajectory_val = add_noise(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths)
   # Forward PASSING
   # Forward pass for training a model
+  # writer.add_graph(model, [input_trajectory_train, hidden, cell_state, input_trajectory_train_lengths])
+  # writer.close()
+  # exit()
   output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
-  output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
   # Project the (u, v, depth) to world space
   output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
   # Evaluating mode
@@ -189,7 +246,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = MSELoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths)
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  # pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
+  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -197,7 +254,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if visualize_trajectory_flag == True and vis_signal == True:
-    make_visualize(output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+    make_visualize(input_trajectory_train=input_trajectory_train, output_train=output_train, input_trajectory_val=input_trajectory_val, output_val=output_val, output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
   return train_loss.item(), val_loss.item(), hidden, cell_state, model
 
@@ -247,6 +304,10 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
     rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual':
+    rnn_model = BiGRUResidual(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_densely':
+    rnn_model = BiGRUDensely(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
     rnn_model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bilstm':
@@ -277,10 +338,14 @@ if __name__ == '__main__':
   parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
   parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
+  parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
+  parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
   args = parser.parse_args()
 
   # Init wandb
-  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)
+  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)#, magic=True)
+  # wandb.tensorboard.patch(save=True, pytorch=True)
+  # writer = SummaryWriter()
 
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -355,15 +420,15 @@ if __name__ == '__main__':
   decay_rate = 0.98
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
-  wandb.watch(rnn_model)
+  # wandb.watch(rnn_model)
 
   # Initialize the hidden and cell_state
   hidden = rnn_model.initHidden(batch_size=args.batch_size)
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
 
   # Training settings
-  n_epochs = 500
-  decay_cycle = int(n_epochs/20)
+  n_epochs = 2000
+  decay_cycle = 25
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []

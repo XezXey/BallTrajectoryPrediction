@@ -10,19 +10,19 @@ import matplotlib.pyplot as plt
 def create_fc_block(in_f, out_f, is_last_layer=False):
   # Auto create the FC blocks
   if is_last_layer:
-    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True))
+    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=False))
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
-      pt.nn.LeakyReLU(),
+      pt.nn.ReLU(),
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
   if is_first_layer:
-    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.5)
   else :
     # this need for stacked bidirectional LSTM/GRU/RNN
-    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.5)
 
 class BiGRU(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -35,7 +35,7 @@ class BiGRU(pt.nn.Module):
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim*2, 64, 32, 16, 8, self.output_size]
+    self.fc_size = [self.hidden_dim*2, 32, 16, 8, self.output_size]
     # Define the layers
     # GRU layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size
@@ -55,10 +55,9 @@ class BiGRU(pt.nn.Module):
     x_packed = pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
     out_packed = x_packed
 
-    hidden_prev = hidden
     for recurrent_block in self.recurrent_blocks:
       # Pass the packed sequence to the recurrent blocks 
-      out_packed, hidden = recurrent_block(out_packed)
+      out_packed, hidden = recurrent_block(out_packed, hidden)
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
     out = self.fc_blocks(out_unpacked)
