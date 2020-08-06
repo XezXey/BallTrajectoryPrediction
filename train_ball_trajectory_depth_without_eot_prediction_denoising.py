@@ -167,7 +167,7 @@ def add_noise(input_trajectory, startpos, lengths):
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
-  noise_uv = pt.normal(mean=0.0, std=15e-2, size=input_trajectory[..., :-1].shape).to(device)
+  noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_ideal = int(args.batch_size * 0.8)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_ideal,), replace=False)
@@ -259,17 +259,17 @@ def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)))# + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = ((pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
   return mse_loss
 
 def DenoisingLoss(uv_gt, uv_pred, mask, lengths):
-  scaling = 10
+  scaling = 100
   # print(uv_gt[0][:lengths[0]])
   # print((uv_gt[..., :-1] * mask[..., :-1])[0][:lengths[0]])
   uv_pred = uv_pred[:, 1:, :] - uv_pred[:, :-1, :]
-  denoising_loss = pt.sum(((((uv_gt[..., :-1] - uv_pred) * scaling)**2) * mask[..., :-1])) / pt.sum(mask[..., :-1])
+  denoising_loss = pt.sum(((pt.abs((uv_gt[..., :-1] - uv_pred))) * mask[..., :-1])) / pt.sum(mask[..., :-1])
   print(denoising_loss)
-  return denoising_loss
+  return denoising_loss * scaling
 
 def initialize_folder(path):
   if not os.path.exists(path):

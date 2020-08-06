@@ -33,10 +33,10 @@ class BiGRUSepMLP(pt.nn.Module):
     self.hidden_dim = 32
     self.n_layers = 2
     # This will create the Recurrent blocks by specify the input/output features
-    self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim]
+    self.recurrent_stacked = [self.input_size, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features
-    self.fc_size_depth = [self.hidden_dim*2, 64, 32, 16, 32, 64, 1]  # MLP depth prediction
-    self.fc_size_uv = [self.hidden_dim*2, 64, 32, 16, 32, 64, 2] # MLP uv prediction
+    self.fc_size_depth = [self.hidden_dim*2, 32, 16, 8, 4, 1]  # MLP depth prediction
+    self.fc_size_uv = [self.hidden_dim*2, 32, 16, 8, 4, 2] # MLP uv prediction
     # Define the layers
     # GRU layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size
@@ -64,7 +64,7 @@ class BiGRUSepMLP(pt.nn.Module):
     # hidden_prev = hidden
     for recurrent_block in self.recurrent_blocks:
       # Pass the packed sequence to the recurrent blocks 
-      out_packed, hidden = recurrent_block(out_packed, hidden)
+      out_packed, hidden = recurrent_block(out_packed)
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
 
     # Pass the unpacked(The hidden features from RNN) to the FC layers into Depth-MLP, UV-MLP

@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader, RandomSampler
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
 import PIL.Image
 import io
-from wandb import magic
+# from wandb import magic
 import wandb
 import plotly
 from plotly.subplots import make_subplots
@@ -141,7 +141,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = pt.sqrt(pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
 
   return mse_loss
 

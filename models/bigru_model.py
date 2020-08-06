@@ -33,7 +33,7 @@ class BiGRU(pt.nn.Module):
     self.hidden_dim = 32
     self.n_layers = 2
     # This will create the Recurrent blocks by specify the input/output features
-    self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim]
+    self.recurrent_stacked = [self.input_size, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features
     self.fc_size = [self.hidden_dim*2, 32, 16, 8, self.output_size]
     # Define the layers
@@ -57,7 +57,8 @@ class BiGRU(pt.nn.Module):
 
     for recurrent_block in self.recurrent_blocks:
       # Pass the packed sequence to the recurrent blocks 
-      out_packed, hidden = recurrent_block(out_packed, hidden)
+      # For the stacked GRU we don't pass the previous hidden state of the first stacked to the upper layer 
+      out_packed, hidden = recurrent_block(out_packed)
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
     out = self.fc_blocks(out_unpacked)
