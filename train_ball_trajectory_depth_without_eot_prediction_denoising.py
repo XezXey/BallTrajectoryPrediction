@@ -28,6 +28,7 @@ from models.gru_model import GRU
 from models.bigru_model import BiGRU
 from models.bigru_model_sepmlp import BiGRUSepMLP
 from models.bigru_model_mlpmapping import BiGRUMLPMapping
+from models.bigru_model_residual_sepmlp import BiGRUResidualSepMLP
 
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
@@ -203,7 +204,12 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Apply cummulative summation to output using cumsum_trajectory function
   # output_train, input_trajectory_train_temp = cumsum_trajectory(output=output_train, trajectory=input_trajectory_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
 
-  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1), trajectory=output_train[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  # Teacher forcing the UV-Denoising
+  # n_forcing = int(args.batch_size * 0.3)
+  # forcing_idx = np.random.choice(a=args.batch_size, size=(n_forcing,), replace=False)
+  # output_train[forcing_idx, :, :-1] = input_trajectory_train[forcing_idx, :, :-1].clone().detach()
+
+  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=output_train[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-1])
 
   # Project the (u, v, depth) to world space
   output_train_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_train[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
@@ -219,18 +225,21 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
   # Project the (u, v, depth) to world space
   output_val_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_val[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val.shape[0])])
-  # Detach for use hidden as a weights in next batch
-  cell_state.detach()
-  cell_state = cell_state.detach()
-  hidden.detach()
-  hidden = hidden.detach()
 
   # Calculate loss of unprojected trajectory
   train_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + DenoisingLoss(uv_gt=input_trajectory_train_gt, uv_pred=denoised_uv_train, lengths=output_trajectory_train_lengths, mask=input_trajectory_train_mask)
   val_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + DenoisingLoss(uv_gt=input_trajectory_val, uv_pred=denoised_uv_val, lengths=output_trajectory_val_lengths, mask=input_trajectory_val_mask)
 
-
   train_loss.backward() # Perform a backpropagation and calculates gradients
+  print("UV NETWORK")
+  n_stack = 6
+  for i in range(n_stack-1):
+    print(model.fc_blocks_uv[i][0].weight.grad)
+    print(model.fc_blocks_uv[i][0].weight)
+  # print("DEPTH NETWORK")
+  # n_stack = 6
+  # for i in range(n_stack-1):
+    # print(model.fc_blocks_depth[i][0].weight.grad)
   pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
   optimizer.step() # Updates the weights accordingly to the gradients
 
@@ -241,6 +250,12 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   if visualize_trajectory_flag == True and vis_signal == True:
     # Log the Reconstructed trajectory, Input/Prediction of features & Displacement
     make_visualize(input_trajectory_train=input_trajectory_train, output_train=pt.cat((denoised_uv_train, output_train), dim=-1), input_trajectory_val=input_trajectory_val, output_val=pt.cat((denoised_uv_val, output_val), dim=-1), output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+
+  # Detach for use hidden as a weights in next batch
+  cell_state.detach()
+  cell_state = cell_state.detach()
+  hidden.detach()
+  hidden = hidden.detach()
 
   return train_loss.item(), val_loss.item(), hidden, cell_state, model
 
@@ -264,6 +279,8 @@ def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
 
 def DenoisingLoss(uv_gt, uv_pred, mask, lengths):
   scaling = 100
+  # print(mask[..., :-1])
+  # print(uv_gt[..., :-1])
   # print(uv_gt[0][:lengths[0]])
   # print((uv_gt[..., :-1] * mask[..., :-1])[0][:lengths[0]])
   uv_pred = uv_pred[:, 1:, :] - uv_pred[:, :-1, :]
@@ -324,6 +341,8 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_sepmlp':
     rnn_model = BiGRUSepMLP(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_sepmlp':
+    rnn_model = BiGRUResidualSepMLP(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_mlpmapping':
     rnn_model = BiGRUMLPMapping(input_size=input_size, output_size=output_size)
   else :
@@ -427,7 +446,7 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.01
+  learning_rate = 0.001
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
   decay_rate = 0.98
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
