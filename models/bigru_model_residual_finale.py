@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def create_fc_block(in_f, out_f, is_last_layer=False):
   # Auto create the FC blocks
   if is_last_layer:
-    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=False))
+    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True))
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
@@ -19,10 +19,10 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
 
 def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
   if is_first_layer:
-    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.3)
   else :
     # this need for stacked bidirectional LSTM/GRU/RNN
-    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.3)
 
 class BiGRUResidual(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -31,12 +31,12 @@ class BiGRUResidual(pt.nn.Module):
     self.input_size = input_size
     self.output_size = output_size
     self.hidden_dim = 32
-    self.n_layers = 1
-    self.n_stack = 4
+    self.n_layers = 2
+    self.n_stack = 3
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim*2, 64, 32, 16, 8, 4, self.output_size]
+    self.fc_size = [self.hidden_dim*2, 32, 16, 8, 4, self.output_size]
     # Define the layers
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size

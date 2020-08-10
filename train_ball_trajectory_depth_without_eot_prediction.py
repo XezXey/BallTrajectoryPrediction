@@ -59,8 +59,8 @@ def make_visualize(input_trajectory_train, output_train, input_trajectory_val, o
   # Adjust the layout/axis
   # For an AUTO SCALED
   fig_traj.update_layout(height=1920, width=1500, autosize=True)
-  plotly.offline.plot(fig_traj, filename='./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path), auto_open=False)
-  wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_auto_scaled.html'.format(visualization_path)))})
+  plotly.offline.plot(fig_traj, filename='/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path), auto_open=False)
+  wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
   # plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
@@ -343,7 +343,8 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   # Init wandb
-  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)#, magic=True)
+  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)
+             # dir="/home/puntawat/mnt/sda2/wandb_logs/")#, magic=True)
   # wandb.tensorboard.patch(save=True, pytorch=True)
   # writer = SummaryWriter()
 
@@ -376,6 +377,7 @@ if __name__ == '__main__':
   height = cam_params['height']
 
   # Create Datasetloader for train and validation
+  print(args.dataset_train_path)
   trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
   trajectory_train_dataloader = DataLoader(trajectory_train_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
   # Create Datasetloader for validation

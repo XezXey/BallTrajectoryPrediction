@@ -36,7 +36,7 @@ def visualize_layout_update(fig=None, n_vis=3):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-30, 30],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-25, 25],),)
   return fig
 
-def make_visualize(input_trajectory_train, output_train, input_trajectory_val, output_val, output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
+def make_visualize(input_trajectory_train_gt, input_trajectory_val_gt, input_trajectory_train, output_train, input_trajectory_val, output_val, output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
   # Visualize by make a subplots of trajectory
   n_vis = 3
   # Random the index the be visualize
@@ -45,8 +45,8 @@ def make_visualize(input_trajectory_train, output_train, input_trajectory_val, o
 
   # Visualize the displacement
   fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_displacement(in_f=input_trajectory_train, out_f=output_train, mask=input_trajectory_train_mask, lengths=input_trajectory_train_lengths, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train')
-  visualize_displacement(in_f=input_trajectory_val, out_f=output_val, mask=input_trajectory_val_mask, lengths=input_trajectory_val_lengths, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation')
+  visualize_displacement(in_f=input_trajectory_train, out_f=output_train, gt_f=input_trajectory_train_gt, mask=input_trajectory_train_mask, lengths=input_trajectory_train_lengths, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train')
+  visualize_displacement(in_f=input_trajectory_val, out_f=output_val, gt_f=input_trajectory_val_gt, mask=input_trajectory_val_mask, lengths=input_trajectory_val_lengths, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation')
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
   # Visualize the trajectory
@@ -70,6 +70,7 @@ def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='
   out_f = np.diff(out_f.cpu().detach().numpy(), axis=1)
   lengths = lengths.cpu().detach().numpy()
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
+  marker_dict_input = dict(color='rgba(255, 255, 0, 0.7)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
   marker_dict_eot = dict(color='rgba(0, 255, 0, 0.7)', size=3)
   # Change the columns for each set
@@ -77,12 +78,15 @@ def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of U (Prediction)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of V (Prediction)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH (Prediction)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_input, name='{}-traj#{}-Displacement of U (Input)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_input, name='{}-traj#{}-Displacement of V (Input)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT (Input)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=3):
   # marker_dict for contain the marker properties
@@ -252,7 +256,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
   if visualize_trajectory_flag == True and vis_signal == True:
     # Log the Reconstructed trajectory, Input/Prediction of features & Displacement
-    make_visualize(input_trajectory_train=input_trajectory_train, output_train=pt.cat((denoised_uv_train, output_train), dim=-1), input_trajectory_val=input_trajectory_val, output_val=pt.cat((denoised_uv_val, output_val), dim=-1), output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+    make_visualize(input_trajectory_train_gt=input_trajectory_train_gt, input_trajectory_train=input_trajectory_train, output_train=pt.cat((denoised_uv_train, output_train), dim=-1), input_trajectory_val_gt=input_trajectory_val_gt, input_trajectory_val=input_trajectory_val, output_val=pt.cat((denoised_uv_val, output_val), dim=-1), output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
   # Detach for use hidden as a weights in next batch
   cell_state.detach()
@@ -288,6 +292,7 @@ def DenoisingLoss(uv_gt, uv_pred, mask, lengths):
   # print((uv_gt[..., :-1] * mask[..., :-1])[0][:lengths[0]])
   uv_pred = uv_pred[:, 1:, :] - uv_pred[:, :-1, :]
   denoising_loss = pt.sum(((((uv_gt[..., :-1] - uv_pred)**2)) * mask[..., :-1])) / pt.sum(mask[..., :-1])
+  print("DenoisingLoss : ", denoising_loss * scaling)
   return denoising_loss * scaling
 
 def initialize_folder(path):
@@ -450,7 +455,7 @@ if __name__ == '__main__':
   # Define optimizer parameters
   learning_rate = 0.001
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
-  decay_rate = 0.98
+  decay_rate = 0.77
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
   wandb.watch(rnn_model)
