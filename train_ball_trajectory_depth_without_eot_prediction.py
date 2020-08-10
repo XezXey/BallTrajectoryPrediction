@@ -27,7 +27,7 @@ from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.gru_model import GRU
 from models.bigru_model import BiGRU
-from models.bigru_model_residual import BiGRUResidual
+from models.bigru_model_residual_finale import BiGRUResidual
 from models.bigru_model_densely import BiGRUDensely
 from torch.utils.tensorboard import SummaryWriter
 
@@ -141,7 +141,7 @@ def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
     # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = pt.sqrt(pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
 
   return mse_loss
 
@@ -415,9 +415,9 @@ if __name__ == '__main__':
   print(rnn_model)
 
   # Define optimizer parameters
-  learning_rate = 0.01
+  learning_rate = 0.001
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
-  decay_rate = 0.98
+  decay_rate = 0.1
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
   # wandb.watch(rnn_model)
@@ -428,7 +428,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 2000
-  decay_cycle = 25
+  decay_cycle = 100
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []

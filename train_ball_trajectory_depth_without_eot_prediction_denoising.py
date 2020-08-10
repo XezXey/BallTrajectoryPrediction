@@ -152,7 +152,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   '''
   # Apply cummulative summation to output
   # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
-  trajectory_temp = pt.stack([pt.cat([trajectory_startpos[i][:, :2], trajectory[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  trajectory_temp = pt.stack([pt.cat([trajectory_startpos[i][:, :2], trajectory[i]]) for i in range(trajectory_startpos.shape[0])])
   # trajectory_temp : perform cumsum along the sequence_length axis
   trajectory_temp = pt.cumsum(trajectory_temp, dim=1)
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
@@ -194,8 +194,10 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   # Adding noise on the fly
   input_trajectory_train_gt = input_trajectory_train.clone()
+  input_trajectory_val_gt = input_trajectory_val.clone()
   if args.noise:
     input_trajectory_train = add_noise(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths)
+    input_trajectory_val = add_noise(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths)
   # Forward PASSING
   # Forward pass for training a model
   output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
@@ -227,15 +229,16 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   output_val_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_val[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val.shape[0])])
 
   # Calculate loss of unprojected trajectory
-  train_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + DenoisingLoss(uv_gt=input_trajectory_train_gt, uv_pred=denoised_uv_train, lengths=output_trajectory_train_lengths, mask=input_trajectory_train_mask)
-  val_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + DenoisingLoss(uv_gt=input_trajectory_val, uv_pred=denoised_uv_val, lengths=output_trajectory_val_lengths, mask=input_trajectory_val_mask)
+  scaling = 100
+  train_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths) + DenoisingLoss(uv_gt=input_trajectory_train_gt, uv_pred=denoised_uv_train, lengths=output_trajectory_train_lengths, mask=input_trajectory_train_mask) * scaling
+  val_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + DenoisingLoss(uv_gt=input_trajectory_val, uv_pred=denoised_uv_val, lengths=output_trajectory_val_lengths, mask=input_trajectory_val_mask) * scaling
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  print("UV NETWORK")
-  n_stack = 6
-  for i in range(n_stack-1):
-    print(model.fc_blocks_uv[i][0].weight.grad)
-    print(model.fc_blocks_uv[i][0].weight)
+  # print("UV NETWORK")
+  # n_stack = 6
+  # for i in range(n_stack-1):
+    # print(model.fc_blocks_uv[i][0].weight.grad)
+    # print(model.fc_blocks_uv[i][0].weight)
   # print("DEPTH NETWORK")
   # n_stack = 6
   # for i in range(n_stack-1):
@@ -284,8 +287,7 @@ def DenoisingLoss(uv_gt, uv_pred, mask, lengths):
   # print(uv_gt[0][:lengths[0]])
   # print((uv_gt[..., :-1] * mask[..., :-1])[0][:lengths[0]])
   uv_pred = uv_pred[:, 1:, :] - uv_pred[:, :-1, :]
-  denoising_loss = pt.sum(((pt.abs((uv_gt[..., :-1] - uv_pred))) * mask[..., :-1])) / pt.sum(mask[..., :-1])
-  print(denoising_loss)
+  denoising_loss = pt.sum(((((uv_gt[..., :-1] - uv_pred)**2)) * mask[..., :-1])) / pt.sum(mask[..., :-1])
   return denoising_loss * scaling
 
 def initialize_folder(path):
@@ -459,7 +461,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 2000
-  decay_cycle = 25
+  decay_cycle = 100
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []

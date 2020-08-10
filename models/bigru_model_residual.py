@@ -64,7 +64,7 @@ class BiGRUResidual(pt.nn.Module):
         # print([self.residual_connection[i].shape for i in range(len(self.residual_connection))])
 
       # Pass the packed sequence to the recurrent blocks 
-      out_packed, hidden = recurrent_block(out_packed, hidden)
+      out_packed, hidden = recurrent_block(out_packed)
 
       # Unpacked sequence for residual connection then packed it back for next input
       out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
