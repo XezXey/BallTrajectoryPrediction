@@ -19,10 +19,10 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
 
 def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
   if is_first_layer:
-    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.5)
+    return pt.nn.GRU(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.3)
   else :
     # this need for stacked bidirectional LSTM/GRU/RNN
-    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.5)
+    return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.3)
 
 class BiGRU(pt.nn.Module):
   def __init__(self, input_size, output_size):
@@ -31,7 +31,7 @@ class BiGRU(pt.nn.Module):
     self.input_size = input_size
     self.output_size = output_size
     self.hidden_dim = 32
-    self.n_layers = 2
+    self.n_layers = 4
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size, self.hidden_dim]
     # This will create the FC blocks by specify the input/output features

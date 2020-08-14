@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def create_fc_block(in_f, out_f, is_last_layer=False):
   # Auto create the FC blocks
   if is_last_layer:
-    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=False))
+    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True))
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
@@ -24,18 +24,19 @@ def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
     # this need for stacked bidirectional LSTM/GRU/RNN
     return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
 
-class BiGRUDensely(pt.nn.Module):
+class BiGRUResidualAdd(pt.nn.Module):
   def __init__(self, input_size, output_size):
-    super(BiGRUDensely, self).__init__()
+    super(BiGRUResidualAdd, self).__init__()
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 16
-    self.n_layers = 2
+    self.hidden_dim = 32
+    self.n_layers = 1
+    self.n_stack = 4
     # This will create the Recurrent blocks by specify the input/output features
-    self.recurrent_stacked = [self.input_size, self.hidden_dim, self.hidden_dim, self.hidden_dim]
+    self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim*2, 32, 16, 8, self.output_size]
+    self.fc_size = [self.hidden_dim*2, 32, 16, 8, 4, self.output_size]
     # Define the layers
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size
@@ -54,22 +55,23 @@ class BiGRUDensely(pt.nn.Module):
     # pack_padded_sequence => RNN => pad_packed_sequence[0] to get the data in batch
     x_packed = pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
     out_packed = x_packed
+    residual = pt.Tensor([0.]).cuda()
 
-    print()
     for idx, recurrent_block in enumerate(self.recurrent_blocks):
-      # Pass the packed sequence to the recurrent blocks 
-      if idx == len(self.recurrent_blocks)-1:
-        out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
-        out_unpacked *= 2
-        # out_unpacked = pt.cat((out_unpacked, out_unpacked), dim=-1)
-        print(out_unpacked.shape)
-        out_packed = pack_padded_sequence(out_unpacked, lengths=lengths, batch_first=True, enforce_sorted=False)
-      out_packed, hidden = recurrent_block(out_packed, hidden)
-      print(idx, pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0].shape)
-    exit()
-    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
+      # Pass the packed sequence to the recurrent blocks with the skip connection
+      if idx == 0:
+        # Only first time that no skip connection from input to other networks
+        out_packed, hidden = recurrent_block(out_packed)
+        residual = self.get_residual(out_packed=out_packed, lengths=lengths, residual=residual, apply_skip=False)
+      else:
+        out_packed, hidden = recurrent_block(residual)
+        residual = self.get_residual(out_packed=out_packed, lengths=lengths, residual=residual, apply_skip=True)
+
+
+    # Residual from recurrent block to FC
+    residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
-    out = self.fc_blocks(out_unpacked)
+    out = self.fc_blocks(residual)
     return out, (hidden, cell_state)
 
   def initHidden(self, batch_size):
@@ -80,3 +82,15 @@ class BiGRUDensely(pt.nn.Module):
     cell_state = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
     return cell_state
 
+  def get_residual(self, out_packed, lengths, residual, apply_skip):
+    # Unpacked sequence for residual connection then packed it back for next input
+    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
+
+    if apply_skip:
+      residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
+      residual += out_unpacked
+    else:
+      residual = out_unpacked
+    # Pack the sequence for next input
+    residual = pack_padded_sequence(residual, lengths=lengths, batch_first=True, enforce_sorted=False)
+    return residual

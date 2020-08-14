@@ -28,6 +28,8 @@ from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.bigru_model import BiGRU
 from models.gru_model import GRU
+from models.bigru_model_residual_list import BiGRUResidualList
+from models.bigru_model_residual_add import BiGRUResidualAdd
 
 def make_visualize(output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag, input_eot):
     # Visualize by make a subplots of trajectory
@@ -85,9 +87,9 @@ def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, leng
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2) + 2
-    fig.add_trace(go.Scatter(x=np.arange(input_eot[i][:lengths[i]].shape[0]), y=input_eot[i][:lengths[i]], marker=marker_dict_eot, mode='markers+lines'), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 0].shape[0]), y=np.diff(input[i][:lengths[i]+1, 0]), marker=marker_dict_u, mode='lines'), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 1].shape[0]), y=np.diff(input[i][:lengths[i]+1, 1]), marker=marker_dict_v, mode='lines'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input_eot[i][:lengths[i]].shape[0]), y=input_eot[i][:lengths[i]], marker=marker_dict_eot, mode='markers+lines', name='EOT'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 0].shape[0]), y=np.diff(input[i][:lengths[i]+1, 0]), marker=marker_dict_u, mode='lines', name='U'), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 1].shape[0]), y=np.diff(input[i][:lengths[i]+1, 1]), marker=marker_dict_v, mode='lines', name='V'), row=row_idx, col=col_idx)
     # fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i], 2].shape[0]), y=input[i][:lengths[i], 2], marker=marker_dict_depth, mode='lines'), row=row_idx, col=col_idx)
 
   plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth.html'.format(args.visualization_path), auto_open=True)
@@ -136,10 +138,10 @@ def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=Tru
   print("Accepted trajectory loss < {} : {}".format(threshold, accepted_trajectory_loss))
   return accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis
 
-def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix):
+def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix, width, height):
   depth = depth.view(-1)
-  screen_width = 1920.
-  screen_height = 1080.
+  screen_width = width
+  screen_height = height
   # Screnn space -> NDC space
   # print("SCREEN : ", screen_space)
   # print("DEPTH : ", depth)
@@ -179,7 +181,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, width, height, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   model.eval()
@@ -191,7 +193,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   # Apply cummulative summation to output using cumsum_trajectory function
   output_test, input_trajectory_test_temp = cumsum_trajectory(output=output_test, trajectory=input_trajectory_test[..., :-1], trajectory_startpos=input_trajectory_test_startpos[..., :-1])
   # Project the (u, v, depth) to world space
-  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix) for i in range(output_test.shape[0])])
+  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_test.shape[0])])
   # Calculate loss of unprojected trajectory
   test_loss = MSELoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
   # Calculate loss per trajectory
@@ -211,38 +213,39 @@ def collate_fn_padd(batch):
     '''
     Padding batch of variable length
     '''
+    padding_value = -10
     ## Get sequence lengths
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    # input_batch = [pt.Tensor(trajectory[1:, [3, 4, -2]]) for trajectory in batch] # Mocap
-    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # Unity (4, 5, -2) = (u, v, end_of_trajectory)
-    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=-1)
+    input_batch = [pt.Tensor(trajectory[1:, [3, 4, -1]]) for trajectory in batch] # Mocap
+    # input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # Unity (4, 5, -2) = (u, v, end_of_trajectory)
+    input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
     ## Retrieve initial position (u, v, depth)
-    # input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -2]]) for trajectory in batch]) # Mocap
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch]) # Unity
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -1]]) for trajectory in batch]) # Mocap
+    # input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch]) # Unity
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
-    input_mask = (input_batch != -1)
+    input_mask = (input_batch != padding_value)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
-    # output_batch = [pt.Tensor(trajectory[:, [5, -2]]) for trajectory in batch] # Mocap
-    output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch] # Unity
+    output_batch = [pt.Tensor(trajectory[:, [5, -1]]) for trajectory in batch] # Mocap
+    # output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch] # Unity
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch])
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -1]]) for trajectory in batch]) # Mocap
+    # output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch]) # Unity
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
-    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=-1)
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -1]]) for trajectory in batch] # Mocap
+    # output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch] # Unity
+    output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
-    output_mask = (output_xyz != -1)
+    output_mask = (output_xyz != padding_value)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
     output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
-    print(output_xyz.shape)
-    print(lengths)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
@@ -253,6 +256,10 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
     rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_list':
+    rnn_model = BiGRUResidualList(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_add':
+    rnn_model = BiGRUResidualAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
     rnn_model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
@@ -293,11 +300,13 @@ if __name__ == '__main__':
   # Load camera parameters : ProjectionMatrix and WorldToCameraMatrix
   with open(args.cam_params_file) as cam_params_json:
     cam_params_file = json.load(cam_params_json)
-    cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix']})
+    cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix'], 'width':cam_params_file['mainCameraParams']['width'], 'height':cam_params_file['mainCameraParams']['height']})
   projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
   projection_matrix = pt.tensor([projection_matrix[0, :], projection_matrix[1, :], projection_matrix[3, :], [0, 0, 0, 1]], dtype=pt.float32)
   projection_matrix = pt.inverse(projection_matrix).to(device)
   camera_to_world_matrix = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
+  width = cam_params['width']
+  height = cam_params['height']
 
   # Create Datasetloader for test
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
@@ -358,7 +367,7 @@ if __name__ == '__main__':
                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag)
+                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag, width=width, height=height)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss
     n_trajectory += input_trajectory_test.shape[0]

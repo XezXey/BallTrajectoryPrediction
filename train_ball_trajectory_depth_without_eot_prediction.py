@@ -27,8 +27,8 @@ from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.gru_model import GRU
 from models.bigru_model import BiGRU
-from models.bigru_model_residual_finale import BiGRUResidual
-from models.bigru_model_densely import BiGRUDensely
+from models.bigru_model_residual_list import BiGRUResidualList
+from models.bigru_model_residual_add import BiGRUResidualAdd
 from torch.utils.tensorboard import SummaryWriter
 
 def visualize_layout_update(fig=None, n_vis=3):
@@ -181,6 +181,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   return output, trajectory_temp
 
 def add_noise(input_trajectory, startpos, lengths):
+  factor = np.random.uniform(low=0.6, high=0.95)
   input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
@@ -188,8 +189,8 @@ def add_noise(input_trajectory, startpos, lengths):
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
   noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
-  n_ideal = int(args.batch_size * 0.8)
-  noise_idx = np.random.choice(a=args.batch_size, size=(n_ideal,), replace=False)
+  n_noise = int(args.batch_size * factor)
+  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
   input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
@@ -304,10 +305,10 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
     rnn_model = BiGRU(input_size=input_size, output_size=output_size)
-  elif model_arch=='bigru_residual':
-    rnn_model = BiGRUResidual(input_size=input_size, output_size=output_size)
-  elif model_arch=='bigru_densely':
-    rnn_model = BiGRUDensely(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_list':
+    rnn_model = BiGRUResidualList(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_add':
+    rnn_model = BiGRUResidualAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
     rnn_model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bilstm':
@@ -419,7 +420,7 @@ if __name__ == '__main__':
   # Define optimizer parameters
   learning_rate = 0.001
   optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
-  decay_rate = 0.1
+  decay_rate = 0.98
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
   # wandb.watch(rnn_model)
@@ -429,7 +430,7 @@ if __name__ == '__main__':
   cell_state = rnn_model.initCellState(batch_size=args.batch_size)
 
   # Training settings
-  n_epochs = 2000
+  n_epochs = 10000
   decay_cycle = 100
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
@@ -457,6 +458,10 @@ if __name__ == '__main__':
       print("[#]Learning rate : ", param_group['lr'])
       wandb.log({'Learning Rate':param_group['lr']})
 
+    # Visualize signal to make a plot and save to wandb every epoch is done.
+    # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+    vis_signal = True if epoch % 10 == 0 else False
+
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
       print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='')
@@ -471,8 +476,6 @@ if __name__ == '__main__':
       output_trajectory_train_startpos = batch_train['output'][3].to(device)
       output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
-      # Visualize signal to make a plot and save to wandb
-      vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
 
       # Call function to train
       train_loss, val_loss, hidden, cell_state, rnn_model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
@@ -489,6 +492,7 @@ if __name__ == '__main__':
 
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
+      vis_signal = False
 
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)

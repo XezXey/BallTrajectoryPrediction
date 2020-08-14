@@ -80,6 +80,8 @@ def visualize_displacement(in_f, out_f, gt_f, mask, lengths, vis_idx, fig=None, 
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
+    nan_idx = np.where(in_f[0][:, -1] == 1.)[0]
+    in_f[i][nan_idx, :-1] = np.nan
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of U (Prediction)'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of V (Prediction)'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH (Prediction)'.format(flag, i)), row=idx+1, col=col)
@@ -89,6 +91,7 @@ def visualize_displacement(in_f, out_f, gt_f, mask, lengths, vis_idx, fig=None, 
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT (Ground Truth)'.format(flag, i)), row=idx+1, col=col)
+
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=3):
   # marker_dict for contain the marker properties
@@ -169,25 +172,48 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   return output, trajectory_temp
 
 def add_noise(input_trajectory, startpos, lengths):
-  factor = np.random.uniform(low=0.6, high=0.95)
-  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
+  factor = np.random.uniform(0.6, 0.9)
+  input_trajectory = pt.cat((startpos[..., [0, 1, -2, -1]], input_trajectory), dim=1)   # Cat only the input from statpos since startpos also contain depth (u, v, depth, eot, missing) = (0, 1, -2, -1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -2].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
-  noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-1].shape).to(device)
-  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-2].shape).to(device)
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-2].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
-  input_trajectory[noise_idx, 1:, :-1] += noise_uv[noise_idx, 1:, :] * masking_noise[noise_idx, 1:, :]
+  input_trajectory[noise_idx, 1:, :-2] += noise_uv[noise_idx, 1:, :] * masking_noise[noise_idx, 1:, :]
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -2].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
   # plt.show()
   # exit()
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
 
+def missing_teacher_forcing(input_trajectory, startpos, lengths, gt):
+  # Create the missing data events and use teacher forcing as the input
+  factor = np.random.uniform(0.2, 0.6)
+  n_missing = [int(lengths[i] * factor) for i in range(args.batch_size)]
+  missing_idx = np.array([np.random.choice(a=np.arange(1, lengths[i].cpu()-1), size=(n_missing[i],), replace=False) for i in range(args.batch_size)])
+  teacher_idx = missing_idx - 1
+  input_trajectory_vis = input_trajectory.clone().cpu().detach()
+  for i in range(args.batch_size):
+    # Use previous GroundTruth as input
+    if args.missing :
+      input_trajectory[i][missing_idx[i], :-1] = -1
+    else:
+      # input_trajectory[i][missing_idx[i], :-1] = input_trajectory[i][teacher_idx[i], :-1]
+      input_trajectory[i][missing_idx[i], :-1] = gt[i][teacher_idx[i], :-1]
+    # Toggle the missing_flag
+    input_trajectory[i][missing_idx[i], -1] = 1
+
+  # print(input_trajectory_vis[0])
+  # print(input_trajectory[0])
+
+  return input_trajectory
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
@@ -205,6 +231,10 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   if args.noise:
     input_trajectory_train = add_noise(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths)
     input_trajectory_val = add_noise(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths)
+  if args.teacherforcing:
+    input_trajectory_train = missing_teacher_forcing(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, gt=input_trajectory_train_gt)
+    input_trajectory_val = missing_teacher_forcing(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, gt=input_trajectory_val_gt)
+
   # Forward PASSING
   # Forward pass for training a model
   output_train, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
@@ -218,7 +248,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # forcing_idx = np.random.choice(a=args.batch_size, size=(n_forcing,), replace=False)
   # output_train[forcing_idx, :, :-1] = input_trajectory_train[forcing_idx, :, :-1].clone().detach()
 
-  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=output_train[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=output_train[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-2])
 
   # Project the (u, v, depth) to world space
   output_train_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_train[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
@@ -230,7 +260,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
-  output_val, denoised_uv_val = cumsum_trajectory(output=output_val[..., -1].unsqueeze(dim=-1), trajectory=output_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+  output_val, denoised_uv_val = cumsum_trajectory(output=output_val[..., -1].unsqueeze(dim=-1), trajectory=output_val[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-2])
 
   # Project the (u, v, depth) to world space
   output_val_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_val[i], depth=output_val[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val.shape[0])])
@@ -293,7 +323,7 @@ def DenoisingLoss(uv_gt, uv_pred, mask, lengths):
   # print(uv_gt[0][:lengths[0]])
   # print((uv_gt[..., :-1] * mask[..., :-1])[0][:lengths[0]])
   uv_pred = uv_pred[:, 1:, :] - uv_pred[:, :-1, :]
-  denoising_loss = pt.sum(((((uv_gt[..., :-1] - uv_pred)**2)) * mask[..., :-1])) / pt.sum(mask[..., :-1])
+  denoising_loss = pt.sum(((((uv_gt[..., :-2] - uv_pred)**2)) * mask[..., :-2])) / pt.sum(mask[..., :-2])
   return denoising_loss
 
 def initialize_folder(path):
@@ -310,10 +340,10 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
+    input_batch = [pt.cat((pt.Tensor(trajectory[1:, [4, 5, -2]]), pt.zeros(trajectory.shape[0]-1).view(-1, 1)), dim=1) for trajectory in batch] # (4, 5, -2, zeros) = (u, v ,end_of_trajectory, missing_flag)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
+    input_startpos = pt.stack([pt.cat((pt.Tensor(trajectory[0, [4, 5, 6, -2]]), pt.zeros(1)), dim=-1) for trajectory in batch])  # (4, 5, 6, -2, zeros) = (u, v, depth, end_of_trajectory, zeros)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != padding_value)
@@ -349,10 +379,10 @@ def get_model(input_size, output_size, model_arch):
     rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_sepmlp':
     rnn_model = BiGRUSepMLP(input_size=input_size, output_size=output_size)
-  elif model_arch=='bigru_residual_sepmlp_add':
-    rnn_model = BiGRUResidualSepMLPAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_residual_sepmlp_list':
     rnn_model = BiGRUResidualSepMLPList(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_sepmlp_add':
+    rnn_model = BiGRUResidualSepMLPAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_mlpmapping':
     rnn_model = BiGRUMLPMapping(input_size=input_size, output_size=output_size)
   else :
@@ -383,6 +413,10 @@ if __name__ == '__main__':
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
   parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
+  parser.add_argument('--teacherforcing', dest='teacherforcing', help='Teacher Forcing for missing data', action='store_true')
+  parser.add_argument('--no_teacherforcing', dest='teacherforcing', help='Teacher Forcing for missing data', action='store_false')
+  parser.add_argument('--missing', dest='missing', help='Missing data', action='store_true')
+  parser.add_argument('--no_missing', dest='missing', help='Missing data', action='store_false')
   args = parser.parse_args()
 
   # Init wandb
@@ -442,7 +476,7 @@ if __name__ == '__main__':
 
   # Model definition
   n_output = 3 # Contain the depth information of the trajectory
-  n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
+  n_input = 4 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
   rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
@@ -469,7 +503,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 10000
-  decay_cycle = 200
+  decay_cycle = 100
   for epoch in range(1, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
@@ -496,6 +530,10 @@ if __name__ == '__main__':
       print("[#]Learning rate : ", param_group['lr'])
       wandb.log({'Learning Rate':param_group['lr']})
 
+    # Visualize signal to make a plot and save to wandb
+    # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+    vis_signal = True if epoch % 10 == 0 else False
+
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
       print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='')
@@ -510,9 +548,6 @@ if __name__ == '__main__':
       output_trajectory_train_startpos = batch_train['output'][3].to(device)
       output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
-      # Visualize signal to make a plot and save to wandb
-      # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
-      vis_signal = True if epoch % 10 == 0 else False
 
       # Call function to train
       train_loss, val_loss, hidden, cell_state, rnn_model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz, input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
@@ -524,6 +559,7 @@ if __name__ == '__main__':
                                                                  model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
                                                                  optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
+      vis_signal = False
 
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
