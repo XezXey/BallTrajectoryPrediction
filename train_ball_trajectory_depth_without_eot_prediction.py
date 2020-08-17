@@ -34,12 +34,12 @@ from torch.utils.tensorboard import SummaryWriter
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-30, 30],), yaxis = dict(nticks=5, range=[-2, 20],), zaxis = dict(nticks=10, range=[-25, 25],),)
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def make_visualize(input_trajectory_train, output_train, input_trajectory_val, output_val, output_train_xyz, output_trajectory_train_xyz, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_xyz, output_trajectory_val_xyz, output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
   # Visualize by make a subplots of trajectory
-  n_vis = 3
+  n_vis = 5
   # Random the index the be visualize
   train_vis_idx = np.random.randint(low=0, high=input_trajectory_train_startpos.shape[0], size=(n_vis))
   val_vis_idx = np.random.randint(low=0, high=input_trajectory_val_startpos.shape[0], size=(n_vis))
@@ -59,14 +59,14 @@ def make_visualize(input_trajectory_train, output_train, input_trajectory_val, o
   # Adjust the layout/axis
   # For an AUTO SCALED
   fig_traj.update_layout(height=1920, width=1500, autosize=True)
-  plotly.offline.plot(fig_traj, filename='/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path), auto_open=False)
-  wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
+  # plotly.offline.plot(fig_traj, filename='/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path), auto_open=False)
+  # wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
-  # plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
-  # wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
+  wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
 
-def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='train', n_vis=3):
+def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='train', n_vis=5):
   in_f = in_f.cpu().detach().numpy()
   out_f = np.diff(out_f.cpu().detach().numpy(), axis=1)
   lengths = lengths.cpu().detach().numpy()
@@ -187,7 +187,7 @@ def add_noise(input_trajectory, startpos, lengths):
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
-  noise_uv = pt.normal(mean=0.0, std=30e-2, size=input_trajectory[..., :-1].shape).to(device)
+  noise_uv = pt.normal(mean=0.0, std=args.noise_sd, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
@@ -365,6 +365,7 @@ if __name__ == '__main__':
   parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
+  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=30e-2)
   args = parser.parse_args()
 
   # Init wandb
@@ -486,7 +487,7 @@ if __name__ == '__main__':
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
-    vis_signal = True if epoch % 10 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

@@ -16,6 +16,7 @@ def computeDisplacement(trajectory_split, trajectory_type):
   drop_cols = ["end_of_trajectory", "add_force_flag", "outside_flag", "trajectory_type", "t"]
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
+    print("Highest Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
     # First vstack(extend rows) with (First row, np.diff() of the rest)
     # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 
@@ -168,7 +169,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(3, 8)
+  random_continuous_length = np.arange(1, 8)
   total_trajectory = len(index_split_by_flag) - 2   # For the timelag may access the trajectory at index_split_by_flag[end_index+1] and can cause the out-of-range error so need to -2 to reserve the last trajectory for timelag
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
