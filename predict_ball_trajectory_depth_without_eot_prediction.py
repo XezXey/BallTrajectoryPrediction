@@ -138,7 +138,7 @@ def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=Tru
   print("Accepted trajectory loss < {} : {}".format(threshold, accepted_trajectory_loss))
   return accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis
 
-def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix, width, height):
+def projectToWorldSpace(screen_space, depth, projection_matrix_inv, camera_to_world_matrix, width, height):
   depth = depth.view(-1)
   screen_width = width
   screen_height = height
@@ -154,7 +154,7 @@ def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_
   # print("CAMERA : ", screen_space)
   screen_space = pt.stack((screen_space[:, 0], screen_space[:, 1], depth, pt.ones(depth.shape[0], dtype=pt.float32).to(device)), axis=1) # Stack the screen with depth and w ===> (x, y, depth, 1)
   # print("CAMERA : ", screen_space)
-  screen_space = (camera_to_world_matrix @ projection_matrix @ screen_space.t()).t() # Reprojected
+  screen_space = (camera_to_world_matrix @ projection_matrix_inv @ screen_space.t()).t() # Reprojected
   # print("WORLD : ", screen_space)
   return screen_space[:, :3]
 
@@ -181,7 +181,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
-def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix, camera_to_world_matrix, trajectory_type, threshold, width, height, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix_inv, camera_to_world_matrix, trajectory_type, threshold, width, height, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
   model.eval()
@@ -193,7 +193,7 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   # Apply cummulative summation to output using cumsum_trajectory function
   output_test, input_trajectory_test_temp = cumsum_trajectory(output=output_test, trajectory=input_trajectory_test[..., :-1], trajectory_startpos=input_trajectory_test_startpos[..., :-1])
   # Project the (u, v, depth) to world space
-  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_test.shape[0])])
+  output_test_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_test_temp[i], depth=output_test[i], projection_matrix_inv=projection_matrix_inv, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_test.shape[0])])
   # Calculate loss of unprojected trajectory
   test_loss = MSELoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
   # Calculate loss per trajectory
@@ -303,7 +303,7 @@ if __name__ == '__main__':
     cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix'], 'width':cam_params_file['mainCameraParams']['width'], 'height':cam_params_file['mainCameraParams']['height']})
   projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
   projection_matrix = pt.tensor([projection_matrix[0, :], projection_matrix[1, :], projection_matrix[3, :], [0, 0, 0, 1]], dtype=pt.float32)
-  projection_matrix = pt.inverse(projection_matrix).to(device)
+  projection_matrix_inv = pt.inverse(projection_matrix).to(device)
   camera_to_world_matrix = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
   width = cam_params['width']
   height = cam_params['height']
@@ -367,7 +367,7 @@ if __name__ == '__main__':
                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
                                              model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
-                                             projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag, width=width, height=height)
+                                             projection_matrix_inv=projection_matrix_inv, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag, width=width, height=height)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss
     n_trajectory += input_trajectory_test.shape[0]

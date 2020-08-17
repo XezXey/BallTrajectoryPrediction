@@ -220,8 +220,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Run over each example
   # Initial hidden layer for the first RNN Cell
   # Train a model
-  hidden = rnn_model.initHidden(batch_size=args.batch_size)
-  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  hidden = model.initHidden(batch_size=args.batch_size)
+  cell_state = model.initCellState(batch_size=args.batch_size)
   # Training mode
   model.train()
   optimizer.zero_grad() # Clear existing gradients from previous epoch
@@ -370,26 +370,51 @@ def collate_fn_padd(batch):
 
 def get_model(input_size, output_size, model_arch):
   if model_arch=='gru':
-    rnn_model = GRU(input_size=input_size, output_size=output_size)
+    model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
-    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+    model = BiGRU(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
-    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+    model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bilstm':
-    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+    model = BiLSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_sepmlp':
-    rnn_model = BiGRUSepMLP(input_size=input_size, output_size=output_size)
+    model = BiGRUSepMLP(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_residual_sepmlp_list':
-    rnn_model = BiGRUResidualSepMLPList(input_size=input_size, output_size=output_size)
+    model = BiGRUResidualSepMLPList(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_residual_sepmlp_add':
-    rnn_model = BiGRUResidualSepMLPAdd(input_size=input_size, output_size=output_size)
+    model = BiGRUResidualSepMLPAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_mlpmapping':
-    rnn_model = BiGRUMLPMapping(input_size=input_size, output_size=output_size)
+    model = BiGRUMLPMapping(input_size=input_size, output_size=output_size)
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
 
-  return rnn_model
+  return model
+
+
+def load_checkpoint(model, optimizer, lr_scheduler):
+  if args.load_checkpoint == 'best':
+    load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
+  elif args.load_checkpoint == 'lastest':
+    load_checkpoint = '{}/{}/{}_lastest.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
+  else:
+    print("[#] The load_checkpoint should be \'best\' or \'lastest\' keywords...")
+    exit()
+
+  if os.path.isfile(load_checkpoint):
+    print("[#] Found the checkpoint...")
+    checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
+    # Load optimizer, learning rate, decay and scheduler parameters
+    model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+    start_epoch = checkpoint['epoch']
+    min_val_loss = checkpoint['min_val_loss']
+    return model, optimizer, start_epoch, lr_scheduler, min_val_loss
+
+  else:
+    print("[#] Checkpoint not found...")
+    exit()
 
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
@@ -401,8 +426,8 @@ if __name__ == '__main__':
   parser.add_argument('--trajectory_type', dest='trajectory_type', type=str, help='Type of trajectory(Rolling, Projectile, MagnusProjectile)', default='Projectile')
   parser.add_argument('--no_visualize', dest='visualize_trajectory_flag', help='No Visualize the trajectory', action='store_false')
   parser.add_argument('--visualize', dest='visualize_trajectory_flag', help='Visualize the trajectory', action='store_true')
-  parser.add_argument('--model_checkpoint_path', dest='model_checkpoint_path', type=str, help='Path to save a model checkpoint', required=True)
-  parser.add_argument('--model_path', dest='model_path', type=str, help='Path to load a trained model checkpoint', default=None)
+  parser.add_argument('--save_checkpoint', dest='save_checkpoint', type=str, help='Path to save a model checkpoint', required=True)
+  parser.add_argument('--load_checkpoint', dest='load_checkpoint', type=str, help='Path to load a trained model checkpoint', default=None)
   parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
   parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
   parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
@@ -424,11 +449,8 @@ if __name__ == '__main__':
 
   # Initialize folder
   initialize_folder(args.visualization_path)
-  model_checkpoint_path = '{}/'.format(args.model_checkpoint_path + args.wandb_tags.replace('/', '_'))
-  print(model_checkpoint_path)
-  initialize_folder(model_checkpoint_path)
-  model_checkpoint_path = '{}/{}.pth'.format(model_checkpoint_path, args.wandb_notes)
-  print(model_checkpoint_path)
+  save_checkpoint = '{}/{}/'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes)
+  initialize_folder(save_checkpoint)
 
   # GPU initialization
   if pt.cuda.is_available():
@@ -478,33 +500,45 @@ if __name__ == '__main__':
   n_output = 3 # Contain the depth information of the trajectory
   n_input = 4 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
-  print('[#]Model Architecture')
-  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
-  if args.model_path is None:
+  model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
+  model = model.to(device)
+
+  # Define optimizer, learning rate, decay and scheduler parameters
+  learning_rate = 0.001
+  optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
+  decay_rate = 0.98
+  lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
+  start_epoch = 1
+
+  if args.load_checkpoint is None:
     # Create a model
     print('===>No trained model')
+    print('[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...')
   else:
-    print('===>Load trained model')
-    rnn_model.load_state_dict(pt.load(args.model_path))
-  rnn_model = rnn_model.to(device)
-  print(rnn_model)
+    print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
+    print('[#] Loading ... {}'.format(args.load_checkpoint))
+    save_checkpoint = args.load_checkpoint
+    model, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model, optimizer, lr_scheduler)
+
+  print('[#]Model Architecture')
+  print(model)
 
   # Define optimizer parameters
   learning_rate = 0.001
-  optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
+  optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
   decay_rate = 0.98
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
-  wandb.watch(rnn_model)
+  wandb.watch(model)
 
   # Initialize the hidden and cell_state
-  hidden = rnn_model.initHidden(batch_size=args.batch_size)
-  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  hidden = model.initHidden(batch_size=args.batch_size)
+  cell_state = model.initCellState(batch_size=args.batch_size)
 
   # Training settings
   n_epochs = 10000
-  decay_cycle = 100
-  for epoch in range(1, n_epochs+1):
+  decay_cycle = 1
+  for epoch in range(start_epoch, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
     # Fetch the Validation set (Get each batch for each training epochs)
@@ -548,15 +582,14 @@ if __name__ == '__main__':
       output_trajectory_train_startpos = batch_train['output'][3].to(device)
       output_trajectory_train_xyz = batch_train['output'][4].to(device)
 
-
       # Call function to train
-      train_loss, val_loss, hidden, cell_state, rnn_model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz, input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
+      train_loss, val_loss, hidden, cell_state, model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz, input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
                                                                  input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
                                                                  output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask,
                                                                  output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
                                                                  input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                                                  input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
-                                                                 model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                                                 model=model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
                                                                  optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
       vis_signal = False
@@ -573,18 +606,32 @@ if __name__ == '__main__':
     if epoch % decay_cycle == 0:
       lr_scheduler.step()
       for param_group in optimizer.param_groups:
-        print("Stepping Learning rate to {}", param_group['lr'])
+        print("Stepping Learning rate to ", param_group['lr'])
 
     # Save the model checkpoint every finished the epochs
     print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
+
     if min_val_loss > val_loss_per_epoch:
       # Save model checkpoint
-      print('[#]Saving a model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      save_checkpoint_best = '{}/{}_best.pth'.format(save_checkpoint, args.wandb_notes)
+      print('[+++]Saving the best model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
       # Save to directory
-      pt.save(rnn_model.state_dict(), model_checkpoint_path)
-      pt.save(rnn_model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+      checkpoint = {'epoch':epoch+1, 'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
+      pt.save(checkpoint, save_checkpoint_best)
+      pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_best.pth'))
+
     else:
-      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
+      print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
+
+
+    if epoch % 3 == 0:
+      # Save the lastest checkpoint for continue training every 10 epoch
+      save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_notes)
+      print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
+      checkpoint = {'epoch':epoch+1, 'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
+      pt.save(checkpoint, save_checkpoint_lastest)
+      pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_lastest.pth'))
 
   print("[#] Done")
