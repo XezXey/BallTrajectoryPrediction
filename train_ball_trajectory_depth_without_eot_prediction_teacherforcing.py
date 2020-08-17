@@ -419,7 +419,7 @@ def load_checkpoint(model, optimizer, lr_scheduler):
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
   # Argumentparser for input
-  parser = argparse.ArgumentParser(description='Predict the 2D projectile')
+  parser = argparse.ArgumentParser(description='Predict the 3D projectile')
   parser.add_argument('--dataset_train_path', dest='dataset_train_path', type=str, help='Path to training set', required=True)
   parser.add_argument('--dataset_val_path', dest='dataset_val_path', type=str, help='Path to validation set', required=True)
   parser.add_argument('--batch_size', dest='batch_size', type=int, help='Size of batch', default=50)
@@ -526,7 +526,7 @@ if __name__ == '__main__':
   # Define optimizer parameters
   learning_rate = 0.001
   optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
-  decay_rate = 0.98
+  decay_rate = 0.95
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   # Log metrics with wandb
   wandb.watch(model)
@@ -537,7 +537,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 10000
-  decay_cycle = 1
+  decay_cycle = 100
   for epoch in range(start_epoch, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
@@ -626,7 +626,7 @@ if __name__ == '__main__':
       print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
 
 
-    if epoch % 3 == 0:
+    if epoch % 20 == 0:
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_notes)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
