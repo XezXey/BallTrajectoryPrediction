@@ -227,7 +227,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
 
 
   # Project the (u, v, depth) to world space
-  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_gt_temp[i][..., :-1], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
+  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_gt_temp[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
   # Evaluating mode
   model.eval()
   # Forward pass for validate a model
@@ -247,15 +247,6 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + DenoisingLoss(uv_gt=input_trajectory_val_gt, uv_pred=denoised_uv_val, lengths=output_trajectory_val_lengths, mask=input_trajectory_val_mask) * scaling
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  # print("UV NETWORK")
-  # n_stack = 6
-  # for i in range(n_stack-1):
-    # print(model.fc_blocks_uv[i][0].weight.grad)
-    # print(model.fc_blocks_uv[i][0].weight)
-  # print("DEPTH NETWORK")
-  # n_stack = 6
-  # for i in range(n_stack-1):
-    # print(model.fc_blocks_depth[i][0].weight.grad)
   pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
   optimizer.step() # Updates the weights accordingly to the gradients
 
