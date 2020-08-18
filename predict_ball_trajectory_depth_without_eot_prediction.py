@@ -54,7 +54,8 @@ def visualize_layout_update(fig=None, n_vis=7):
   for i in range(n_vis*2):
     if i%2==0:
       # Set the figure in column 1 (fig0, 2, 4, ...) into a pitch scaled
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-5, 5],), yaxis = dict(nticks=5, range=[-2, 4],), zaxis = dict(nticks=10, range=[-5, 5],),)
+      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-5, 5],), yaxis = dict(nticks=5, range=[-2, 4],), zaxis = dict(nticks=10, range=[-5, 5],),)
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
     fig['layout']['scene{}'.format(i+1)]['camera'].update(projection=dict(type="perspective"))
   return fig
 
@@ -142,9 +143,6 @@ def projectToWorldSpace(screen_space, depth, projection_matrix_inv, camera_to_wo
   depth = depth.view(-1)
   screen_width = width
   screen_height = height
-  # Screnn space -> NDC space
-  # print("SCREEN : ", screen_space)
-  # print("DEPTH : ", depth)
   screen_space = pt.div(screen_space, pt.tensor([screen_width, screen_height]).to(device)) # Normalize : (width, height) -> (-1, 1)
   # print("NDC : ", screen_space)
   # NDC space -> CAMERA space
@@ -181,6 +179,30 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   # print(output.shape, trajectory_temp.shape)
   return output, trajectory_temp
 
+def add_noise(input_trajectory, startpos, lengths):
+  factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
+  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(input_trajectory.shape[0] * factor)
+  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
+  input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  # plt.show()
+  # exit()
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+  return input_trajectory
+
 def predict(output_trajectory_test, output_trajectory_test_mask, output_trajectory_test_lengths, output_trajectory_test_startpos, output_trajectory_test_xyz, input_trajectory_test, input_trajectory_test_mask, input_trajectory_test_lengths, input_trajectory_test_startpos, model, hidden, cell_state, projection_matrix_inv, camera_to_world_matrix, trajectory_type, threshold, width, height, animation_visualize_flag=False, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Initial hidden layer for the first RNN Cell
@@ -188,6 +210,10 @@ def predict(output_trajectory_test, output_trajectory_test_mask, output_trajecto
   # Test a model on a testing batch
   # Forward PASSING
   # Forward pass for testing a model
+  input_trajectory_test_gt = input_trajectory_test.clone()
+  if args.noise:
+    input_trajectory_test = add_noise(input_trajectory=input_trajectory_test, startpos=input_trajectory_test_startpos, lengths=input_trajectory_test_lengths)
+
   output_test, (_, _) = model(input_trajectory_test, hidden, cell_state, lengths=input_trajectory_test_lengths)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
@@ -284,6 +310,9 @@ if __name__ == '__main__':
   parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
   parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input model architecture (gru, bigru, lstm, bilstm)', required=True)
+  parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
+  parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
+  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   args = parser.parse_args()
   # Initialize folder
   initialize_folder(args.visualization_path)
@@ -338,7 +367,7 @@ if __name__ == '__main__':
     exit()
   else:
     print('===>Load trained model')
-    rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device))
+    rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device)['model'])
   rnn_model = rnn_model.to(device)
   print(rnn_model)
 

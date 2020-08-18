@@ -170,12 +170,16 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
 
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
   input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
-  noise_uv = pt.normal(mean=0.0, std=args.noise_sd, size=input_trajectory[..., :-1].shape).to(device)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
@@ -187,7 +191,6 @@ def add_noise(input_trajectory, startpos, lengths):
   # exit()
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
-
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
@@ -218,10 +221,13 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # forcing_idx = np.random.choice(a=args.batch_size, size=(n_forcing,), replace=False)
   # output_train[forcing_idx, :, :-1] = input_trajectory_train[forcing_idx, :, :-1].clone().detach()
 
-  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=output_train[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  output_train, denoised_uv_train = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=output_train[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-1])\
+
+  _, input_trajectory_train_gt_temp = cumsum_trajectory(output=output_train[..., -1].unsqueeze(dim=-1).clone(), trajectory=input_trajectory_train_gt[..., :-1].clone(), trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+
 
   # Project the (u, v, depth) to world space
-  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=denoised_uv_train[i], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
+  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_gt_temp[i][..., :-1], depth=output_train[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train.shape[0])])
   # Evaluating mode
   model.eval()
   # Forward pass for validate a model
@@ -406,7 +412,7 @@ if __name__ == '__main__':
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
-  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=30e-2)
+  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
   args = parser.parse_args()
 
@@ -470,7 +476,7 @@ if __name__ == '__main__':
   model = model.to(device)
 
   # Define optimizer, learning rate, decay and scheduler parameters
-  learning_rate = 0.001
+  learning_rate = 0.005
   optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
   decay_rate = 0.95
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
@@ -539,7 +545,7 @@ if __name__ == '__main__':
 
       # Visualize signal to make a plot and save to wandb
       # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
-      vis_signal = True if epoch % 1 == 0 else False
+      vis_signal = True if epoch % 10 == 0 else False
 
       # Call function to train
       train_loss, val_loss, hidden, cell_state, model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask, output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz, input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,

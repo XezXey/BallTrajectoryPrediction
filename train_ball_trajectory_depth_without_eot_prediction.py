@@ -182,12 +182,16 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
 
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
   input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
   # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
-  noise_uv = pt.normal(mean=0.0, std=args.noise_sd, size=input_trajectory[..., :-1].shape).to(device)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
@@ -365,7 +369,7 @@ if __name__ == '__main__':
   parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
-  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=30e-2)
+  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   args = parser.parse_args()
 
   # Init wandb
@@ -429,9 +433,9 @@ if __name__ == '__main__':
   model = model.to(device)
 
   # Define optimizer, learning rate, decay and scheduler parameters
-  learning_rate = 0.001
+  learning_rate = 0.005
   optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
-  decay_rate = 0.95
+  decay_rate = 0.7
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   start_epoch = 1
 
@@ -487,7 +491,7 @@ if __name__ == '__main__':
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 10 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
