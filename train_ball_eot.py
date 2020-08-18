@@ -26,22 +26,49 @@ from models.rnn_model import RNN
 from models.lstm_model import LSTM
 from models.bilstm_model import BiLSTM
 from models.bigru_model import BiGRU
+from models.bigru_model_residual_list import BiGRUResidualList
+from models.bigru_model_residual_add import BiGRUResidualAdd
 from models.gru_model import GRU
 
-def make_visualize(output_train_eot, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_eot,output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path):
+def make_visualize(output_train_eot, output_trajectory_train_startpos, input_trajectory_train_lengths, output_trajectory_train_maks, output_val_eot,output_trajectory_val_startpos, input_trajectory_val_lengths, output_trajectory_val_mask, visualization_path, eot_gt_train, eot_gt_val, input_trajectory_train, input_trajectory_val):
   # Visualize by make a subplots of trajectory
   n_vis = 5
   # Random the index the be visualize
   train_vis_idx = np.random.randint(low=0, high=input_trajectory_train_startpos.shape[0], size=(n_vis))
   val_vis_idx = np.random.randint(low=0, high=input_trajectory_val_startpos.shape[0], size=(n_vis))
-  fig = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+
+  # Visualize the displacement
+  fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+  visualize_displacement(in_f=input_trajectory_train, out_f=output_train_eot, gt=eot_gt_train, mask=input_trajectory_train_mask, lengths=input_trajectory_train_lengths, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train')
+  visualize_displacement(in_f=input_trajectory_val, out_f=output_val_eot, gt=eot_gt_val, mask=input_trajectory_val_mask, lengths=input_trajectory_val_lengths, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation')
+  wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
   # Visualize the End of trajectory(EOT) flag
   fig_eot = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   visualize_eot(output_eot=output_train_eot.clone(), eot_gt=output_trajectory_train_uv[..., -1], eot_startpos=output_trajectory_train_startpos[..., -1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., -1], fig=fig_eot, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
   visualize_eot(output_eot=output_val_eot.clone(), eot_gt=output_trajectory_val_uv[..., -1], eot_startpos=output_trajectory_val_startpos[..., -1], lengths=input_trajectory_val_lengths, mask=output_trajectory_val_mask[..., -1], fig=fig_eot, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
-  plotly.offline.plot(fig_eot, filename='./{}/trajectory_visualization_depth_eot_prediction.html'.format(visualization_path), auto_open=False)
-  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_eot_prediction.html'.format(visualization_path)))})
+  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
+
+def visualize_displacement(in_f, out_f, gt, mask, lengths, vis_idx, fig=None, flag='train', n_vis=5):
+  threshold = 0.8
+  out_f = pt.sigmoid(out_f) > threshold
+  in_f = in_f.cpu().detach().numpy()
+  out_f = out_f.cpu().detach().numpy()
+  lengths = lengths.cpu().detach().numpy()
+  gt = pt.unsqueeze(gt, dim=-1).cpu().detach().numpy()
+  marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
+  marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
+  marker_dict_eot = dict(color='rgba(150, 255, 125, 0.7)', size=3)
+  # Change the columns for each set
+  if flag == 'Train': col = 1
+  elif flag == 'Validation': col=2
+  # Iterate to plot each trajectory
+  for idx, i in enumerate(vis_idx):
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+    # fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt[i][:lengths[i]+1, :], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-GroundTruth EOT'.format(flag, i)), row=idx+1, col=col)
+    # fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, :], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Prediction EOT'.format(flag, i)), row=idx+1, col=col)
+
 
 def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # Add the feature dimension using unsqueeze
@@ -72,8 +99,6 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, .7)', size=5)
   marker_dict_pred = dict(color='rgba(255, 0, 0, .7)', size=5)
-  # Random the index the be visualize
-  vis_idx = np.random.randint(low=0, high=eot_startpos.shape[0], size=(n_vis))
   # Change the columns for each set
   if flag == 'Train': col = 1
   elif flag == 'Validation': col=2
@@ -124,16 +149,46 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='t
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
   return eot_loss * 100
 
+def add_noise(input_trajectory, startpos, lengths):
+  factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
+  input_trajectory = pt.cat((startpos[..., :-1], input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :].shape).to(device)
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(args.batch_size * factor)
+  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
+  input_trajectory[noise_idx, :, :] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 0].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, 1].cpu().numpy()))
+  # plt.plot(np.diff(input_trajectory[0][:lengths[0]+1, -1].cpu().numpy()))
+  # plt.show()
+  # exit()
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+  return input_trajectory
+
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_uv, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_uv, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, hidden, cell_state, optimizer, epoch, n_epochs, vis_signal, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model on a minibatch
   # Run over each example batch
   # Initial hidden layer for the first RNN Cell
   # Train a model
-  hidden = rnn_model.initHidden(batch_size=args.batch_size)
-  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  hidden = model.initHidden(batch_size=args.batch_size)
+  cell_state = model.initCellState(batch_size=args.batch_size)
   # Training mode
   model.train()
   optimizer.zero_grad() # Clear existing gradients from previous epoch
+  # Add noise on the fly
+  input_trajectory_train_gt = input_trajectory_train.clone()
+  input_trajectory_val_gt = input_trajectory_val.clone()
+  if args.noise:
+    input_trajectory_train = add_noise(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths)
+    input_trajectory_val = add_noise(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths)
   # Forward PASSING
   # Forward pass for training a model  
   output_train_eot, (_, _) = model(input_trajectory_train, hidden, cell_state, lengths=input_trajectory_train_lengths)
@@ -155,7 +210,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   val_loss = val_eot_loss
 
   train_loss.backward() # Perform a backpropagation and calculates gradients
-  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=2)
+  pt.nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=args.clip)
   optimizer.step() # Updates the weights accordingly to the gradients
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
@@ -163,7 +218,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if visualize_trajectory_flag == True and vis_signal == True:
-    make_visualize(output_train_eot=output_train_eot, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_eot=output_val_eot, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+    make_visualize(output_train_eot=output_train_eot, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_eot=output_val_eot, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, eot_gt_train=output_trajectory_train_uv[..., -1], eot_gt_val=output_trajectory_val_uv[..., -1], visualization_path=visualization_path, input_trajectory_train=input_trajectory_train, input_trajectory_val=input_trajectory_val)
 
   return train_loss.item(), val_loss.item(), hidden, cell_state, model
 
@@ -209,18 +264,46 @@ def collate_fn_padd(batch):
 
 def get_model(input_size, output_size, model_arch):
   if model_arch=='gru':
-    rnn_model = GRU(input_size=input_size, output_size=output_size)
+    model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
-    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+    model = BiGRU(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_list':
+    model = BiGRUResidualList(input_size=input_size, output_size=output_size)
+  elif model_arch=='bigru_residual_add':
+    model = BiGRUResidualAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
-    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+    model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bilstm':
-    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+    model = BiLSTM(input_size=input_size, output_size=output_size)
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
 
-  return rnn_model
+  return model
+
+def load_checkpoint(model, optimizer, lr_scheduler):
+  if args.load_checkpoint == 'best':
+    load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
+  elif args.load_checkpoint == 'lastest':
+    load_checkpoint = '{}/{}/{}_lastest.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
+  else:
+    print("[#] The load_checkpoint should be \'best\' or \'lastest\' keywords...")
+    exit()
+
+  if os.path.isfile(load_checkpoint):
+    print("[#] Found the checkpoint...")
+    checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
+    # Load optimizer, learning rate, decay and scheduler parameters
+    model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+    start_epoch = checkpoint['epoch']
+    min_val_loss = checkpoint['min_val_loss']
+    return model, optimizer, start_epoch, lr_scheduler, min_val_loss
+
+  else:
+    print("[#] Checkpoint not found...")
+    exit()
 
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
@@ -232,14 +315,18 @@ if __name__ == '__main__':
   parser.add_argument('--trajectory_type', dest='trajectory_type', type=str, help='Type of trajectory(Rolling, Projectile, MagnusProjectile)', default='Projectile')
   parser.add_argument('--no_visualize', dest='visualize_trajectory_flag', help='No Visualize the trajectory', action='store_false')
   parser.add_argument('--visualize', dest='visualize_trajectory_flag', help='Visualize the trajectory', action='store_true')
-  parser.add_argument('--model_checkpoint_path', dest='model_checkpoint_path', type=str, help='Path to save a model checkpoint', required=True)
-  parser.add_argument('--model_path', dest='model_path', type=str, help='Path to load a trained model checkpoint', default=None)
+  parser.add_argument('--save_checkpoint', dest='save_checkpoint', type=str, help='Path to save a model checkpoint', required=True)
+  parser.add_argument('--load_checkpoint', dest='load_checkpoint', type=str, help='Path to load a trained model checkpoint', default=None)
   parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
   parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
   parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
   parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
   parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
   parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
+  parser.add_argument('--clip', dest='clip', type=int, help='Clipping gradients value', required=True)
+  parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
+  parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
+  parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   args = parser.parse_args()
 
   # Init wandb
@@ -247,11 +334,8 @@ if __name__ == '__main__':
 
   # Initialize folder
   initialize_folder(args.visualization_path)
-  model_checkpoint_path = '{}/'.format(args.model_checkpoint_path + args.wandb_tags.replace('/', '_'))
-  print(model_checkpoint_path)
-  initialize_folder(model_checkpoint_path)
-  model_checkpoint_path = '{}/{}.pth'.format(model_checkpoint_path, args.wandb_notes)
-  print(model_checkpoint_path)
+  save_checkpoint = '{}/{}/'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes)
+  initialize_folder(save_checkpoint)
 
   # GPU initialization
   if pt.cuda.is_available():
@@ -291,32 +375,40 @@ if __name__ == '__main__':
   n_input = 2 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
   print('[#]Model Architecture')
-  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
-  if args.model_path is None:
-    # Create a model
-    print('===>No trained model')
-  else:
-    print('===>Load trained model')
-    rnn_model.load_state_dict(pt.load(args.model_path))
-  rnn_model = rnn_model.to(device)
-  print(rnn_model)
+  model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
+  model = model.to(device)
 
-  # Define optimizer parameters
-  learning_rate = 0.01
-  optimizer = pt.optim.Adam(rnn_model.parameters(), lr=learning_rate)
-  decay_rate = 0.96
+  # Define optimizer, learning rate, decay and scheduler parameters
+  learning_rate = 0.005
+  optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
+  decay_rate = 0.9
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
+  start_epoch = 1
+
+  # Load the checkpoint if it's available.
+  if args.load_checkpoint is None:
+    # Create a model
+    print('===>No model checkpoint')
+    print('[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...')
+  else:
+    print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
+    print('[#] Loading ... {}'.format(args.load_checkpoint))
+    model, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model, optimizer, lr_scheduler)
+
+  print('[#]Model Architecture')
+  print(model)
+
   # Log metrics with wandb
-  wandb.watch(rnn_model)
+  wandb.watch(model)
 
   # Initialize the hidden and cell_state
-  hidden = rnn_model.initHidden(batch_size=args.batch_size)
-  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  hidden = model.initHidden(batch_size=args.batch_size)
+  cell_state = model.initCellState(batch_size=args.batch_size)
 
   # Training settings
-  n_epochs = 300
-  decay_cycle = int(n_epochs/30)
-  for epoch in range(1, n_epochs+1):
+  n_epochs = 10000
+  decay_cycle = 100
+  for epoch in range(start_epoch, n_epochs+1):
     accumulate_val_loss = []
     accumulate_train_loss = []
     # Fetch the Validation set (Get each batch for each training epochs)
@@ -356,9 +448,10 @@ if __name__ == '__main__':
       output_trajectory_train_uv = batch_train['output'][4].to(device)
 
       # Visualize signal to make a plot and save to wandb
-      vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+      # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+      vis_signal = True if epoch % 10 == 0 else False
       # Call function to train
-      train_loss, val_loss, hidden, cell_state, rnn_model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
+      train_loss, val_loss, hidden, cell_state, model = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
                                                                  output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_uv=output_trajectory_train_uv,
                                                                  input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
                                                                  input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
@@ -366,15 +459,19 @@ if __name__ == '__main__':
                                                                  output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
                                                                  input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_uv=output_trajectory_val_uv,
                                                                  input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
-                                                                 model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                                                 model=model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal)
 
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
+      vis_signal = False
 
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)
     train_loss_per_epoch = np.mean(accumulate_train_loss)
+
+    # Log the each epoch loss
+    wandb.log({'Epoch Train Loss':train_loss_per_epoch, 'Epoch Validation Loss':val_loss_per_epoch})
 
     # Decrease learning rate every n_epochs % decay_cycle batch
     if epoch % decay_cycle == 0:
@@ -386,12 +483,26 @@ if __name__ == '__main__':
     print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
     if min_val_loss > val_loss_per_epoch:
       # Save model checkpoint
-      print('[#]Saving a model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      save_checkpoint_best = '{}/{}_best.pth'.format(save_checkpoint, args.wandb_notes)
+      print('[+++]Saving the best model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
+      print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
       # Save to directory
-      pt.save(rnn_model.state_dict(), model_checkpoint_path)
-      pt.save(rnn_model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
+      checkpoint = {'epoch':epoch+1, 'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
+      pt.save(checkpoint, save_checkpoint_best)
+      pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_best.pth'))
+
     else:
-      print('[#]Not saving a model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
+      print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
+
+
+    if epoch % 20 == 0:
+      # Save the lastest checkpoint for continue training every 10 epoch
+      save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_notes)
+      print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
+      checkpoint = {'epoch':epoch+1, 'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
+      pt.save(checkpoint, save_checkpoint_lastest)
+      pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_lastest.pth'))
 
   print("[#] Done")
+
