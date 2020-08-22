@@ -183,7 +183,7 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
   if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=1)
+    noise_sd = np.random.uniform(low=0.3, high=1.5)
   else:
     noise_sd = args.noise_sd
   input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
@@ -435,7 +435,7 @@ if __name__ == '__main__':
   # Define optimizer, learning rate, decay and scheduler parameters
   learning_rate = 0.005
   optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
-  decay_rate = 0.7
+  decay_rate = 0.5
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   start_epoch = 1
 
@@ -462,7 +462,7 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 10000
-  decay_cycle = 100
+  decay_cycle = 200
   for epoch in range(start_epoch, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []

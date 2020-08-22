@@ -14,7 +14,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
-      pt.nn.LeakyReLU(),
+      pt.nn.LeakyReLU(negative_slope=0.2),
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
@@ -30,7 +30,7 @@ class BiGRUResidualSepMLPAdd(pt.nn.Module):
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 32
+    self.hidden_dim = 64
     self.n_layers = 1
     self.n_stack = 4
     # This will create the Recurrent blocks by specify the input/output features

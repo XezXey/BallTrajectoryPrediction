@@ -30,7 +30,7 @@ class BiGRUResidualAdd(pt.nn.Module):
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
-    self.hidden_dim = 32
+    self.hidden_dim = 64
     self.n_layers = 1
     self.n_stack = 4
     # This will create the Recurrent blocks by specify the input/output features

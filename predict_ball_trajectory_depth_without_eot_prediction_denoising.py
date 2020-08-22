@@ -97,8 +97,8 @@ def visualize_trajectory(input, output_xyz, output_pred, trajectory_gt, trajecto
     col_idx = 1
     row_idx = (idx*2) + 2
     fig.add_trace(go.Scatter(x=np.arange(input_eot[i][:lengths[i]].shape[0]), y=input_eot[i][:lengths[i]], marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], Input-EOT'.format(flag, i)), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 0].shape[0]), y=np.diff(input[i][:lengths[i]+1, 0]), marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], Input-U'.format(flag, i)), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 1].shape[0]), y=np.diff(input[i][:lengths[i]+1, 1]), marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], Input-V'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 0].shape[0]), y=input[i][:lengths[i], 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], Input-U'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(input[i][:lengths[i]+1, 1].shape[0]), y=input[i][:lengths[i], 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], Input-V'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(output_pred[i][:lengths[i]+1, 0].shape[0]), y=np.diff(output_pred[i][:lengths[i]+1, 0]), marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], Denoising-U'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(output_pred[i][:lengths[i]+1, 1].shape[0]), y=np.diff(output_pred[i][:lengths[i]+1, 1]), marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], Denoising-V'.format(flag, i)), row=row_idx, col=col_idx)
 

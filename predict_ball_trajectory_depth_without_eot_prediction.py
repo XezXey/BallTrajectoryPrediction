@@ -250,11 +250,13 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [3, 4, -1]]) for trajectory in batch] # Mocap
+    input_batch = [pt.Tensor(trajectory[1:, [3, 4, -1]]) for trajectory in batch] # Mocap : EOT-PREDICTION
+    # input_batch = [pt.Tensor(trajectory[1:, [3, 4, -2]]) for trajectory in batch] # Mocap : Manually Labeled
     # input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # Unity (4, 5, -2) = (u, v, end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -1]]) for trajectory in batch]) # Mocap
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -1]]) for trajectory in batch]) # Mocap : EOT-PREDICTION
+    # input_startpos = pt.stack([pt.Tensor(trajectory[0, [3, 4, 5, -2]]) for trajectory in batch]) # Mocap : Manually Labeled
     # input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch]) # Unity
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
@@ -266,11 +268,13 @@ def collate_fn_padd(batch):
     # output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch] # Unity
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -1]]) for trajectory in batch]) # Mocap
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -1]]) for trajectory in batch]) # Mocap : EOT-PREDICTION
+    # output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch]) # Mocap : Manually Labeled
     # output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch]) # Unity
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -1]]) for trajectory in batch] # Mocap
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -1]]) for trajectory in batch] # Mocap : EOT-Prediction
+    # output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch] # Mocap :  Manually Labeled
     # output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch] # Unity
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
@@ -285,19 +289,19 @@ def collate_fn_padd(batch):
 
 def get_model(input_size, output_size, model_arch):
   if model_arch=='gru':
-    rnn_model = GRU(input_size=input_size, output_size=output_size)
+    model = GRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
-    rnn_model = BiGRU(input_size=input_size, output_size=output_size)
+    model = BiGRU(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_residual_list':
-    rnn_model = BiGRUResidualList(input_size=input_size, output_size=output_size)
+    model = BiGRUResidualList(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru_residual_add':
-    rnn_model = BiGRUResidualAdd(input_size=input_size, output_size=output_size)
+    model = BiGRUResidualAdd(input_size=input_size, output_size=output_size)
   elif model_arch=='lstm':
-    rnn_model = LSTM(input_size=input_size, output_size=output_size)
+    model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
-    rnn_model = BiLSTM(input_size=input_size, output_size=output_size)
+    model = BiLSTM(input_size=input_size, output_size=output_size)
 
-  return rnn_model
+  return model
 
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
@@ -366,19 +370,19 @@ if __name__ == '__main__':
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 3 # Contain following this trajectory parameters (u, v) position from tracking
   print('[#]Model Architecture')
-  rnn_model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
+  model = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
   if args.pretrained_model_path is None:
     print('===>No pre-trained model to load')
     print('EXIT...')
     exit()
   else:
     print('===>Load trained model')
-    rnn_model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device)['model'])
-  rnn_model = rnn_model.to(device)
-  print(rnn_model)
+    model.load_state_dict(pt.load(args.pretrained_model_path, map_location=device)['model'])
+  model = model.to(device)
+  print(model)
 
-  hidden = rnn_model.initHidden(batch_size=args.batch_size)
-  cell_state = rnn_model.initCellState(batch_size=args.batch_size)
+  hidden = model.initHidden(batch_size=args.batch_size)
+  cell_state = model.initCellState(batch_size=args.batch_size)
   # Test a model iterate over dataloader to get each batch and pass to predict function
   n_accepted_3axis_loss = 0
   n_accepted_trajectory_loss = 0
@@ -402,7 +406,7 @@ if __name__ == '__main__':
                                              output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos, output_trajectory_test_xyz=output_trajectory_test_xyz,
                                              input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                              input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
-                                             model=rnn_model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
+                                             model=model, hidden=hidden, cell_state=cell_state, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                              projection_matrix_inv=projection_matrix_inv, camera_to_world_matrix=camera_to_world_matrix, trajectory_type=args.trajectory_type, threshold=args.threshold, animation_visualize_flag=args.animation_visualize_flag, width=width, height=height)
     n_accepted_3axis_loss += accepted_3axis_loss
     n_accepted_trajectory_loss += accepted_trajectory_loss

@@ -50,7 +50,7 @@ def make_visualize(output_train_eot, output_trajectory_train_startpos, input_tra
   wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
 
 def visualize_displacement(in_f, out_f, gt, mask, lengths, vis_idx, fig=None, flag='train', n_vis=5):
-  threshold = 0.8
+  threshold = 0.5
   out_f = pt.sigmoid(out_f) > threshold
   in_f = in_f.cpu().detach().numpy()
   out_f = out_f.cpu().detach().numpy()
@@ -89,7 +89,7 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   # Calculate the EOT loss for each trajectory
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
   # Thresholding the EOT to be class True/False
-  threshold = 0.8
+  threshold = 0.5
   output_eot = output_eot > threshold
 
   # detach() for visualization
@@ -109,7 +109,7 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]+1).reshape(-1,), y=eot_gt[i][:lengths[i]+1, :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=idx+1, col=col)
 
 def eot_metrics_log(eot_gt, output_eot, lengths, flag):
-  output_eot = output_eot > 0.8
+  output_eot = output_eot > 0.5
   # Output of confusion_matrix.ravel() = [TN, FP ,FN, TP]
   cm_each_trajectory = np.array([confusion_matrix(y_pred=output_eot[i][:lengths[i]+1, :], y_true=eot_gt[i][:lengths[i]+1]).ravel() for i in range(lengths.shape[0])])
   n_accepted_trajectory = np.sum(np.logical_and(cm_each_trajectory[:, 1]==0., cm_each_trajectory[:, 2] == 0.))
@@ -152,7 +152,7 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='t
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
   if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=1)
+    noise_sd = np.random.uniform(low=0.3, high=2.5)
   else:
     noise_sd = args.noise_sd
   input_trajectory = pt.cat((startpos[..., :-1], input_trajectory), dim=1)
