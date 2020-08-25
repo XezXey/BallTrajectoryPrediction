@@ -237,7 +237,7 @@ def initialize_folder(path):
 def collate_fn_padd(batch):
     '''
     Padding batch of variable length
-    - The inference_batch will contain all other features (x,r y, z, u, v, depth, eot_pred, eot_gt). This will enabled in save_eot and will write the file into numpy array to be used in other models
+    - The inference_batch will contain all other features (x, y, z, u, v, depth, eot_pred, eot_gt). This will enabled in save_eot and will write the file into numpy array to be used in other models
     '''
     padding_value = -10
     ## Get sequence lengths
