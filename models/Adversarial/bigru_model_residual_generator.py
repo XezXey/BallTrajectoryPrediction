@@ -14,7 +14,7 @@ def create_fc_block(in_f, out_f, is_last_layer=False):
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
-      pt.nn.ReLU(),
+      pt.nn.LeakyReLU(negative_slope=0.2),
     )
 
 def create_recurrent_block(in_f, hidden_f, num_layers, is_first_layer=False):
