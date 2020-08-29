@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 def create_fc_block(in_f, out_f, is_last_layer=False):
   # Auto create the FC blocks
   if is_last_layer:
-    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True),
-                            pt.nn.Sigmoid())
+    return pt.nn.Sequential(pt.nn.Linear(in_f, out_f, bias=True),)
   else :
     return pt.nn.Sequential(
       pt.nn.Linear(in_f, out_f, bias=True),
