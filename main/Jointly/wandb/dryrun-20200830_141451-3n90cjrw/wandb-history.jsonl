@@ -1,0 +1,7 @@
+{"Learning Rate (Discriminator)": 0.001, "_runtime": 5.10674786567688, "_timestamp": 1598796896.3542812, "_step": 0}
+{"Learning Rate (Generator)": 0.001, "_runtime": 5.110694169998169, "_timestamp": 1598796896.3582275, "_step": 1}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.142112493515015, "_timestamp": 1598796897.3896458, "_step": 2}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.364949703216553, "_timestamp": 1598796899.612483, "_step": 3}
+{"Generator Loss": 97.2090072631836, "Discriminator Loss": 0.30238422751426697, "Validation Loss": 165.3082275390625, "_runtime": 8.38399076461792, "_timestamp": 1598796899.631524, "_step": 4}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_5_be538ecd.plotly.json", "sha256": "be538ecd5c801d01229e396f4295efc28232e7cd326d62a0b5be383245430885", "size": 592380}, "_runtime": 9.023802042007446, "_timestamp": 1598796900.2713354, "_step": 5}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_6_3b04f485.html", "sha256": "3b04f485af7d321d4ece8fc60984447c8b28834c7b0c7814c07149cc50528da4", "size": 4043509}, "_runtime": 9.668779611587524, "_timestamp": 1598796900.916313, "_step": 6}

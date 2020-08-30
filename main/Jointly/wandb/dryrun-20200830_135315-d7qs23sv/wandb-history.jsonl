@@ -1,0 +1,5 @@
+{"Learning Rate (Discriminator)": 0.001, "_runtime": 4.687103986740112, "_timestamp": 1598795599.8400967, "_step": 0}
+{"Learning Rate (Generator)": 0.001, "_runtime": 4.694157838821411, "_timestamp": 1598795599.8471506, "_step": 1}
+{"Train Precision": 0.0044224091764990415, "Train Recall": 1.0, "Train F1-score": 0.008805875169839878, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 5.705296754837036, "_timestamp": 1598795600.8582895, "_step": 2}
+{"Validation Precision": 0.004442494378325015, "Validation Recall": 1.0, "Validation F1-score": 0.00884569182046522, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.907252550125122, "_timestamp": 1598795603.0602453, "_step": 3}
+{"Generator Loss": 5224.025390625, "Discriminator Loss": 1.045633316040039, "Validation Loss": 29102.455078125, "_runtime": 7.926842927932739, "_timestamp": 1598795603.0798357, "_step": 4}
