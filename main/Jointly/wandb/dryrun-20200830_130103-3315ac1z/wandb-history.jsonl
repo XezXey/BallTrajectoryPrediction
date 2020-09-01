@@ -1,3 +1,0 @@
-{"Learning Rate (Discriminator)": 0.001, "_runtime": 4.726802349090576, "_timestamp": 1598792467.5202844, "_step": 0}
-{"Learning Rate (Generator)": 0.001, "_runtime": 4.734573125839233, "_timestamp": 1598792467.5280552, "_step": 1}
-{"Train Precision": 0.004594895358437736, "Train Recall": 1.0, "Train F1-score": 0.00914775772735394, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 5.7789671421051025, "_timestamp": 1598792468.5724492, "_step": 2}

@@ -1,6 +1,0 @@
-{"Learning Rate (Discriminator)": 0.001, "_runtime": 4.466375350952148, "_timestamp": 1598796113.6249304, "_step": 0}
-{"Learning Rate (Generator)": 0.001, "_runtime": 4.473716497421265, "_timestamp": 1598796113.6322715, "_step": 1}
-{"Train Precision": 0.004464908608901912, "Train Recall": 1.0, "Train F1-score": 0.008890123628281706, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 5.4698710441589355, "_timestamp": 1598796114.628426, "_step": 2}
-{"Validation Precision": 0.004250283983339644, "Validation Recall": 1.0, "Validation F1-score": 0.008464591050910084, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.511343240737915, "_timestamp": 1598796116.6698983, "_step": 3}
-{"Generator Loss": 1324.9654541015625, "Discriminator Loss": 0.25946348905563354, "Validation Loss": 7064.73046875, "_runtime": 7.528407335281372, "_timestamp": 1598796116.6869624, "_step": 4}
-{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_5_2dd8ff3c.plotly.json", "sha256": "2dd8ff3c14618b295e68bb60ed3d39c24beda2387695069d3fbc2cf195aa02c9", "size": 574334}, "_runtime": 8.193575620651245, "_timestamp": 1598796117.3521307, "_step": 5}

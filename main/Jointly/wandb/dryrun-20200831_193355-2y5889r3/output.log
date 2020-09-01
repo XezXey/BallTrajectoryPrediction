@@ -1,0 +1,5 @@
+[%]GPU Enabled
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_adversarial.py", line 604, in <module>
+    with open(args.cam_params_file) as cam_params_json:
+FileNotFoundError: [Errno 2] No such file or directory: '/home2/mint/UnityDataset/RealWorld//Unity/Mixed/NormalScaled/No_noise/configFile_camParams_Trial1.json'

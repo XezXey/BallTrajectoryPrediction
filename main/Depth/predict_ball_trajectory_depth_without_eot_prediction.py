@@ -32,26 +32,26 @@ from models.bigru_model_residual_list import BiGRUResidualList
 from models.bigru_model_residual_add import BiGRUResidualAdd
 
 def make_visualize(output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag, input_eot, accepted_3axis_maxdist, maxdist_3axis):
-    # Visualize by make a subplots of trajectory
-    n_vis = 5
-    if n_vis > args.batch_size:
-      n_vis = args.batch_size
-    if n_vis > input_trajectory_test_temp.shape[0]:
-      n_vis = input_trajectory_test_temp.shape[0]
+  # Visualize by make a subplots of trajectory
+  n_vis = 5
+  if n_vis > args.batch_size:
+    n_vis = args.batch_size
+  if n_vis > input_trajectory_test_temp.shape[0]:
+    n_vis = input_trajectory_test_temp.shape[0]
 
-    fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{'colspan':2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-    # Random the index the be visualize
-    vis_idx = np.random.choice(a=np.arange(input_trajectory_test_temp.shape[0]), size=(n_vis), replace=False)
-    # Visualize a trajectory
-    fig = visualize_trajectory(input=input_trajectory_test_temp, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx, input_eot=input_eot, accepted_3axis_maxdist=accepted_3axis_maxdist.cpu().detach().numpy(), maxdist_3axis=maxdist_3axis.cpu().detach().numpy())
-    # Adjust the layout/axis
-    # AUTO SCALED/PITCH SCALED
-    fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
-    fig = visualize_layout_update(fig=fig, n_vis=n_vis)
-    plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth.html'.format(args.visualization_path), auto_open=True)
-    if animation_visualize_flag:
-      trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
-    input("Continue plotting...")
+  fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{'colspan':2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+  # Random the index the be visualize
+  vis_idx = np.random.choice(a=np.arange(input_trajectory_test_temp.shape[0]), size=(n_vis), replace=False)
+  # Visualize a trajectory
+  fig = visualize_trajectory(input=input_trajectory_test_temp, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx, input_eot=input_eot, accepted_3axis_maxdist=accepted_3axis_maxdist.cpu().detach().numpy(), maxdist_3axis=maxdist_3axis.cpu().detach().numpy())
+  # Adjust the layout/axis
+  # AUTO SCALED/PITCH SCALED
+  fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
+  fig = visualize_layout_update(fig=fig, n_vis=n_vis)
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth.html'.format(args.visualization_path), auto_open=True)
+  if animation_visualize_flag:
+    trajectory_animation(output_xyz=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), gt_xyz=output_trajectory_test_xyz[..., :-1], input_uv=input_trajectory_test_temp, lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], n_vis=n_vis, html_savepath=visualization_path, vis_idx=vis_idx)
+  input("Continue plotting...")
 
 def visualize_layout_update(fig=None, n_vis=7):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
