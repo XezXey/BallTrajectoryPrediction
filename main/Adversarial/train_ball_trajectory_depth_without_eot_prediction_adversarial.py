@@ -443,7 +443,8 @@ def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_sched
     lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss
+    counter_log = {'counter':checkpoint['counter'], 'total_epochs_train_generator':checkpoint['total_epochs_train_generator'], 'total_epochs_train_discriminator':checkpoint['total_epochs_train_discriminator']}
+    return generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss, counter_log
 
   else:
     print("[#] Checkpoint not found...")
@@ -553,10 +554,17 @@ if __name__ == '__main__':
     # Create a model
     print('===>No model checkpoint')
     print('[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...')
+    # Initilize value if not load a checkpoint
+    counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
+    total_epochs_train_generator = 0
+    total_epochs_train_discriminator = 0
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss = load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss, counter_log = load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    counter = counter_log['counter'] # Value can be 1-15, depends on n_epoch training generator and discriminator
+    total_epochs_train_generator = counter_log['total_epochs_train_generator']
+    total_epochs_train_discriminator = counter_log['total_epochs_train_discriminator']
 
 
   print('[#]Model Architecture')

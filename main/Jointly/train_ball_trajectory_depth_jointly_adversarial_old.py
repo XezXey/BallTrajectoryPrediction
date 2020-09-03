@@ -32,8 +32,6 @@ from models.Simple.gru_model import GRU
 from models.Simple.bigru_model import BiGRU
 from models.Simple.bigru_model_residual_list import BiGRUResidualList
 from models.Simple.bigru_model_residual_add import BiGRUResidualAdd
-# from models.Adversarial.bigru_model_residual_generator import Generator
-# from models.Adversarial.bigru_model_residual_discriminator import Discriminator
 from models.Jointly.bigru_model_residual_generator import Generator
 from models.Jointly.bigru_model_residual_discriminator import Discriminator
 from torch.utils.tensorboard import SummaryWriter
@@ -405,13 +403,13 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   ############# Generator ############
   ####################################
   optimizer_G.zero_grad() # Clear existing gradients from previous epoch
-  # Generator Loss = adversarialLoss + trajectory_loss + gravity_loss
+  # Generator Loss = adversarialLoss + trajectory_loss + gravity_loss + eot_loss
   adversarial_loss_G = adversarialLoss(hidden_D = hidden_D, cell_state_D = cell_state_D, real_label=real_label, fake_label=fake_label, discriminator=discriminator, real_traj=output_trajectory_train_xyz[..., :-1], fake_traj=output_train_xyz, lengths=output_trajectory_train_lengths, flag='generator')
   trajectory_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
   gravity_loss = GravityLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
   eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=input_trajectory_train_gt[..., -1], mask=input_trajectory_train_mask[..., -1], lengths=input_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1], flag='Train')
   # Sum up all generator loss 
-  loss_G = adversarial_loss_G + 100*trajectory_loss + 0.01*gravity_loss+ 100*eot_loss
+  loss_G = adversarial_loss_G + 100*trajectory_loss + gravity_loss + 100*eot_loss
   if train_generator:
     generator_eot.train()
     generator_depth.train()
@@ -526,7 +524,7 @@ def get_model(input_size, output_size, model_arch):
 
   return generator_eot, generator_depth, discriminator
 
-def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D):
+def load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D):
   if args.load_checkpoint == 'best':
     load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
   elif args.load_checkpoint == 'lastest':
@@ -539,7 +537,8 @@ def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_sched
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
-    generator.load_state_dict(checkpoint['generator'])
+    generator_eot   .load_state_dict(checkpoint['generator_eot'])
+    generator_depth.load_state_dict(checkpoint['generator_depth'])
     discriminator.load_state_dict(checkpoint['discriminator'])
     optimizer_G.load_state_dict(checkpoint['optimizer_G'])
     optimizer_D.load_state_dict(checkpoint['optimizer_D'])
@@ -547,7 +546,7 @@ def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_sched
     lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss
+    return generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss
 
   else:
     print("[#] Checkpoint not found...")
@@ -663,7 +662,7 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss = load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss = load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
 
 
   print('[#]Model Architecture')
@@ -682,13 +681,13 @@ if __name__ == '__main__':
   # Training settings
   n_epochs = 100000
   decay_cycle = 400
-  counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
-  total_epochs_train_generator = 0
-  total_epochs_train_discriminator = 0
   n_train_generator = 20
   n_train_discriminator = 5
   pretrained_generator = args.pretrained_generator
   n_pretrained_generator = 20
+  counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
+  total_epochs_train_generator = 0
+  total_epochs_train_discriminator = 0
   for epoch in range(start_epoch, n_epochs+1):
     accumulate_discriminator_loss = []
     accumulate_generator_loss = []

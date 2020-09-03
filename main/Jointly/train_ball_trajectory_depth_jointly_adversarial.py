@@ -409,7 +409,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   gravity_loss = GravityLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
   eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=input_trajectory_train_gt[..., -1], mask=input_trajectory_train_mask[..., -1], lengths=input_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1], flag='Train')
   # Sum up all generator loss 
-  loss_G = adversarial_loss_G + 100*trajectory_loss + gravity_loss + 100*eot_loss
+  loss_G = adversarial_loss_G*100 + 100*trajectory_loss + gravity_loss + 100*eot_loss
   if train_generator:
     generator_eot.train()
     generator_depth.train()
@@ -428,7 +428,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   # Fake = Reconstructed(Generated)
   # Real = Ground truth 
   adversarial_loss_D = adversarialLoss(hidden_D = hidden_D, cell_state_D = cell_state_D, real_label=real_label, fake_label=fake_label, discriminator=discriminator, real_traj=output_trajectory_train_xyz[..., :-1], fake_traj=output_train_xyz, lengths=output_trajectory_train_lengths, flag='discriminator')
-  loss_D = adversarial_loss_D
+  loss_D = adversarial_loss_D * 100
 
   if train_discriminator:
     discriminator.train()
@@ -524,7 +524,7 @@ def get_model(input_size, output_size, model_arch):
 
   return generator_eot, generator_depth, discriminator
 
-def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D):
+def load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D):
   if args.load_checkpoint == 'best':
     load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
   elif args.load_checkpoint == 'lastest':
@@ -537,7 +537,8 @@ def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_sched
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
-    generator.load_state_dict(checkpoint['generator'])
+    generator_eot   .load_state_dict(checkpoint['generator_eot'])
+    generator_depth.load_state_dict(checkpoint['generator_depth'])
     discriminator.load_state_dict(checkpoint['discriminator'])
     optimizer_G.load_state_dict(checkpoint['optimizer_G'])
     optimizer_D.load_state_dict(checkpoint['optimizer_D'])
@@ -545,7 +546,8 @@ def load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_sched
     lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss
+    counter_log = {'counter':checkpoint['counter'], 'total_epochs_train_generator':checkpoint['total_epochs_train_generator'], 'total_epochs_train_discriminator':checkpoint['total_epochs_train_discriminator']}
+    return generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss, counter_log
 
   else:
     print("[#] Checkpoint not found...")
@@ -658,10 +660,17 @@ if __name__ == '__main__':
     # Create a model
     print('===>No model checkpoint')
     print('[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...')
+    # Initilize value if not load a checkpoint
+    counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
+    total_epochs_train_generator = 0
+    total_epochs_train_discriminator = 0
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    generator, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss = load_checkpoint(generator, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss, counter_log = load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    counter = counter_log['counter'] # Value can be 1-15, depends on n_epoch training generator and discriminator
+    total_epochs_train_generator = counter_log['total_epochs_train_generator']
+    total_epochs_train_discriminator = counter_log['total_epochs_train_discriminator']
 
 
   print('[#]Model Architecture')
@@ -680,9 +689,6 @@ if __name__ == '__main__':
   # Training settings
   n_epochs = 100000
   decay_cycle = 400
-  counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
-  total_epochs_train_generator = 0
-  total_epochs_train_discriminator = 0
   n_train_generator = 20
   n_train_discriminator = 5
   pretrained_generator = args.pretrained_generator
@@ -809,7 +815,7 @@ if __name__ == '__main__':
       print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
       # Save to directory
-      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss}
+      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss, 'counter':counter, 'total_epochs_train_discriminator':total_epochs_train_discriminator, 'total_epochs_train_generator':total_epochs_train_generator}
       pt.save(checkpoint, save_checkpoint_best)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_best.pth'))
 
@@ -821,7 +827,7 @@ if __name__ == '__main__':
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_notes)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
-      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss}
+      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss, 'counter':counter, 'total_epochs_train_discriminator':total_epochs_train_discriminator, 'total_epochs_train_generator':total_epochs_train_generator}
       pt.save(checkpoint, save_checkpoint_lastest)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_lastest.pth'))
 

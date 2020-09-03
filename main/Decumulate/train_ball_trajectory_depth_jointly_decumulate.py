@@ -190,28 +190,28 @@ def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_
   screen_space = ((camera_to_world_matrix @ projection_matrix) @ screen_space.t()).t() # Reprojected
   return screen_space[:, :3]
 
-def cumsum_trajectory(output, trajectory, trajectory_startpos):
+def cumsum_trajectory(depth, uv, trajectory_startpos):
   '''
   Perform a cummulative summation to the output
   Argument :
-  1. output : The displacement from the network with shape = (batch_size, sequence_length,)
-  2. trajectory : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
+  1. depth : The displacement from the network with shape = (batch_size, sequence_length,)
+  2. uv : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
   3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
   Output :
   1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
-  2. trajectory_temp : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
+  2. uv_cumsum : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
   '''
   # Apply cummulative summation to output
-  # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
-  trajectory_temp = pt.stack([pt.cat([trajectory_startpos[i][:, :2], trajectory[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
-  # trajectory_temp : perform cumsum along the sequence_length axis
-  trajectory_temp = pt.cumsum(trajectory_temp, dim=1)
+  # trajectory_cumsum : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
+  uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  # trajectory_cumsum : perform cumsum along the sequence_length axis
+  uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), output[i]]) for i in range(trajectory_startpos.shape[0])])
+  output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), depth[i]]) for i in range(trajectory_startpos.shape[0])])
   # output : perform cumsum along the sequence_length axis
-  output = pt.cumsum(output, dim=1)
-  # print(output.shape, trajectory_temp.shape)
-  return output, trajectory_temp
+  depth = pt.cumsum(depth, dim=1)
+  # print(output.shape, trajectory_cumsum.shape)
+  return depth, uv_cumsum
 
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
@@ -274,6 +274,79 @@ def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='T
   eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
   return eot_loss
 
+def get_plane_normal():
+  a = pt.tensor([32., 0., 19.])
+  b = pt.tensor([32., 0., -31.])
+  c = pt.tensor([-28., 0., 19.])
+  plane_normal = pt.cross(b-a, c-a)
+  return plane_normal.to(device)
+
+def raycasting(reset_idx, uv, lengths, depth, projection_matrix, camera_to_world_matrix, width, height, plane_normal):
+  # print(reset_idx, uv, lengths, depth)
+  camera_center = camera_to_world_matrix[:-1, -1]
+  # Ray casting
+  transformation = pt.inverse(pt.inverse(projection_matrix) @ pt.inverse(camera_to_world_matrix))   # Inverse(Intrinsic @ Extrinsic)
+  uv = pt.cat((uv[reset_idx[0], :], pt.ones(uv[reset_idx[0], :].shape).to(device)), dim=-1)
+  uv[:, 0] = ((uv[:, 0]/width) * 2) - 1
+  uv[:, 1] = ((uv[:, 1]/height) * 2) - 1
+  ndc = (uv @ transformation.t()).to(device)
+  ray_direction = ndc[:, :-1] - camera_center
+  # Depth that intersect the pitch
+  plane_point = pt.tensor([32, 0, 19]).to(device)
+  distance = camera_center - plane_point
+  normalize = pt.tensor([-(pt.dot(distance, plane_normal)/pt.dot(ray_direction[i], plane_normal)) for i in range(ray_direction.shape[0])]).view(-1, 1).to(device)
+  intersect_pos = pt.cat(((camera_center - ray_direction * normalize), pt.ones(ray_direction.shape[0], 1).to(device)), dim=-1)
+  reset_depth = intersect_pos @ pt.inverse(camera_to_world_matrix).t()
+  return reset_depth[..., -2].view(-1, 1)
+
+def split_cumsum(reset_idx, lengths, reset_depth, depth):
+  '''
+  1. This will split the depth displacement from reset_idx into a chunk. (Ignore where the EOT=1 in prediction variable. Because we will cast the ray to get that reset depth instead of cumsum to get it.)
+  2. Perform cumsum seperately of each chunk.
+  3. Concatenate all u, v, depth together and replace with the current one. (Need to replace with padding for masking later on.)
+  '''
+  print(pt.zeros(1).shape)
+  print(reset_idx.shape)
+  reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
+  depth_chunk = [depth[start:end] for start, end in zip(reset_idx, reset_idx[1:])]
+  print("ASD : ", reset_depth[0].shape, depth_chunk[0].shape)
+  depth_chunk = [pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i])) for i in range(len(depth_chunk))]
+  print(depth_chunk[0].shape)
+  depth = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), depth[i]]) for i in range(trajectory_startpos.shape[0])])
+  # output : perform cumsum along the sequence_length axis
+  depth = pt.cumsum(depth, dim=1)
+
+def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, projection_matrix, camera_to_world_matrix, width, height):
+  print(depth.shape, uv.shape, trajectory_startpos.shape, eot.shape)
+
+  '''
+  Perform a cummulative summation to the output
+  Argument :
+  1. output : The displacement from the network with shape = (batch_size, sequence_length,)
+  2. trajectory : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
+  3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
+  Output :
+  1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
+  2. trajectory_temp : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
+  '''
+
+  # Apply cummulative summation to output
+  # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
+  uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  # trajectory_temp : perform cumsum along the sequence_length axis
+  uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
+  # Reset the depth when eot == 1
+  plane_normal = get_plane_normal()
+
+  eot_all = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
+  reset_idx = [pt.where((eot_all[i][:lengths[i]+1] > 0.5) == 1.) for i in range(eot_all.shape[0])]
+  reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
+  # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0], lengths=lengths, reset_depth=reset_depth[i], depth=depth[i]) for i in range(trajectory_startpos.shape[0])]
+  # print(depth.shape, uv_cumsum.shape)
+  return depth, uv_cumsum
+
+
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model_eot, model_depth, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
@@ -306,7 +379,12 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   output_train_depth, (_, _) = model_depth(input_trajectory_train, hidden_depth, cell_state_depth, lengths=input_trajectory_train_lengths)
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
-  output_train_depth, input_trajectory_train_uv = cumsum_trajectory(output=output_train_depth, trajectory=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  if args.decumulate:
+    output_train_depth, input_trajectory_train_uv = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=input_trajectory_train_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+  else:
+    output_train_depth, input_trajectory_train_uv = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+
+  exit()
   # Project the (u, v, depth) to world space
   output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_uv[i], depth=output_train_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train_depth.shape[0])])
 
@@ -457,6 +535,7 @@ if __name__ == '__main__':
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
   parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
+  parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
   parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
   args = parser.parse_args()
 

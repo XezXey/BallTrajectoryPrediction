@@ -7,6 +7,8 @@ import glob
 import os
 import argparse
 from tqdm import tqdm
+import sys
+sys.path.append(os.path.realpath('../..'))
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset, DataLoader, RandomSampler
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
@@ -23,13 +25,13 @@ from utils.animated_visualization import trajectory_animation
 # Dataloader
 from utils.dataloader import TrajectoryDataset
 # Models
-from models.rnn_model import RNN
-from models.lstm_model import LSTM
-from models.bilstm_model import BiLSTM
-from models.bigru_model import BiGRU
-from models.gru_model import GRU
-from models.bigru_model_residual_list import BiGRUResidualList
-from models.bigru_model_residual_add import BiGRUResidualAdd
+from models.Simple.rnn_model import RNN
+from models.Simple.lstm_model import LSTM
+from models.Simple.bilstm_model import BiLSTM
+from models.Simple.gru_model import GRU
+from models.Simple.bigru_model import BiGRU
+from models.Simple.bigru_model_residual_list import BiGRUResidualList
+from models.Simple.bigru_model_residual_add import BiGRUResidualAdd
 
 def make_visualize(output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_temp, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag, input_eot, accepted_3axis_maxdist, maxdist_3axis):
   # Visualize by make a subplots of trajectory
@@ -300,6 +302,9 @@ def get_model(input_size, output_size, model_arch):
     model = LSTM(input_size=input_size, output_size=output_size)
   elif model_arch=='bigru':
     model = BiLSTM(input_size=input_size, output_size=output_size)
+  else :
+    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
+    exit()
 
   return model
 

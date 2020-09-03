@@ -296,7 +296,10 @@ def predict(input_trajectory_test, input_trajectory_test_mask, input_trajectory_
   # model Loss = adversarialLoss + trajectory_loss + gravity_loss + eot_loss
   trajectory_loss = TrajectoryLoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
   gravity_loss = GravityLoss(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths)
-  eot_loss = EndOfTrajectoryLoss(output_eot=output_test_eot, eot_gt=input_trajectory_test_gt[..., -1], mask=input_trajectory_test_mask[..., -1], lengths=input_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1], flag='test')
+  if args.no_gt_eot:
+    eot_loss = pt.tensor(0.).to(device)
+  else:
+    eot_loss = EndOfTrajectoryLoss(output_eot=output_test_eot, eot_gt=input_trajectory_test_gt[..., -1], mask=input_trajectory_test_mask[..., -1], lengths=input_trajectory_test_lengths, eot_startpos=input_trajectory_test_startpos[..., -1], flag='test')
   test_loss = trajectory_loss + gravity_loss + eot_loss
 
   ####################################
@@ -426,6 +429,7 @@ if __name__ == '__main__':
   parser.add_argument('--unity', dest='unity', help='Use unity column convention', action='store_true', default=False)
   parser.add_argument('--mocap', dest='mocap', help='Use mocap column convention', action='store_true', default=False)
   parser.add_argument('--predicted_eot', dest='predicted_eot', help='Use predicted_eot column convention', action='store_true', default=False)
+  parser.add_argument('--no_gt_eot', dest='no_gt_eot', help='Use predicted_eot column convention', action='store_true', default=False)
   args = parser.parse_args()
 
   # Initialize folder
