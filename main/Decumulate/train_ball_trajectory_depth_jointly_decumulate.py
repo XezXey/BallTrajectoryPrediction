@@ -299,26 +299,25 @@ def raycasting(reset_idx, uv, lengths, depth, projection_matrix, camera_to_world
   reset_depth = intersect_pos @ pt.inverse(camera_to_world_matrix).t()
   return reset_depth[..., -2].view(-1, 1)
 
-def split_cumsum(reset_idx, lengths, reset_depth, depth):
+def split_cumsum(reset_idx, length, reset_depth, depth):
   '''
   1. This will split the depth displacement from reset_idx into a chunk. (Ignore where the EOT=1 in prediction variable. Because we will cast the ray to get that reset depth instead of cumsum to get it.)
   2. Perform cumsum seperately of each chunk.
   3. Concatenate all u, v, depth together and replace with the current one. (Need to replace with padding for masking later on.)
   '''
-  print(pt.zeros(1).shape)
-  print(reset_idx.shape)
+  max_len = pt.tensor(depth.shape[0]).view(-1, 1).to(device)
   reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
+  if reset_idx[-1] != depth.shape[0]:
+    reset_idx[-1] = max_len
   depth_chunk = [depth[start:end] for start, end in zip(reset_idx, reset_idx[1:])]
-  print("ASD : ", reset_depth[0].shape, depth_chunk[0].shape)
-  depth_chunk = [pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i])) for i in range(len(depth_chunk))]
-  print(depth_chunk[0].shape)
-  depth = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), depth[i]]) for i in range(trajectory_startpos.shape[0])])
-  # output : perform cumsum along the sequence_length axis
-  depth = pt.cumsum(depth, dim=1)
+  depth_chunk = [pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i])) if i == len(depth_chunk)-1
+                 else pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i][:-1, :])) for i in range(len(depth_chunk))]
+  depth_chunk_cumsum = [pt.cumsum(each_depth_chunk, dim=0) for each_depth_chunk in depth_chunk]
+  depth_chunk = pt.cat(depth_chunk_cumsum)
+  return depth_chunk
 
 def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, projection_matrix, camera_to_world_matrix, width, height):
-  print(depth.shape, uv.shape, trajectory_startpos.shape, eot.shape)
-
+  # print(depth.shape, uv.shape, trajectory_startpos.shape, eot.shape)
   '''
   Perform a cummulative summation to the output
   Argument :
@@ -331,9 +330,9 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, p
   '''
 
   # Apply cummulative summation to output
-  # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
+  # uv_cumsum : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
   uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
-  # trajectory_temp : perform cumsum along the sequence_length axis
+  # uv_cumsum : perform cumsum along the sequence_length axis
   uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
   # Reset the depth when eot == 1
   plane_normal = get_plane_normal()
@@ -342,9 +341,9 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, p
   reset_idx = [pt.where((eot_all[i][:lengths[i]+1] > 0.5) == 1.) for i in range(eot_all.shape[0])]
   reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0], lengths=lengths, reset_depth=reset_depth[i], depth=depth[i]) for i in range(trajectory_startpos.shape[0])]
-  # print(depth.shape, uv_cumsum.shape)
-  return depth, uv_cumsum
+  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0], length=lengths[i], reset_depth=reset_depth[i], depth=depth[i]) for i in range(trajectory_startpos.shape[0])]
+  depth_cumsum = pt.stack(depth_cumsum, dim=0)
+  return depth_cumsum, uv_cumsum
 
 
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model_eot, model_depth, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
@@ -384,7 +383,6 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   else:
     output_train_depth, input_trajectory_train_uv = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
 
-  exit()
   # Project the (u, v, depth) to world space
   output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_uv[i], depth=output_train_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train_depth.shape[0])])
 
@@ -413,9 +411,12 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   input_trajectory_val = pt.cat((input_trajectory_val[..., :-1], output_val_eot), dim=2)
   # Predict the DEPTH
   output_val_depth, (_, _) = model_depth(input_trajectory_val, hidden_depth, cell_state_depth, lengths=input_trajectory_val_lengths)
-  # (This step we get the displacement of depth by input the displacement of u and v)
-  # Apply cummulative summation to output using cumsum_trajectory function
-  output_val_depth, input_trajectory_val_uv = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+  if args.decumulate:
+    output_val_depth, input_trajectory_val_uv = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, eot=input_trajectory_val_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+  else:
+    # (This step we get the displacement of depth by input the displacement of u and v)
+    # Apply cummulative summation to output using cumsum_trajectory function
+    output_val_depth, input_trajectory_val_uv = cumsum_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
   # Project the (u, v, depth) to world space
   output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_uv[i], depth=output_val_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val_depth.shape[0])])
 
