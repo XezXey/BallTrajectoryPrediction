@@ -67,7 +67,7 @@ def make_visualize(input_trajectory_train, output_train_depth, input_trajectory_
   # wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
-  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path), auto_open=False)
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path), auto_open=True)
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path)))})
 
   # Visualize the End of trajectory(EOT) flag
@@ -299,12 +299,13 @@ def raycasting(reset_idx, uv, lengths, depth, projection_matrix, camera_to_world
   reset_depth = intersect_pos @ pt.inverse(camera_to_world_matrix).t()
   return reset_depth[..., -2].view(-1, 1)
 
-def split_cumsum(reset_idx, length, reset_depth, depth):
+def split_cumsum(reset_idx, length, start_pos, reset_depth, depth):
   '''
   1. This will split the depth displacement from reset_idx into a chunk. (Ignore where the EOT=1 in prediction variable. Because we will cast the ray to get that reset depth instead of cumsum to get it.)
   2. Perform cumsum seperately of each chunk.
   3. Concatenate all u, v, depth together and replace with the current one. (Need to replace with padding for masking later on.)
   '''
+  reset_depth = pt.cat((start_pos[0][2].view(-1, 1), reset_depth))
   max_len = pt.tensor(depth.shape[0]).view(-1, 1).to(device)
   reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
   if reset_idx[-1] != depth.shape[0]:
@@ -341,7 +342,7 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, p
   reset_idx = [pt.where((eot_all[i][:lengths[i]+1] > 0.5) == 1.) for i in range(eot_all.shape[0])]
   reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0], length=lengths[i], reset_depth=reset_depth[i], depth=depth[i]) for i in range(trajectory_startpos.shape[0])]
+  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0], length=lengths[i], reset_depth=reset_depth[i], start_pos=trajectory_startpos[i], depth=depth[i]) for i in range(trajectory_startpos.shape[0])]
   depth_cumsum = pt.stack(depth_cumsum, dim=0)
   return depth_cumsum, uv_cumsum
 
@@ -661,7 +662,7 @@ if __name__ == '__main__':
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
-    vis_signal = True if epoch % 10 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
