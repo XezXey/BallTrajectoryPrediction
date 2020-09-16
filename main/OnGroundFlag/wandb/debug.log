@@ -1,0 +1,21 @@
+2020-09-16 14:33:01,852 DEBUG   MainThread:26663 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2020-09-16 14:33:01,855 DEBUG   MainThread:26663 [meta.py:setup():97] code probe starting
+2020-09-16 14:33:01,856 DEBUG   MainThread:26663 [meta.py:_setup_code_git():49] probe for git information
+2020-09-16 14:33:01,865 DEBUG   MainThread:26663 [meta.py:_setup_code_program():58] save program starting
+2020-09-16 14:33:01,865 DEBUG   MainThread:26663 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/OnGroundFlag/train_ball_trajectory_depth_jointly_ongroundflag.py
+2020-09-16 14:33:01,865 DEBUG   MainThread:26663 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/OnGroundFlag/wandb/dryrun-20200916_073301-249pqmke/code/main/OnGroundFlag/train_ball_trajectory_depth_jointly_ongroundflag.py
+2020-09-16 14:33:01,865 DEBUG   MainThread:26663 [meta.py:_setup_code_program():67] save program
+2020-09-16 14:33:01,865 DEBUG   MainThread:26663 [meta.py:setup():119] code probe done
+2020-09-16 14:33:01,874 DEBUG   MainThread:26663 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/249pqmke
+2020-09-16 14:33:01,875 INFO    MainThread:26663 [run_manager.py:wrap_existing_process():1144] wrapping existing process 26631
+2020-09-16 14:33:01,875 WARNING MainThread:26663 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2020-09-16 14:33:02,447 INFO    MainThread:26663 [run_manager.py:init_run():924] system metrics and metadata threads started
+2020-09-16 14:33:02,447 INFO    MainThread:26663 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
+2020-09-16 14:33:02,447 INFO    MainThread:26663 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
+2020-09-16 14:33:02,857 INFO    Thread-3  :26663 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/OnGroundFlag/wandb/dryrun-20200916_073301-249pqmke/config.yaml
+2020-09-16 14:33:50,617 INFO    MainThread:26663 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
+2020-09-16 14:33:50,617 INFO    MainThread:26663 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2020-09-16 14:33:50,622 INFO    MainThread:26663 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
+tc():1324] process received interrupt signal, shutting down
+2020-09-16 14:33:50,617 INFO    MainThread:26663 [249pqmke:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2020-09-16 14:33:50,622 INFO    MainThread:26663 [249pqmke:run_manager.py:shutdown():1068] shutting down system stats and metadata service

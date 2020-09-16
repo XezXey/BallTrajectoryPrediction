@@ -22,6 +22,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import json
+from sklearn.metrics import confusion_matrix
 # Dataloader
 from utils.dataloader import TrajectoryDataset
 # Models
@@ -32,8 +33,6 @@ from models.Simple.gru_model import GRU
 from models.Simple.bigru_model import BiGRU
 from models.Simple.bigru_model_residual_list import BiGRUResidualList
 from models.Simple.bigru_model_residual_add import BiGRUResidualAdd
-from models.Jointly.bigru_model_residual_generator import Generator
-from models.Jointly.bigru_model_residual_discriminator import Discriminator
 from torch.utils.tensorboard import SummaryWriter
 
 def visualize_layout_update(fig=None, n_vis=3):
@@ -68,14 +67,15 @@ def make_visualize(input_trajectory_train, output_train_depth, input_trajectory_
   # wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
-  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path), auto_open=False)
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path), auto_open=True)
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(args.visualization_path)))})
 
-  # Visualize the End of trajectory(EOT) flag
-  fig_eot = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_eot(output_eot=input_trajectory_train[..., -1].clone(), eot_gt=output_trajectory_train_xyz[..., -1], eot_startpos=output_trajectory_train_startpos[..., -1], lengths=output_trajectory_train_lengths, mask=output_trajectory_train_mask[..., -1], fig=fig_eot, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_eot(output_eot=input_trajectory_val[..., -1].clone(), eot_gt=output_trajectory_val_xyz[..., -1], eot_startpos=output_trajectory_val_startpos[..., -1], lengths=output_trajectory_val_lengths, mask=output_trajectory_val_mask[..., -1], fig=fig_eot, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
-  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
+  # Visualize the End of trajectory(flag) flag
+  fig_flag = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+  visualize_flag(output_flag=input_trajectory_train[..., -1].clone(), flag_gt=output_trajectory_train_xyz[..., -1], flag_startpos=output_trajectory_train_startpos[..., -1], lengths=output_trajectory_train_lengths, mask=output_trajectory_train_mask[..., -1], fig=fig_flag, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+  visualize_flag(output_flag=input_trajectory_val[..., -1].clone(), flag_gt=output_trajectory_val_xyz[..., -1], flag_startpos=output_trajectory_val_startpos[..., -1], lengths=output_trajectory_val_lengths, mask=output_trajectory_val_mask[..., -1], fig=fig_flag, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+  plotly.offline.plot(fig_flag, filename='./{}/trajectory_visualization_depth_flag.html'.format(args.visualization_path), auto_open=True)
+  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_flag})
 
 def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='train', n_vis=5):
   in_f = in_f.cpu().detach().numpy()
@@ -83,7 +83,7 @@ def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='
   lengths = lengths.cpu().detach().numpy()
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
-  marker_dict_eot = dict(color='rgba(0, 255, 0, 0.7)', size=3)
+  marker_dict_flag = dict(color='rgba(0, 255, 0, 0.7)', size=3)
   # Change the columns for each set
   if flag == 'Train': col = 1
   elif flag == 'Validation': col=2
@@ -92,7 +92,7 @@ def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=out_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-Displacement of EOT'.format(flag, i)), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=in_f[i][:lengths[i]+1, 2], mode='markers+lines', marker=marker_dict_flag, name='{}-traj#{}-Displacement of flag'.format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # marker_dict for contain the marker properties
@@ -109,29 +109,27 @@ def visualize_trajectory(output, trajectory_gt, trajectory_startpos, lengths, ma
     fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, TrajectoryLoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
     fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+1, col=col)
 
-def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
+def visualize_flag(output_flag, flag_gt, flag_startpos, lengths, mask, vis_idx, fig=None, flag='train', n_vis=5):
   # Add the feature dimension using unsqueeze
-  eot_gt = pt.unsqueeze(eot_gt, dim=2)
+  flag_gt = pt.unsqueeze(flag_gt, dim=2)
   mask = pt.unsqueeze(mask, dim=2)
-  eot_startpos = pt.unsqueeze(eot_startpos, dim=2)
-  output_eot = pt.unsqueeze(output_eot, dim=2)
-  # output_eot : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output_eot = pt.stack([pt.cat([eot_startpos[i], output_eot[i]]) for i in range(eot_startpos.shape[0])])
-  # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
-  output_eot *= mask
-  eot_gt *= mask
-  # sigmoid the output to keep each trajectory seperately
-  output_eot = pt.sigmoid(output_eot)
+  flag_startpos = pt.unsqueeze(flag_startpos, dim=2)
+  output_flag = pt.unsqueeze(output_flag, dim=2)
+  # output_flag : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output_flag = pt.stack([pt.cat([flag_startpos[i], output_flag[i]]) for i in range(flag_startpos.shape[0])])
+  # Here we use output mask so we need to append the startpos to the output_flag before multiplied with mask(already included the startpos)
+  output_flag *= mask
+  flag_gt *= mask
   # Weight of positive/negative classes for imbalanced class
-  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
+  pos_weight = pt.sum(flag_gt == 0)/pt.sum(flag_gt==1)
   neg_weight = 1
   eps = 1e-10
-  # Calculate the EOT loss for each trajectory
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot+eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot+eps))), dim=1).cpu().detach().numpy()
+  # Calculate the flag loss for each trajectory
+  flag_loss = pt.mean(-((pos_weight * flag_gt * pt.log(output_flag+eps)) + (neg_weight * (1-flag_gt)*pt.log(1-output_flag+eps))), dim=1).cpu().detach().numpy()
 
   # detach() for visualization
-  output_eot = output_eot.cpu().detach().numpy()
-  eot_gt = eot_gt.cpu().detach().numpy()
+  output_flag = output_flag.cpu().detach().numpy()
+  flag_gt = flag_gt.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, .7)', size=5)
@@ -141,13 +139,14 @@ def visualize_eot(output_eot, eot_gt, eot_startpos, lengths, mask, vis_idx, fig=
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
-    # print(output_eot[i][:lengths[i]+1, :])
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]).reshape(-1,), y=output_eot[i][:lengths[i], :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-EOT Predicted [{}], EOTLoss = {:.3f}".format(flag, i, eot_loss[i][0])), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]).reshape(-1,), y=eot_gt[i][:lengths[i], :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth EOT [{}]".format(flag, i)), row=idx+1, col=col)
+    # print(output_flag[i][:lengths[i]+1, :])
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]).reshape(-1,), y=output_flag[i][:lengths[i], :].reshape(-1,), mode='markers+lines', marker=marker_dict_pred, name="{}-flag Predicted [{}], flagLoss = {:.3f}".format(flag, i, flag_loss[i][0])), row=idx+1, col=col)
+    fig.add_trace(go.Scatter(x=np.arange(lengths[i]).reshape(-1,), y=flag_gt[i][:lengths[i], :].reshape(-1,), mode='markers+lines', marker=marker_dict_gt, name="{}-Ground Truth flag [{}]".format(flag, i)), row=idx+1, col=col)
 
 def GravityLoss(output, trajectory_gt, mask, lengths):
   # Compute the 2nd finite difference of the y-axis to get the gravity should be equal in every time step
-  gravity_constraint_penalize = 0
+  gravity_constraint_penalize = pt.tensor([0.])
+  count = 0
   # Gaussian blur kernel for not get rid of the input information
   gaussian_blur = pt.tensor([0.25, 0.5, 0.25], dtype=pt.float32).view(1, 1, -1).to(device)
   # Kernel weight for performing a finite difference
@@ -156,28 +155,52 @@ def GravityLoss(output, trajectory_gt, mask, lengths):
   for i in range(trajectory_gt.shape[0]):
     # print(trajectory_gt[i][:lengths[i]+1, 1])
     # print(trajectory_gt[i][:lengths[i]+1, 1].shape)
-    if trajectory_gt[i][:lengths[i]+1, 1].shape[0] < 6:
+    if trajectory_gt[i][:lengths[i], 1].shape[0] < 6:
       print("The trajectory is too shorter to perform a convolution")
       continue
-    trajectory_gt_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt[i][:lengths[i]+1, 1].view(1, 1, -1), gaussian_blur)
+    trajectory_gt_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt[i][:lengths[i], 1].view(1, 1, -1), gaussian_blur)
     trajectory_gt_yaxis_1st_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_gaussian_blur, kernel_weight)
     trajectory_gt_yaxis_2nd_gaussian_blur = pt.nn.functional.conv1d(trajectory_gt_yaxis_1st_finite_difference, gaussian_blur)
     trajectory_gt_yaxis_2nd_finite_difference = pt.nn.functional.conv1d(trajectory_gt_yaxis_2nd_gaussian_blur, kernel_weight)
+    # print(trajectory_gt[i][:lengths[i], 1])
+    # print(trajectory_gt_yaxis_2nd_finite_difference)
+    # print(trajectory_gt_yaxis_2nd_finite_difference.shape[i][:, :lengths[i]+1])
+    # exit()
     # Apply Gaussian blur and finite difference to trajectory_gt
-    output_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(output[i][:lengths[i]+1, 1].view(1, 1, -1), gaussian_blur)
+    output_yaxis_1st_gaussian_blur = pt.nn.functional.conv1d(output[i][:lengths[i], 1].view(1, 1, -1), gaussian_blur)
     output_yaxis_1st_finite_difference = pt.nn.functional.conv1d(output_yaxis_1st_gaussian_blur, kernel_weight)
     output_yaxis_2nd_gaussian_blur = pt.nn.functional.conv1d(output_yaxis_1st_finite_difference, gaussian_blur)
     output_yaxis_2nd_finite_difference = pt.nn.functional.conv1d(output_yaxis_2nd_gaussian_blur, kernel_weight)
     # Compute the penalize term
-    # print(trajectory_gt_yaxis_2nd_finite_difference, output_yaxis_2nd_finite_difference)
-    gravity_constraint_penalize += (pt.sum((trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)**2))
+    # print(trajectory_gt_yaxis_2nd_finite_difference.shape, output_yaxis_2nd_finite_difference.shape)
+    if gravity_constraint_penalize.shape[0] == 1:
+      gravity_constraint_penalize = ((trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)**2).reshape(-1, 1)
+    else:
+      gravity_constraint_penalize = pt.cat((gravity_constraint_penalize, ((trajectory_gt_yaxis_2nd_finite_difference - output_yaxis_2nd_finite_difference)**2).reshape(-1, 1)))
 
   return pt.mean(gravity_constraint_penalize)
 
+def BelowGroundPenalize(output, trajectory_gt, mask, lengths):
+  # Penalize when the y-axis is below on the ground
+  output = output * mask
+  below_ground_mask = output[..., 1] < -0.5
+  below_ground_constraint_penalize = pt.mean((output[..., 1] * below_ground_mask)**2)
+  return below_ground_constraint_penalize
+
+# def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
+  # L2 loss of reconstructed trajectory
+  # print(trajectory_gt[0])
+  # trajectory_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))
+  # print(trajectory_loss)
+  # exit()
+  # return trajectory_loss
+
 def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   # L2 loss of reconstructed trajectory
-  trajectory_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))
-  return trajectory_loss
+  x_trajectory_loss = (pt.sum((((trajectory_gt[..., 0] - output[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
+  y_trajectory_loss = (pt.sum((((trajectory_gt[..., 1] - output[..., 1]))**2) * mask[..., 1]) / pt.sum(mask[..., 1]))
+  z_trajectory_loss = (pt.sum((((trajectory_gt[..., 2] - output[..., 2]))**2) * mask[..., 2]) / pt.sum(mask[..., 2]))
+  return x_trajectory_loss + y_trajectory_loss + z_trajectory_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix, width, height):
   # print(screen_space.shape, depth.shape)
@@ -191,7 +214,138 @@ def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_
   screen_space = ((camera_to_world_matrix @ projection_matrix) @ screen_space.t()).t() # Reprojected
   return screen_space[:, :3]
 
-def cumsum_trajectory(output, trajectory, trajectory_startpos):
+def DepthLoss(output, depth_gt, mask, lengths):
+  depth_loss = (pt.sum((((depth_gt - output))**2) * mask) / pt.sum(mask))
+  return depth_loss
+
+def cumsum_trajectory(depth, uv, trajectory_startpos):
+  '''
+  Perform a cummulative summation to the output
+  Argument :
+  1. depth : The displacement from the network with shape = (batch_size, sequence_length,)
+  2. uv : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
+  3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
+  Output :
+  1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
+  2. uv_cumsum : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
+  '''
+  # Apply cummulative summation to output
+  # trajectory_cumsum : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
+  uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  # trajectory_cumsum : perform cumsum along the sequence_length axis
+  uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
+  # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+  output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), depth[i]]) for i in range(trajectory_startpos.shape[0])])
+  # output : perform cumsum along the sequence_length axis
+  depth = pt.cumsum(output, dim=1)
+  return depth, uv_cumsum
+
+def add_noise(input_trajectory, startpos, lengths):
+  factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=0.7)
+  else:
+    noise_sd = args.noise_sd
+  input_trajectory = pt.cat((startpos[..., [0, 1, -2, -1]], input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-2].shape).to(device)
+  ''' For see the maximum range of noise in uv-coordinate space
+  for i in np.arange(0.3, 2, 0.1):
+    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
+    x = []
+    for j in range(100):
+     x.append(np.all(noise_uv.cpu().numpy() < 3))
+    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
+  '''
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-2].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(args.batch_size * factor)
+  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
+  input_trajectory[noise_idx, :, :-2] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+  return input_trajectory
+
+def flag_metrics_log(flag_gt, output_flag, lengths, mode):
+  output_flag = output_flag > 0.5
+  # Output of confusion_matrix.ravel() = [TN, FP ,FN, TP]
+  cm_each_trajectory = np.array([confusion_matrix(y_pred=output_flag[i][:lengths[i], :], y_true=flag_gt[i][:lengths[i]]).ravel() for i in range(lengths.shape[0])])
+  n_accepted_trajectory = np.sum(np.logical_and(cm_each_trajectory[:, 1]==0., cm_each_trajectory[:, 2] == 0.))
+  cm_batch = np.sum(cm_each_trajectory, axis=0)
+  tn, fp, fn, tp = cm_batch
+  precision = tp/(tp+fp)
+  recall = tp/(tp+fn)
+  f1_score = 2 * (precision * recall) / (precision + recall)
+  wandb.log({'{} Precision'.format(flag):precision, '{} Recall'.format(flag):recall, '{} F1-score'.format(flag):f1_score, '{}-#N accepted trajectory(Perfect flag without FN, FP)'.format(mode):n_accepted_trajectory})
+
+def FlagLoss(output_flag, flag_gt, flag_startpos, mask, lengths, mode='Train'):
+  # Here we use output mask so we need to append the startpos to the output_flag before multiplied with mask(already included the startpos)
+  mask = pt.unsqueeze(mask, dim=-1)
+  flag_gt = pt.unsqueeze(flag_gt, dim=-1)
+  output_flag *= mask
+  flag_gt *= mask
+
+  # Log the precision, recall, confusion_matrix and using wandb
+  flag_gt_log = flag_gt.clone().cpu().detach().numpy()
+  output_flag_log = output_flag.clone().cpu().detach().numpy()
+  flag_metrics_log(flag_gt=flag_gt_log, output_flag=output_flag_log, lengths=lengths.cpu().detach().numpy(), mode=mode)
+
+  # Implement from scratch
+  # Flatten and concat all trajectory together
+  flag_gt = pt.cat(([flag_gt[i][:lengths[i]+1] for i in range(flag_startpos.shape[0])]))
+  output_flag = pt.cat(([output_flag[i][:lengths[i]+1] for i in range(flag_startpos.shape[0])]))
+  # Class weight for imbalance class problem
+  pos_weight = pt.sum(flag_gt == 0)/pt.sum(flag_gt==1)
+  neg_weight = 1
+  # Prevent of pt.log(-value)
+  eps = 1e-10
+  # Calculate the BCE loss
+  flag_loss = pt.mean(-((pos_weight * flag_gt * pt.log(output_flag + eps)) + (neg_weight * (1-flag_gt)*pt.log(1-output_flag + eps))))
+  return flag_loss
+
+def get_plane_normal():
+  a = pt.tensor([32., 0., 19.])
+  b = pt.tensor([32., 0., -31.])
+  c = pt.tensor([-28., 0., 19.])
+  plane_normal = pt.cross(b-a, c-a)
+  return plane_normal.to(device)
+
+def raycasting(reset_idx, uv, lengths, depth, projection_matrix, camera_to_world_matrix, width, height, plane_normal):
+  # print(reset_idx, uv, lengths, depth)
+  camera_center = camera_to_world_matrix[:-1, -1]
+  # Ray casting
+  transformation = pt.inverse(pt.inverse(projection_matrix) @ pt.inverse(camera_to_world_matrix))   # Inverse(Intrinsic @ Extrinsic)
+  uv = pt.cat((uv[reset_idx[0], :], pt.ones(uv[reset_idx[0], :].shape).to(device)), dim=-1)
+  uv[:, 0] = ((uv[:, 0]/width) * 2) - 1
+  uv[:, 1] = ((uv[:, 1]/height) * 2) - 1
+  ndc = (uv @ transformation.t()).to(device)
+  ray_direction = ndc[:, :-1] - camera_center
+  # Depth that intersect the pitch
+  plane_point = pt.tensor([32, 0, 19]).to(device)
+  distance = camera_center - plane_point
+  normalize = pt.tensor([-(pt.dot(distance, plane_normal)/pt.dot(ray_direction[i], plane_normal)) for i in range(ray_direction.shape[0])]).view(-1, 1).to(device)
+  intersect_pos = pt.cat(((camera_center - ray_direction * normalize), pt.ones(ray_direction.shape[0], 1).to(device)), dim=-1)
+  reset_depth = intersect_pos @ pt.inverse(camera_to_world_matrix).t()
+  return reset_depth[..., 2].view(-1, 1)
+
+def split_cumsum(reset_idx, length, start_pos, reset_depth, depth, flag):
+  '''
+  1. This will split the depth displacement from reset_idx into a chunk. (Ignore the prediction where the flag=1 in prediction variable. Because we will cast the ray to get that reset depth instead of cumsum to get it.)
+  2. Perform cumsum seperately of each chunk.
+  3. Concatenate all u, v, depth together and replace with the current one. (Need to replace with padding for masking later on.)
+  '''
+  reset_idx -= 1
+  reset_depth = pt.cat((start_pos[0][2].view(-1, 1), reset_depth))
+  max_len = pt.tensor(depth.shape[0]).view(-1, 1).to(device)
+  reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
+  if reset_idx[-1] != depth.shape[0] and reset_idx.shape[0] > 1:
+    reset_idx = pt.cat((reset_idx, max_len))
+  depth_chunk = [depth[start:end] if start == 0 else depth[start+1:end] for start, end in zip(reset_idx, reset_idx[1:])]
+  depth_chunk = [pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i])) for i in range(len(depth_chunk))]
+  depth_chunk_cumsum = [pt.cumsum(each_depth_chunk, dim=0) for each_depth_chunk in depth_chunk]
+  depth_chunk = pt.cat(depth_chunk_cumsum)
+  return depth_chunk
+
+def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, flag, projection_matrix, camera_to_world_matrix, width, height):
+  # print(depth.shape, uv.shape, trajectory_startpos.shape, flag.shape)
   '''
   Perform a cummulative summation to the output
   Argument :
@@ -202,275 +356,135 @@ def cumsum_trajectory(output, trajectory, trajectory_startpos):
   1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
   2. trajectory_temp : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
   '''
+  # flag = (flag > 0.5).type(pt.cuda.FloatTensor)
   # Apply cummulative summation to output
-  # trajectory_temp : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
-  trajectory_temp = pt.stack([pt.cat([trajectory_startpos[i][:, :2], trajectory[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
-  # trajectory_temp : perform cumsum along the sequence_length axis
-  trajectory_temp = pt.cumsum(trajectory_temp, dim=1)
+  # uv_cumsum : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
+  uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
+  # uv_cumsum : perform cumsum along the sequence_length axis
+  uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
+  # Reset the depth when flag == 1
+  plane_normal = get_plane_normal()
+
+  flag_all = pt.stack([pt.cat([trajectory_startpos[i][:, -2].view(-1, 1), flag[i]]) for i in range(trajectory_startpos.shape[0])])
+  reset_idx = [pt.where((flag_all[i][:lengths[i]+1]) == 1.) for i in range(flag_all.shape[0])]
+  reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
-  output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), output[i]]) for i in range(trajectory_startpos.shape[0])])
-  # output : perform cumsum along the sequence_length axis
-  output = pt.cumsum(output, dim=1)
-  # print(output.shape, trajectory_temp.shape)
-  return output, trajectory_temp
+  depth_cumsum = [split_cumsum(reset_idx=reset_idx[i][0]+1, length=lengths[i], reset_depth=reset_depth[i], start_pos=trajectory_startpos[i], depth=depth[i], flag=flag_all[i]) for i in range(trajectory_startpos.shape[0])]
+  depth_cumsum = pt.stack(depth_cumsum, dim=0)
+  return depth_cumsum, uv_cumsum
 
-def add_noise(input_trajectory, startpos, lengths):
-  factor = np.random.uniform(low=0.6, high=0.95)
-  if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=0.7)
-  else:
-    noise_sd = args.noise_sd
-  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
-  input_trajectory = pt.cumsum(input_trajectory, dim=1)
-  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
-  ''' For see the maximum range of noise in uv-coordinate space
-  for i in np.arange(0.3, 2, 0.1):
-    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
-    x = []
-    for j in range(100):
-     x.append(np.all(noise_uv.cpu().numpy() < 3))
-    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
-  '''
-  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
-  n_noise = int(args.batch_size * factor)
-  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
-  input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
-  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
-  return input_trajectory
-
-def adversarialLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag):
-  # Adversarial loss choosen by a flag
-  if args.adversarial_lossfn == 'gan':
-    adversarial_loss = GanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag)
-  elif args.adversarial_lossfn == 'lsgan':
-    adversarial_loss = LSGanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag)
-  elif args.adversarial_lossfn == 'wgan':
-    adversarial_loss = WGanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag)
-  elif args.adversarial_lossfn == 'wgangp':
-    adversarial_loss = WGanGPLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag)
-  return adversarial_loss
-
-def GanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag):
-  # Vanilla GAN Loss is the BCELoss for binary classification (1=Real, 0=Fake)
-  eps = 1e-10
-  sigmoid_layer = pt.nn.Sigmoid()
-  # Calculate the BCE loss
-  if flag == 'generator':
-    pred_label = sigmoid_layer(discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0])
-    gan_loss = pt.mean(-((real_label * pt.log(pred_label + eps)) + ((1-real_label)*pt.log(1-pred_label + eps))))
-  else:
-    pred_fake_label = sigmoid_layer(discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0])
-    fake_loss = pt.mean(-((fake_label * pt.log(pred_fake_label + eps)) + ((1-fake_label)*pt.log(1-pred_fake_label + eps))))
-    pred_real_label = sigmoid_layer(discriminator(real_traj, hidden_D, cell_state_D, lengths)[0])
-    real_loss = pt.mean(-((real_label * pt.log(pred_real_label + eps)) + ((1-real_label)*pt.log(1-pred_real_label + eps))))
-    gan_loss = 0.5 * (fake_loss + real_loss)
-  return gan_loss
-
-def LSGanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag):
-  # Use the MSELoss instead of BCELoss 
-  if flag == 'generator':
-    pred_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    lsgan_loss = 0.5 * pt.mean((pred_label - real_label)**2)    # fake->real = 0.5 * E[D(G(z)) - 1)^2]
-  else:
-    pred_fake_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    fake_loss = pt.mean((pred_fake_label - fake_label)**2)  # fake = 0.5 * E[D(G(z)) - 0)^2]
-    pred_real_label = discriminator(real_traj, hidden_D, cell_state_D, lengths)[0]
-    real_loss = pt.mean((pred_real_label - real_label)**2)  # real = 0.5 * E[D(x) - 1)^2]
-    lsgan_loss = 0.5*(fake_loss + real_loss)
-  return lsgan_loss
-
-def WGanLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag):
-  if flag == 'generator':
-    pred_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    wgan_loss = -pt.mean(pred_label)
-  else:
-    pred_fake_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    pred_real_label = discriminator(real_traj, hidden_D, cell_state_D, lengths)[0]
-    wgan_loss = -pt.mean(pred_real_label) + pt.mean(pred_fake_label)
-  return wgan_loss
-
-def WGanGPLoss(hidden_D, cell_state_D, real_label, fake_label, discriminator, fake_traj, real_traj, lengths, flag):
-  if flag == 'generator':
-    pred_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    wgangp_loss = -pt.mean(pred_label)
-  else:
-    lambda_gp = 10
-    gradient_penalty = compute_gradient_penalty(discriminator, hidden_D, cell_state_D, real_traj, fake_traj, lengths)
-    pred_fake_label = discriminator(fake_traj, hidden_D, cell_state_D, lengths)[0]
-    pred_real_label = discriminator(real_traj, hidden_D, cell_state_D, lengths)[0]
-    wgangp_loss = -pt.mean(pred_real_label) + pt.mean(pred_fake_label) + lambda_gp * gradient_penalty
-  return wgangp_loss
-
-def compute_gradient_penalty(discriminator, hidden_D, cell_state_D, real_traj, fake_traj, lengths):
-    """Calculates the gradient penalty loss for WGAN GP"""
-    # Random weight term for interpolation between real and fake samples
-    alpha = pt.Tensor(np.random.random((real_traj.shape))).to(device)
-    # Get random interpolation between real and fake samples
-    interpolates = (alpha * real_traj + ((1 - alpha) * fake_traj)).requires_grad_(True)
-    d_interpolates = discriminator(interpolates, hidden_D, cell_state_D, lengths)[0].to(device)
-    fake = pt.autograd.Variable(pt.Tensor(real_traj.shape[0], 1).fill_(1.0), requires_grad=False).to(device)
-    # Get gradient w.r.t. interpolates
-    gradients = pt.autograd.grad(
-                   outputs = d_interpolates,
-                   inputs = interpolates,
-                   grad_outputs = fake,
-                   create_graph = True,
-                   retain_graph = True,
-                   only_inputs = True,)[0]
-    gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    return gradient_penalty
-
-def eot_metrics_log(eot_gt, output_eot, lengths, flag):
-  output_eot = output_eot > 0.5
-  # Output of confusion_matrix.ravel() = [TN, FP ,FN, TP]
-  cm_each_trajectory = np.array([confusion_matrix(y_pred=output_eot[i][:lengths[i], :], y_true=eot_gt[i][:lengths[i]]).ravel() for i in range(lengths.shape[0])])
-  n_accepted_trajectory = np.sum(np.logical_and(cm_each_trajectory[:, 1]==0., cm_each_trajectory[:, 2] == 0.))
-  cm_batch = np.sum(cm_each_trajectory, axis=0)
-  tn, fp, fn, tp = cm_batch
-  precision = tp/(tp+fp)
-  recall = tp/(tp+fn)
-  f1_score = 2 * (precision * recall) / (precision + recall)
-  wandb.log({'{} Precision'.format(flag):precision, '{} Recall'.format(flag):recall, '{} F1-score'.format(flag):f1_score, '{}-#N accepted trajectory(Perfect EOT without FN, FP)'.format(flag):n_accepted_trajectory})
-
-def EndOfTrajectoryLoss(output_eot, eot_gt, eot_startpos, mask, lengths, flag='Train'):
-  # Here we use output mask so we need to append the startpos to the output_eot before multiplied with mask(already included the startpos)
-  mask = pt.unsqueeze(mask, dim=-1)
-  eot_gt = pt.unsqueeze(eot_gt, dim=-1)
-  output_eot *= mask
-  eot_gt *= mask
-
-  # Log the precision, recall, confusion_matrix and using wandb
-  eot_gt_log = eot_gt.clone().cpu().detach().numpy()
-  output_eot_log = output_eot.clone().cpu().detach().numpy()
-  eot_metrics_log(eot_gt=eot_gt_log, output_eot=output_eot_log, lengths=lengths.cpu().detach().numpy(), flag=flag)
-
-  # Implement from scratch
-  # Flatten and concat all trajectory together
-  eot_gt = pt.cat(([eot_gt[i][:lengths[i]+1] for i in range(eot_startpos.shape[0])]))
-  output_eot = pt.cat(([output_eot[i][:lengths[i]+1] for i in range(eot_startpos.shape[0])]))
-  # Class weight for imbalance class problem
-  pos_weight = pt.sum(eot_gt == 0)/pt.sum(eot_gt==1)
-  neg_weight = 1
-  # Prevent of pt.log(-value)
-  eps = 1e-10
-  # Calculate the BCE loss
-  eot_loss = pt.mean(-((pos_weight * eot_gt * pt.log(output_eot + eps)) + (neg_weight * (1-eot_gt)*pt.log(1-output_eot + eps))))
-  return eot_loss
-
-def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, generator_eot, generator_depth, discriminator, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer_D, optimizer_G, width, height, train_generator, train_discriminator, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model_flag, model_depth, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
   # Train a model
-  # Initial the state for Generator and Discriminator for EOT and Depth
-  hidden_G_eot = generator_eot.initHidden(batch_size=args.batch_size)
-  cell_state_G_eot = generator_eot.initCellState(batch_size=args.batch_size)
-  hidden_G_depth = generator_depth.initHidden(batch_size=args.batch_size)
-  cell_state_G_depth = generator_depth.initCellState(batch_size=args.batch_size)
-  hidden_D = discriminator.initHidden(batch_size=args.batch_size)
-  cell_state_D = discriminator.initCellState(batch_size=args.batch_size)
-  # Initialize the real/fake label for adversarial loss
-  real_label = pt.ones(size=(args.batch_size, 1)).to(device)
-  fake_label = pt.zeros(size=(args.batch_size, 1)).to(device)
+  # Initial the state for flag and Depth
+  hidden_flag = model_flag.initHidden(batch_size=args.batch_size)
+  cell_state_flag = model_flag.initCellState(batch_size=args.batch_size)
+  hidden_depth = model_depth.initHidden(batch_size=args.batch_size)
+  cell_state_depth = model_depth.initCellState(batch_size=args.batch_size)
 
   # Training mode
-  generator_eot.train()
-  generator_depth.train()
+  model_flag.train()
+  model_depth.train()
   # Add noise on the fly
   input_trajectory_train_gt = input_trajectory_train.clone()
   input_trajectory_val_gt = input_trajectory_val.clone()
   if args.noise:
     input_trajectory_train = add_noise(input_trajectory=input_trajectory_train, startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths)
-    input_trajectory_train_eot = input_trajectory_train[..., :-1].clone()
+    input_trajectory_train_flag = input_trajectory_train[..., :-2].clone()
     input_trajectory_val = add_noise(input_trajectory=input_trajectory_val, startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths)
-    input_trajectory_val_eot = input_trajectory_val[..., :-1].clone()
+    input_trajectory_val_flag = input_trajectory_val[..., :-2].clone()
 
   # Forward PASSING
   # Forward pass for training a model
-  # Predict the EOT
-  output_train_eot, (_, _) = generator_eot(input_trajectory_train_eot, hidden_G_eot, cell_state_G_eot, lengths=input_trajectory_train_lengths)
-  output_train_eot = pt.sigmoid(output_train_eot).clone()
-  input_trajectory_train = pt.cat((input_trajectory_train[..., :-1], output_train_eot), dim=2)
+  # Predict the flag
+  output_train_flag, (_, _) = model_flag(input_trajectory_train_flag, hidden_flag, cell_state_flag, lengths=input_trajectory_train_lengths)
+  output_train_flag = pt.sigmoid(output_train_flag).clone()
+
+  input_trajectory_train = pt.cat((input_trajectory_train[..., :-2], output_train_flag), dim=2)
+  # input_trajectory_train = pt.cat((input_trajectory_train[..., :-1], (output_train_flag > 0.5).type(pt.cuda.FloatTensor)), dim=2)
   # Predict the DEPTH
-  output_train_depth, (_, _) = generator_depth(input_trajectory_train, hidden_G_depth, cell_state_G_depth, lengths=input_trajectory_train_lengths)
+  output_train_depth, (_, _) = model_depth(input_trajectory_train, hidden_depth, cell_state_depth, lengths=input_trajectory_train_lengths)
+
+  # De-accumulate module
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
-  output_train_depth, input_trajectory_train_uv = cumsum_trajectory(output=output_train_depth, trajectory=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+  if args.decumulate and epoch > args.start_decumulate:
+    output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-2], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, flag=input_trajectory_train_gt[..., -2].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+    # output_train_depth, input_trajectory_train_uv = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, flag=(output_train_flag > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+
+  else:
+    output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-2], trajectory_startpos=input_trajectory_train_startpos[..., :-2])
+
   # Project the (u, v, depth) to world space
-  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_uv[i], depth=output_train_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train_depth.shape[0])])
+  output_train_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_train_uv_cumsum[i], depth=output_train_depth_cumsum[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_train_depth.shape[0])])
 
   ####################################
-  ############# Generator ############
+  ############# flag&Depth ############
   ####################################
-  optimizer_G.zero_grad() # Clear existing gradients from previous epoch
-  # Generator Loss = adversarialLoss + trajectory_loss + gravity_loss + eot_loss
-  adversarial_loss_G = adversarialLoss(hidden_D = hidden_D, cell_state_D = cell_state_D, real_label=real_label, fake_label=fake_label, discriminator=discriminator, real_traj=output_trajectory_train_xyz[..., :-1], fake_traj=output_train_xyz, lengths=output_trajectory_train_lengths, flag='generator')
-  trajectory_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
-  gravity_loss = GravityLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-1], mask=output_trajectory_train_mask[..., :-1], lengths=output_trajectory_train_lengths)
-  eot_loss = EndOfTrajectoryLoss(output_eot=output_train_eot, eot_gt=input_trajectory_train_gt[..., -1], mask=input_trajectory_train_mask[..., -1], lengths=input_trajectory_train_lengths, eot_startpos=input_trajectory_train_startpos[..., -1], flag='Train')
-  # Sum up all generator loss 
-  loss_G = adversarial_loss_G + 100*trajectory_loss + gravity_loss + 100*eot_loss
-  if train_generator:
-    generator_eot.train()
-    generator_depth.train()
-    loss_G.backward()
-    for p in generator_eot.parameters():
-        p.data.clamp_(-args.clip, args.clip)
-    for p in generator_depth.parameters():
-        p.data.clamp_(-args.clip, args.clip)
-    optimizer_G.step()
+  optimizer.zero_grad() # Clear existing gradients from previous epoch
+  train_trajectory_loss = TrajectoryLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-2], mask=output_trajectory_train_mask[..., :-2], lengths=output_trajectory_train_lengths)
+  train_gravity_loss = GravityLoss(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-2], mask=output_trajectory_train_mask[..., :-2], lengths=output_trajectory_train_lengths)
+  train_onground_loss = FlagLoss(output_flag=output_train_flag[..., [-1]], flag_gt=input_trajectory_train_gt[..., -1], mask=input_trajectory_train_mask[..., -1], lengths=input_trajectory_train_lengths, flag_startpos=input_trajectory_train_startpos[..., -1], mode='Train')
+  train_eot_loss = FlagLoss(output_flag=output_train_flag[..., [-2]], flag_gt=input_trajectory_train_gt[..., -2], mask=input_trajectory_train_mask[..., -2], lengths=input_trajectory_train_lengths, flag_startpos=input_trajectory_train_startpos[..., -2], mode='Train')
+  train_depth_loss = DepthLoss(output=output_train_depth, depth_gt=output_trajectory_train[..., 0].unsqueeze(dim=-1), lengths=input_trajectory_train_lengths, mask=input_trajectory_train_mask)
+  train_below_ground_loss = BelowGroundPenalize(output=output_train_xyz, trajectory_gt=output_trajectory_train_xyz[..., :-2], mask=output_trajectory_train_mask[..., :-2], lengths=output_trajectory_train_lengths)
 
-
-  ####################################
-  ########### Discriminator ##########
-  ####################################
-  optimizer_D.zero_grad() # Clear existing gradients from previous epoch
-  # Fake = Reconstructed(Generated)
-  # Real = Ground truth 
-  adversarial_loss_D = adversarialLoss(hidden_D = hidden_D, cell_state_D = cell_state_D, real_label=real_label, fake_label=fake_label, discriminator=discriminator, real_traj=output_trajectory_train_xyz[..., :-1], fake_traj=output_train_xyz, lengths=output_trajectory_train_lengths, flag='discriminator')
-  loss_D = adversarial_loss_D
-
-  if train_discriminator:
-    discriminator.train()
-    loss_D.backward()
-    # Clip weights of discriminator
-    for p in discriminator.parameters():
-        p.data.clamp_(-args.clip, args.clip)
-    optimizer_D.step()
+  # Sum up all train loss 
+  train_loss = train_trajectory_loss + train_flag_loss*100 + train_depth_loss*1000 + train_gravity_loss + train_below_ground_loss
+  train_loss.backward()
+  for p in model_flag.parameters():
+      p.data.clamp_(-args.clip, args.clip)
+  for p in model_depth.parameters():
+      p.data.clamp_(-args.clip, args.clip)
+  optimizer.step()
 
   # Evaluating mode
-  generator_eot.eval()
-  generator_depth.eval()
+  model_flag.eval()
+  model_depth.eval()
   # Forward pass for validate a model
-  output_val_eot, (_, _) = generator_eot(input_trajectory_val_eot, hidden_G_eot, cell_state_G_eot, lengths=input_trajectory_val_lengths)
-  output_val_eot = pt.sigmoid(output_val_eot).clone()
-  input_trajectory_val = pt.cat((input_trajectory_val[..., :-1], output_val_eot), dim=2)
+  output_val_flag, (_, _) = model_flag(input_trajectory_val_flag, hidden_flag, cell_state_flag, lengths=input_trajectory_val_lengths)
+  output_val_flag = pt.sigmoid(output_val_flag).clone()
+  input_trajectory_val = pt.cat((input_trajectory_val[..., :-1], output_val_flag), dim=2)
+  # input_trajectory_val = pt.cat((input_trajectory_val[..., :-1], (output_val_flag > 0.5).type(pt.cuda.FloatTensor)), dim=2)
   # Predict the DEPTH
-  output_val_depth, (_, _) = generator_depth(input_trajectory_val, hidden_G_depth, cell_state_G_depth, lengths=input_trajectory_val_lengths)
-  # (This step we get the displacement of depth by input the displacement of u and v)
-  # Apply cummulative summation to output using cumsum_trajectory function
-  output_val_depth, input_trajectory_val_uv = cumsum_trajectory(output=output_val_depth, trajectory=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+  output_val_depth, (_, _) = model_depth(input_trajectory_val, hidden_depth, cell_state_depth, lengths=input_trajectory_val_lengths)
+
+  # De-accumulate module
+  if args.decumulate and epoch > args.start_decumulate:
+    output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-2], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, flag=input_trajectory_val_gt[..., -2].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+    # output_val_depth, input_trajectory_val_uv = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, flag=(output_val_flag > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+  else:
+    # (This step we get the displacement of depth by input the displacement of u and v)
+    # Apply cummulative summation to output using cumsum_trajectory function
+    output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+
   # Project the (u, v, depth) to world space
-  output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_uv[i], depth=output_val_depth[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val_depth.shape[0])])
+  output_val_xyz = pt.stack([projectToWorldSpace(screen_space=input_trajectory_val_uv_cumsum[i], depth=output_val_depth_cumsum[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height) for i in range(output_val_depth.shape[0])])
 
   # Calculate loss of unprojected trajectory
-  val_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + GravityLoss(output=output_val_xyz.clone(), trajectory_gt=output_trajectory_val_xyz[..., :-1], mask=output_trajectory_val_mask[..., :-1], lengths=output_trajectory_val_lengths) + EndOfTrajectoryLoss(output_eot=output_val_eot, eot_gt=input_trajectory_val_gt[..., -1], mask=input_trajectory_val_mask[..., -1], lengths=input_trajectory_val_lengths, eot_startpos=input_trajectory_val_startpos[..., -1], flag='Validation')
+  val_trajectory_loss = TrajectoryLoss(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-2], mask=output_trajectory_val_mask[..., :-2], lengths=output_trajectory_val_lengths)
+  val_gravity_loss = GravityLoss(output=output_val_xyz.clone(), trajectory_gt=output_trajectory_val_xyz[..., :-2], mask=output_trajectory_val_mask[..., :-2], lengths=output_trajectory_val_lengths)
+  val_onground_loss = FlagLoss(output_flag=output_val_flag[..., [-1]], flag_gt=input_trajectory_val_gt[..., -1], mask=input_trajectory_val_mask[..., -1], lengths=input_trajectory_val_lengths, flag_startpos=input_trajectory_val_startpos[..., -1], mode='Validation')
+  val_eot_loss = FlagLoss(output_flag=output_val_flag[..., [-2]], flag_gt=input_trajectory_val_gt[..., -2], mask=input_trajectory_val_mask[..., -2], lengths=input_trajectory_val_lengths, flag_startpos=input_trajectory_val_startpos[..., -2], mode='Validation')
+  val_below_ground_loss = BelowGroundPenalize(output=output_val_xyz, trajectory_gt=output_trajectory_val_xyz[..., :-2], mask=output_trajectory_val_mask[..., :-2], lengths=output_trajectory_val_lengths)
+  val_depth_loss = DepthLoss(output=output_val_depth, depth_gt=output_trajectory_val[..., 0].unsqueeze(dim=-1), lengths=input_trajectory_val_lengths, mask=input_trajectory_val_mask)
+  val_loss = val_trajectory_loss + val_gravity_loss + val_eot_loss + val_onground_loss + val_below_ground_loss + val_depth_loss
 
-
-  print('Generator Loss : {:.3f}'.format(loss_G.item()), end=', ')
-  print('Discriminator Loss : {:.3f}'.format(loss_D.item()), end=', ')
+  print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()))
-  print('======> [Generator] Adversarial Loss ({}) : {:.3f}'.format(args.adversarial_lossfn, adversarial_loss_G.item()), end=', ')
-  print('Trajectory Loss : {:.3f}'.format(trajectory_loss.item()), end=', ')
-  print('Gravity Loss : {:.3f}'.format(gravity_loss.item()), end=', ')
-  print('EndOfTrajectory Loss : {:.3f}'.format(eot_loss.item()))
-  print('======> [Discriminator] Adversarial Loss ({}) : {:.3f}'.format(args.adversarial_lossfn, loss_D.item()))
-  wandb.log({'Generator Loss':loss_G.item(), 'Discriminator Loss':loss_D.item(), 'Validation Loss':val_loss.item()})
+  print('======> Trajectory Loss : {:.3f}'.format(train_trajectory_loss.item()), end=', ')
+  print('Gravity Loss : {:.3f}'.format(train_gravity_loss.item()), end=', ')
+  print('EndOfTrajectory Loss : {:.3f}'.format(train_eot_loss.item()), end=', ')
+  print('OnGround Loss : {:.3f}'.format(train_onground_loss.item()), end=', ')
+  print('BelowGroundPenalize Loss : {:.3f}'.format(train_below_ground_loss.item()), end=', ')
+  print('Depth Loss : {:.3f}'.format(train_depth_loss.item()))
+  wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if visualize_trajectory_flag == True and vis_signal == True:
     make_visualize(input_trajectory_train=input_trajectory_train, output_train_depth=output_train_depth, input_trajectory_val=input_trajectory_val, output_val_depth=output_val_depth, output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
 
-  return loss_G.item(), loss_D.item(), val_loss.item(), generator_eot, generator_depth, discriminator
+  return train_loss.item(), val_loss.item(), model_flag, model_depth
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -485,46 +499,45 @@ def collate_fn_padd(batch):
     lengths = pt.tensor([trajectory[1:, :].shape[0] for trajectory in batch])
     # Input features : columns 4-5 contain u, v in screen space
     ## Padding 
-    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -3, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory, is_on_ground)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
     ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -2]]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, [4, 5, 6, -3, -2]]) for trajectory in batch])  # (4, 5, 6, -3, -2) = (u, v, depth, end_of_trajectory, is_on_ground)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != padding_value)
 
     # Output features : columns 6 cotain depth from camera to projected screen
     ## Padding
-    output_batch = [pt.Tensor(trajectory[:, [6, -2]]) for trajectory in batch]
+    output_batch = [pt.Tensor(trajectory[1:, [6, -3, -2]]) for trajectory in batch]
     output_batch = pad_sequence(output_batch, batch_first=True)
     ## Retrieve initial position
-    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -2]]) for trajectory in batch])
+    output_startpos = pt.stack([pt.Tensor(trajectory[0, [0, 1, 2, -3, -2]]) for trajectory in batch])
     output_startpos = pt.unsqueeze(output_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
-    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -2]]) for trajectory in batch]
+    output_xyz = [pt.Tensor(trajectory[:, [0, 1, 2, -3, -2]]) for trajectory in batch]
     output_xyz = pad_sequence(output_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
     output_mask = (output_xyz != padding_value)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     # print(output_xyz[..., :-1].shape, pt.unsqueeze(output_xyz[..., -1], dim=2).shape)
-    output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-1], dim=1), pt.unsqueeze(output_xyz[..., -1], dim=2)), dim=2)
+    output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-2], dim=1), output_xyz[..., [-3, -2]]), dim=2)
 
     # print("Mask shape : ", mask.shape)
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'output':[output_batch, lengths+1, output_mask, output_startpos, output_xyz]}
 
 def get_model(input_size, output_size, model_arch):
-  if model_arch=='bigru_residual_adversarial':
-    generator_eot = Generator(input_size=2, output_size=1)
-    generator_depth = Generator(input_size=3, output_size=1)
-    discriminator = Discriminator(input_size=3, output_size=1)
+  if model_arch=='bigru_residual_add':
+    model_flag = BiGRUResidualAdd(input_size=2, output_size=2)
+    model_depth = BiGRUResidualAdd(input_size=4, output_size=1)
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
 
-  return generator_eot, generator_depth, discriminator
+  return model_flag, model_depth
 
-def load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D):
+def load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler):
   if args.load_checkpoint == 'best':
     load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_notes, args.wandb_notes)
   elif args.load_checkpoint == 'lastest':
@@ -537,16 +550,13 @@ def load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, 
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
-    generator_eot   .load_state_dict(checkpoint['generator_eot'])
-    generator_depth.load_state_dict(checkpoint['generator_depth'])
-    discriminator.load_state_dict(checkpoint['discriminator'])
-    optimizer_G.load_state_dict(checkpoint['optimizer_G'])
-    optimizer_D.load_state_dict(checkpoint['optimizer_D'])
-    lr_scheduler_G.load_state_dict(checkpoint['lr_scheduler_G'])
-    lr_scheduler_D.load_state_dict(checkpoint['lr_scheduler_D'])
+    model_flag.load_state_dict(checkpoint['model_flag'])
+    model_depth.load_state_dict(checkpoint['model_depth'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss
+    return model_flag, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss
 
   else:
     print("[#] Checkpoint not found...")
@@ -575,11 +585,10 @@ if __name__ == '__main__':
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
   parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
-  parser.add_argument('--pretrained_generator', help='Pretraining the generator before training the discriminator', action='store_true')
-  parser.add_argument('--no_pretrained_generator', help='Pretraining the generator before training the discriminator', action='store_false')
-  parser.add_argument('--adversarial_lossfn', help='Specify the loss fucntion of aderverial training', type=str, default='gan')
   parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
+  parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
   parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
+  parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
   args = parser.parse_args()
 
   # Init wandb
@@ -639,19 +648,16 @@ if __name__ == '__main__':
   n_output = 1 # Contain the depth information of the trajectory
   n_input = 3 # Contain following this trajectory parameters (u, v, end_of_trajectory) position from tracking
   min_val_loss = 2e10
-  generator_eot, generator_depth, discriminator = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
-  generator_eot = generator_eot.to(device)
-  generator_depth = generator_depth.to(device)
-  discriminator = discriminator.to(device)
+  model_flag, model_depth = get_model(input_size=n_input, output_size=n_output, model_arch=args.model_arch)
+  model_flag = model_flag.to(device)
+  model_depth = model_depth.to(device)
 
   # Define optimizer, learning rate, decay and scheduler parameters
   learning_rate = args.lr
-  params_G = list(generator_eot.parameters()) + list(generator_depth.parameters())
-  optimizer_G = pt.optim.Adam(params_G, lr=learning_rate)
-  optimizer_D = pt.optim.Adam(discriminator.parameters(), lr=learning_rate)
-  decay_rate = 0.5
-  lr_scheduler_G = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer_G, gamma=decay_rate)
-  lr_scheduler_D = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer_D, gamma=decay_rate)
+  params = list(model_flag.parameters()) + list(model_depth.parameters())
+  optimizer = pt.optim.Adam(params, lr=learning_rate)
+  decay_rate = 0.7
+  lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=decay_rate)
   start_epoch = 1
 
   # Load the checkpoint if it's available.
@@ -662,35 +668,24 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, start_epoch, lr_scheduler_G, lr_scheduler_D, min_val_loss = load_checkpoint(generator_eot, generator_depth, discriminator, optimizer_G, optimizer_D, lr_scheduler_G, lr_scheduler_D)
+    model_flag, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler)
 
 
   print('[#]Model Architecture')
-  print('####### Generator - EOT #######')
-  print(generator_eot)
-  print('####### Generator - Depth #######')
-  print(generator_depth)
-  print('####### Discriminator #######')
-  print(discriminator)
+  print('####### Model - Flag #######')
+  print(model_flag)
+  print('####### Model - Depth #######')
+  print(model_depth)
 
   # Log metrics with wandb
-  wandb.watch(generator_eot)
-  wandb.watch(generator_depth)
-  wandb.watch(discriminator)
+  wandb.watch(model_flag)
+  wandb.watch(model_depth)
 
   # Training settings
   n_epochs = 100000
-  decay_cycle = 400
-  n_train_generator = 20
-  n_train_discriminator = 5
-  pretrained_generator = args.pretrained_generator
-  n_pretrained_generator = 20
-  counter = 0 # Value can be 1-15, depends on n_epoch training generator and discriminator
-  total_epochs_train_generator = 0
-  total_epochs_train_discriminator = 0
+  decay_cycle = 200
   for epoch in range(start_epoch, n_epochs+1):
-    accumulate_discriminator_loss = []
-    accumulate_generator_loss = []
+    accumulate_train_loss = []
     accumulate_val_loss = []
     # Fetch the Validation set (Get each batch for each training epochs)
     try:
@@ -711,43 +706,13 @@ if __name__ == '__main__':
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : {}/{}]<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch, n_epochs))
 
     # Log the learning rate
-    for param_group in optimizer_D.param_groups:
-      print("[#]Learning rate (Discriminator) : ", param_group['lr'])
-      wandb.log({'Learning Rate (Discriminator)':param_group['lr']})
-    for param_group in optimizer_G.param_groups:
-      print("[#]Learning rate (Generator) : ", param_group['lr'])
-      wandb.log({'Learning Rate (Generator)':param_group['lr']})
+    for param_group in optimizer.param_groups:
+      print("[#]Learning rate (Depth & flag) : ", param_group['lr'])
+      wandb.log({'Learning Rate (Depth & flag)':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
     vis_signal = True if epoch % 10 == 0 else False
-
-    # This pretrained the generator for first few epochs
-    if epoch > n_pretrained_generator and pretrained_generator:
-      pretrained_generator = False
-      counter = 1
-
-    # Training signal for swapping training between generator and discriminator
-    if pretrained_generator:
-      train_discriminator = False
-      train_generator = True
-      print("[#]Pretraining a Generator...[{}/{}]".format(epoch, n_pretrained_generator))
-    elif counter>=1 and counter<=n_train_discriminator:
-      train_discriminator = True
-      train_generator = False
-      total_epochs_train_discriminator += 1
-      print("[#]Training a Discriminator...[{}/{}]".format(counter, n_train_discriminator))
-    elif counter>n_train_discriminator and counter<=n_train_generator+n_train_discriminator:
-      train_discriminator = False
-      train_generator = True
-      total_epochs_train_generator += 1
-      print("[#]Training a Generator...[{}/{}]".format(counter-n_train_discriminator, n_train_generator))
-    else :
-      counter = 1
-      train_discriminator = True
-      train_generator = False
-      total_epochs_train_discriminator += 1
-      print("[#]Training Discriminator...[{}/{}]".format(counter, n_train_discriminator))
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
@@ -765,44 +730,37 @@ if __name__ == '__main__':
 
 
       # Call function to train
-      loss_G, loss_D, val_loss, generator_eot, generator_depth, discriminator = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
-                                                                 output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos, output_trajectory_train_xyz=output_trajectory_train_xyz,
-                                                                 input_trajectory_train=input_trajectory_train, input_trajectory_train_mask = input_trajectory_train_mask,
-                                                                 input_trajectory_train_lengths=input_trajectory_train_lengths, input_trajectory_train_startpos=input_trajectory_train_startpos,
-                                                                 output_trajectory_val=output_trajectory_val, output_trajectory_val_mask=output_trajectory_val_mask,
-                                                                 output_trajectory_val_lengths=output_trajectory_val_lengths, output_trajectory_val_startpos=output_trajectory_val_startpos,
-                                                                 input_trajectory_val=input_trajectory_val, input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
+      train_loss, val_loss, model_flag, model_depth = train(output_trajectory_train=output_trajectory_train, output_trajectory_train_mask=output_trajectory_train_mask,
+                                                                 output_trajectory_train_lengths=output_trajectory_train_lengths, output_trajectory_train_startpos=output_trajectory_train_startpos,
+                                                                 output_trajectory_train_xyz=output_trajectory_train_xyz, input_trajectory_train=input_trajectory_train,
+                                                                 input_trajectory_train_mask = input_trajectory_train_mask, input_trajectory_train_lengths=input_trajectory_train_lengths,
+                                                                 input_trajectory_train_startpos=input_trajectory_train_startpos, output_trajectory_val=output_trajectory_val,
+                                                                 output_trajectory_val_mask=output_trajectory_val_mask, output_trajectory_val_lengths=output_trajectory_val_lengths,
+                                                                 output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val=input_trajectory_val,
+                                                                 input_trajectory_val_mask=input_trajectory_val_mask, output_trajectory_val_xyz=output_trajectory_val_xyz,
                                                                  input_trajectory_val_lengths=input_trajectory_val_lengths, input_trajectory_val_startpos=input_trajectory_val_startpos,
-                                                                 generator_eot=generator_eot, generator_depth=generator_depth, discriminator=discriminator,
-                                                                 visualize_trajectory_flag=args.visualize_trajectory_flag, train_generator=train_generator, train_discriminator=train_discriminator,
+                                                                 model_flag=model_flag, model_depth=model_depth, visualize_trajectory_flag=args.visualize_trajectory_flag,
                                                                  projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix,
-                                                                 optimizer_G=optimizer_G, optimizer_D=optimizer_D, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
+                                                                 optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
 
       accumulate_val_loss.append(val_loss)
-      accumulate_generator_loss.append(loss_G)
-      accumulate_discriminator_loss.append(loss_D)
+      accumulate_train_loss.append(train_loss)
       vis_signal = False
 
-    counter += 1
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)
-    generator_loss_per_epoch = np.mean(accumulate_generator_loss)
-    discriminator_loss_per_epoch = np.mean(accumulate_discriminator_loss)
+    train_loss_per_epoch = np.mean(accumulate_train_loss)
     # Log the each epoch loss
-    wandb.log({'Epoch Generator Loss':generator_loss_per_epoch, 'Epoch Discriminator Loss':discriminator_loss_per_epoch, 'Epoch Validation Loss':val_loss_per_epoch, 'Total #N training generator' : total_epochs_train_generator, 'Total #N training discriminator' : total_epochs_train_discriminator})
+    wandb.log({'Epoch Train Loss':train_loss_per_epoch, 'Epoch Validation Loss':val_loss_per_epoch})
 
     # Decrease learning rate every n_epochs % decay_cycle batch
-    if total_epochs_train_generator % decay_cycle == 0 and train_generator and not pretrained_generator:
-      lr_scheduler_G.step()
-      for param_group in optimizer_G.param_groups:
-        print("Generator - Stepping Learning rate to ", param_group['lr'])
-    if total_epochs_train_discriminator % decay_cycle == 0 and train_discriminator:
-      lr_scheduler_D.step()
-      for param_group in optimizer_D.param_groups:
-        print("Discriminator - Stepping Learning rate to ", param_group['lr'])
+    if epoch % decay_cycle == 0:
+      lr_scheduler.step()
+      for param_group in optimizer.param_groups:
+        print("Stepping Learning rate to ", param_group['lr'])
 
     # Save the model checkpoint every finished the epochs
-    print('[#]Finish Epoch : {}/{}.........Generator loss : {:.3f}, Discriminator loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, generator_loss_per_epoch, discriminator_loss_per_epoch, val_loss_per_epoch))
+    print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
     if min_val_loss > val_loss_per_epoch:
       # Save model checkpoint
       save_checkpoint_best = '{}/{}_best.pth'.format(save_checkpoint, args.wandb_notes)
@@ -810,7 +768,7 @@ if __name__ == '__main__':
       print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
       # Save to directory
-      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss}
+      checkpoint = {'epoch':epoch+1, 'model_depth':model_depth.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
       pt.save(checkpoint, save_checkpoint_best)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_best.pth'))
 
@@ -822,7 +780,7 @@ if __name__ == '__main__':
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_notes)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
-      checkpoint = {'epoch':epoch+1, 'generator_eot':generator_eot.state_dict(), 'generator_depth':generator_depth.state_dict(), 'discriminator':discriminator.state_dict(), 'optimizer_G':optimizer_G.state_dict(), 'optimizer_D':optimizer_D.state_dict(), 'lr_scheduler_D':lr_scheduler_D.state_dict(), 'lr_scheduler_G':lr_scheduler_G.state_dict(), 'min_val_loss':min_val_loss}
+      checkpoint = {'epoch':epoch+1, 'model_depth':model_depth.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss}
       pt.save(checkpoint, save_checkpoint_lastest)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_lastest.pth'))
 

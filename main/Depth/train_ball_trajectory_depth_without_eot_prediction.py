@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import glob
 import os
 import argparse
+import sys
+sys.path.append(os.path.realpath('../..'))
 from tqdm import tqdm
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset, DataLoader, RandomSampler
@@ -22,14 +24,15 @@ import json
 # Dataloader
 from utils.dataloader import TrajectoryDataset
 # Models
-from models.rnn_model import RNN
-from models.lstm_model import LSTM
-from models.bilstm_model import BiLSTM
-from models.gru_model import GRU
-from models.bigru_model import BiGRU
-from models.bigru_model_residual_list import BiGRUResidualList
-from models.bigru_model_residual_add import BiGRUResidualAdd
+from models.Simple.rnn_model import RNN
+from models.Simple.lstm_model import LSTM
+from models.Simple.bilstm_model import BiLSTM
+from models.Simple.gru_model import GRU
+from models.Simple.bigru_model import BiGRU
+from models.Simple.bigru_model_residual_list import BiGRUResidualList
+from models.Simple.bigru_model_residual_add import BiGRUResidualAdd
 from torch.utils.tensorboard import SummaryWriter
+from utils.dataloader import TrajectoryDataset
 
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
@@ -63,7 +66,7 @@ def make_visualize(input_trajectory_train, output_train, input_trajectory_val, o
   # wandb.log({"AUTO SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('/{}/trajectory_visualization_depth_auto_scaled.html'.format(args.visualization_path)))})
   # For a PITCH SCALED
   fig = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
-  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=False)
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=True)
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
 
 def visualize_displacement(in_f, out_f, mask, lengths, vis_idx, fig=None, flag='train', n_vis=5):
@@ -129,19 +132,20 @@ def compute_gravity_constraint_penalize(output, trajectory_gt, mask, lengths):
 def compute_below_ground_constraint_penalize(output, mask, lengths):
   # Penalize when the y-axis is below on the ground
   output = output * mask
-  below_ground_constraint_penalize = pt.sum((output[:, :, 1][output[:, :, 1] < -1])**2)
+  below_ground_mask = output[..., 1] < 0
+  below_ground_constraint_penalize = pt.mean((output[:, :, 1] * below_ground_mask)**2)
   return below_ground_constraint_penalize
 
 def MSELoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   if lengths is None :
     gravity_constraint_penalize = pt.tensor(0).to(device)
-    # below_ground_constraint_penalize = pt.tensor(0).to(device)
+    below_ground_constraint_penalize = pt.tensor(0).to(device)
   else:
     # Penalize the model if predicted values are not fall by gravity(2nd derivatives)
     gravity_constraint_penalize = compute_gravity_constraint_penalize(output=output.clone(), trajectory_gt=trajectory_gt.clone(), mask=mask, lengths=lengths)
     # Penalize the model if predicted values are below the ground (y < 0)
-    # below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
-  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) # + below_ground_constraint_penalize
+    below_ground_constraint_penalize = compute_below_ground_constraint_penalize(output=output.clone(), mask=mask, lengths=lengths)
+  mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) + below_ground_constraint_penalize
 
   return mse_loss
 
@@ -370,10 +374,11 @@ if __name__ == '__main__':
   parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
   parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
   parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
+  parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
   args = parser.parse_args()
 
   # Init wandb
-  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes)
+  wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes, dir=args.wandb_dir)
 
   # Initialize folder
   initialize_folder(args.visualization_path)

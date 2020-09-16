@@ -1,0 +1,3 @@
+{"Learning Rate (Depth & flag)": 0.01, "_runtime": 4.548647403717041, "_timestamp": 1600240134.6697419, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 7.098947525024414, "_timestamp": 1600240137.220042, "_step": 1}
+{"Train Precision": 0.004235255190669204, "Train Recall": 1.0, "Train F1-score": 0.008434786906311264, "Train-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 7.26548957824707, "_timestamp": 1600240137.386584, "_step": 2}

@@ -1,0 +1,87 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/onGroundFlag/train_set
+Mixed:   0%|                                                                                                                                       | 0/3 [00:00<?, ?it/s]Mixed:  67%|████████████████████████████████████████████████████████████████████████████████████▋                                          | 2/3 [00:00<00:00, 16.75it/s]===============================Dataset shape===============================
+Mixed : (4565,)
+===========================================================================
+Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 17.25it/s]
+Mixed:   0%|                                                                                                                                       | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 24.96it/s]
+Mixed : (631,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+[[ 1.4989030e+00 -2.2721290e-08 -3.4126520e+00 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 1.3031200e-01 -2.3841860e-08 -1.7420700e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 1.2919500e-01 -2.3841870e-08 -1.7266200e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ ...
+ [-6.2950000e-03 -2.3841870e-08  7.4460000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-6.1430000e-03 -2.3841860e-08  7.2670000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-6.0000000e-03  7.1525589e-08  7.0970000e-03 ...  1.0000000e+00
+   1.0000000e+00 -9.8100000e+00]]
+None
+[[ 1.2149420e+01 -1.3681170e-08 -3.5658050e+00 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-1.0204000e-01 -2.3841860e-08 -1.2287100e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-1.0079000e-01 -2.3841860e-08 -1.2142200e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ ...
+ [ 4.0900000e-03 -6.5326700e-06  4.3930000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 3.9900000e-03 -1.2593970e-06  4.2870000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 3.9000000e-03 -1.9073491e-07  4.1850000e-03 ...  1.0000000e+00
+   1.0000000e+00 -9.8100000e+00]]
+None
+[[-7.1072550e+00 -1.0011920e-08  5.0240360e+00 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 3.2168000e-02  1.9080431e-01 -5.7761000e-02 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 3.2168000e-02  1.8807940e-01 -5.7761000e-02 ...  0.0000000e+00
+   0.0000000e+00 -9.8100000e+00]
+ ...
+ [ 1.6350000e-03 -9.8705350e-06 -2.9300000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 1.5970000e-03 -2.0503996e-06 -2.8700000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [ 1.5600000e-03 -3.3378610e-07 -2.8000000e-03 ...  1.0000000e+00
+   1.0000000e+00 -9.8100000e+00]]
+None
+[[ 4.1477230e+00 -4.8063650e-08  5.4809550e+00 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-1.0405700e-01 -2.3345160e-08 -1.8482400e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-1.0304300e-01  6.8048646e-08 -1.8320500e-01 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ ...
+ [-3.9500000e-03 -1.0804340e-05  4.7580000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-3.8550000e-03 -2.1256507e-06  4.6440000e-03 ...  0.0000000e+00
+   1.0000000e+00 -9.8100000e+00]
+ [-3.7630000e-03 -4.3287881e-07  4.5330000e-03 ...  1.0000000e+00
+   1.0000000e+00 -9.8100000e+00]]
+None
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 651, in <module>
+    for key, batch in enumerate(trajectory_train_dataloader):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 279, in __iter__
+    return _MultiProcessingDataLoaderIter(self)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 719, in __init__
+    w.start()
+  File "/usr/lib/python3.6/multiprocessing/process.py", line 105, in start
+    self._popen = self._Popen(self)
+  File "/usr/lib/python3.6/multiprocessing/context.py", line 223, in _Popen
+    return _default_context.get_context().Process._Popen(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/context.py", line 277, in _Popen
+    return Popen(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/popen_fork.py", line 66, in _launch
+    self.pid = os.fork()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 22579) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.

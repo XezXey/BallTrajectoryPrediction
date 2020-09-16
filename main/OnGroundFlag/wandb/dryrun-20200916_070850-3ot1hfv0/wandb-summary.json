@@ -1,0 +1,1 @@
+{"_timestamp": 1600240137.386584, "_step": 2, "Learning Rate (Depth & flag)": 0.01, "_runtime": 7.26548957824707, "Train Precision": 0.004235255190669204, "Train F1-score": 0.008434786906311264, "Train-#N accepted trajectory(Perfect flag without FN, FP)": 0, "Train Recall": 1.0}

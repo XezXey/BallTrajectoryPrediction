@@ -13,16 +13,31 @@ import matplotlib.pyplot as plt
 
 def computeDisplacement(trajectory_split, trajectory_type):
   # Compute the displacement
-  drop_cols = ["end_of_trajectory", "add_force_flag", "outside_flag", "trajectory_type", "t"]
+  drop_cols = ["end_of_trajectory", "on_ground_flag", "add_force_flag", "outside_flag", "trajectory_type", "t"]
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
     print("Highest Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
     # First vstack(extend rows) with (First row, np.diff() of the rest)
     # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 
-    trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
-                                                       np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
-                                            trajectory_split[traj_type][i].loc[:, 'end_of_trajectory'].values.reshape(-1, 1))) for i in range(len(trajectory_split[traj_type]))]
+    # print(trajectory_split[traj_type][0].iloc[1:, :].shape)
+    # print(trajectory_split[traj_type][0][['on_ground_flag']].iloc[1:, :].values.shape)
+    # print(trajectory_split[traj_type][0].loc[:, ['end_of_trajectory']].values.shape)
+    # print(np.zeros((1, 1)).shape)
+    # print(np.concatenate((trajectory_split[traj_type][0].loc[1:, ['on_ground_flag']].values, np.ones((1, 1)))).shape)
+    # exit()
+    if args.on_ground_flag:
+      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
+                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
+                                              # trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64),
+                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory', 'on_ground_flag']].values.astype(np.int64),
+                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].iloc[1:, :].values, np.ones((1, 1))))
+                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].values))
+                                              )) for i in range(len(trajectory_split[traj_type]))]
+    else :
+      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
+                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
+                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64))) for i in range(len(trajectory_split[traj_type]))]
     # Cast to ndarray (Bunch of trajectory)
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
     # Remove some dataset that goes below the ground (Error from unity)
@@ -253,6 +268,8 @@ if __name__ == '__main__':
   parser.add_argument('--no_vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_false')
   parser.add_argument('--masking', dest='masking', help='Masking of Noise', action='store_true')
   parser.add_argument('--no_masking', dest='masking', help='Masking of Noise', action='store_false')
+  parser.add_argument('--og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_true')
+  parser.add_argument('--no_og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_false')
 
   args = parser.parse_args()
   # List trial in directory

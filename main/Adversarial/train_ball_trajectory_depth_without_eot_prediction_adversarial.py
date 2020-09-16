@@ -131,10 +131,17 @@ def GravityLoss(output, trajectory_gt, mask, lengths):
 
   return pt.mean(gravity_constraint_penalize)
 
+# def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
+  # L2 loss of reconstructed trajectory
+  # trajectory_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))
+  # return trajectory_loss
+
 def TrajectoryLoss(output, trajectory_gt, mask, lengths=None, delmask=True):
   # L2 loss of reconstructed trajectory
-  trajectory_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask))
-  return trajectory_loss
+  x_trajectory_loss = (pt.sum((((trajectory_gt[..., 0] - output[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
+  y_trajectory_loss = (pt.sum((((trajectory_gt[..., 1] - output[..., 1]))**2) * mask[..., 1]) / pt.sum(mask[..., 1]))
+  z_trajectory_loss = (pt.sum((((trajectory_gt[..., 2] - output[..., 2]))**2) * mask[..., 2]) / pt.sum(mask[..., 2]))
+  return x_trajectory_loss + y_trajectory_loss + z_trajectory_loss
 
 def projectToWorldSpace(screen_space, depth, projection_matrix, camera_to_world_matrix, width, height):
   # print(screen_space.shape, depth.shape)
