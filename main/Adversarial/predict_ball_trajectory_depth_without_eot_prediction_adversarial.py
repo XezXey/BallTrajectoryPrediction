@@ -287,7 +287,10 @@ def compute_gradient_penalty(discriminator, hidden_D, cell_state_D, real_traj, f
 
 def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
   mae_loss_3axis = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
+  mse_loss_3axis = pt.sum((((trajectory_gt - output)**2) * mask), axis=1) / pt.sum(mask, axis=1)
   maxdist_3axis = pt.max(pt.abs(trajectory_gt - output) * mask, dim=1)[0]
+  print(pt.mean(mse_loss_3axis, axis=0))
+  print(pt.std(mse_loss_3axis, axis=0))
   accepted_3axis_maxdist = pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3))
   mae_loss_trajectory = pt.sum(mae_loss_3axis, axis=1) / 3
   print("Accepted 3-Axis(X, Y, Z) Maxdist < {} : {}".format(threshold, accepted_3axis_maxdist))

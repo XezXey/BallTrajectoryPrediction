@@ -16,7 +16,7 @@ def computeDisplacement(trajectory_split, trajectory_type):
   drop_cols = ["end_of_trajectory", "on_ground_flag", "add_force_flag", "outside_flag", "trajectory_type", "t"]
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
-    print("Highest Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
+    print("Average of Y-axis Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
     # First vstack(extend rows) with (First row, np.diff() of the rest)
     # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 

@@ -40,7 +40,7 @@ def visualize_layout_update(fig=None, n_vis=3):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
-def make_visualize(input_trajectory_test, output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_uv, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, mae_loss_trajectory, mae_loss_3axis, trajectory_type, animation_visualize_flag, gt_eot, pred_eot, accepted_3axis_maxdist, maxdist_3axis):
+def make_visualize(input_trajectory_test, output_test_xyz, output_trajectory_test_xyz, output_trajectory_test_startpos, input_trajectory_test_uv, input_trajectory_test_lengths, output_trajectory_test_mask, visualization_path, evaluation_results, trajectory_type, animation_visualize_flag, gt_eot, pred_eot):
   # Visualize by make a subplots of trajectory
   n_vis = 5
   if n_vis > args.batch_size:
@@ -52,7 +52,7 @@ def make_visualize(input_trajectory_test, output_test_xyz, output_trajectory_tes
   # Random the index the be visualize
   vis_idx = np.random.choice(a=np.arange(input_trajectory_test_uv.shape[0]), size=(n_vis), replace=False)
   # Visualize a trajectory
-  fig = visualize_trajectory(input=input_trajectory_test_uv, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, mae_loss_trajectory=mae_loss_trajectory.cpu().detach().numpy(), mae_loss_3axis=mae_loss_3axis.cpu().detach().numpy(), vis_idx=vis_idx, pred_eot=pred_eot, gt_eot=gt_eot, accepted_3axis_maxdist=accepted_3axis_maxdist.cpu().detach().numpy(), maxdist_3axis=maxdist_3axis.cpu().detach().numpy())
+  fig = visualize_trajectory(input=input_trajectory_test_uv, output=pt.mul(output_test_xyz, output_trajectory_test_mask[..., :-1]), trajectory_gt=output_trajectory_test_xyz[..., :-1], trajectory_startpos=output_trajectory_test_startpos[..., :-1], lengths=input_trajectory_test_lengths, mask=output_trajectory_test_mask[..., :-1], fig=fig, flag='Test', n_vis=n_vis, evaluation_results=evaluation_results, vis_idx=vis_idx, pred_eot=pred_eot, gt_eot=gt_eot)
   # Adjust the layout/axis
   # AUTO SCALED/PITCH SCALED
   fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(trajectory_type))
@@ -73,7 +73,7 @@ def visualize_layout_update(fig=None, n_vis=7):
     fig['layout']['scene{}'.format(i+1)]['camera'].update(projection=dict(type="perspective"))
   return fig
 
-def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, lengths, mask, mae_loss_trajectory, mae_loss_3axis, vis_idx, gt_eot, pred_eot, accepted_3axis_maxdist, maxdist_3axis, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, fig=None, flag='test', n_vis=5):
   # marker_dict for contain the marker properties
   marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
   marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
@@ -94,7 +94,7 @@ def visualize_trajectory(input, output, trajectory_gt, trajectory_startpos, leng
   count = 1
   for idx, i in enumerate(vis_idx):
     for col_idx in range(1, 3):
-      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {:.3f}, MaxDist = {}".format(flag, i, TrajectoryLoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), mae_loss_trajectory[i], maxdist_3axis[i, :])), row=idx+count, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {}, MaxDist = {}".format(flag, i, TrajectoryLoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]), evaluation_results['MAE']['loss_3axis'][i], evaluation_results['MAE']['maxdist_3axis'][i, :])), row=idx+count, col=col_idx)
       fig.add_trace(go.Scatter3d(x=trajectory_gt[i][:lengths[i]+1, 0], y=trajectory_gt[i][:lengths[i]+1, 1], z=trajectory_gt[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+count, col=col_idx)
     count +=1
 
@@ -229,16 +229,31 @@ def add_noise(input_trajectory, startpos, lengths):
   return input_trajectory
 
 def evaluateModel(output, trajectory_gt, mask, lengths, threshold=1, delmask=True):
-  mae_loss_3axis = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
-  maxdist_3axis = pt.max(pt.abs(trajectory_gt - output) * mask, dim=1)[0]
-  accepted_3axis_maxdist = pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3))
-  mae_loss_trajectory = pt.sum(mae_loss_3axis, axis=1) / 3
-  print("Accepted 3-Axis(X, Y, Z) Maxdist < {} : {}".format(threshold, accepted_3axis_maxdist))
-  accepted_3axis_loss = pt.sum((pt.sum(mae_loss_3axis < threshold, axis=1) == 3))
-  print("Accepted 3-Axis(X, Y, Z) loss < {} : {}".format(threshold, accepted_3axis_loss))
-  accepted_trajectory_loss = pt.sum(mae_loss_trajectory < threshold)
-  print("Accepted trajectory loss < {} : {}".format(threshold, accepted_trajectory_loss))
-  return accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis
+  # accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis, mse_loss_3axis
+  evaluation_results = {'MAE':{}, 'MSE':{}}
+  # metrics = ['3axis_maxdist', '3axis_loss', 'trajectory_loss', 'accepted_3axis_loss', 'accepted_3axis_maxdist', 'accepted_trajectory_loss']
+
+  for distance in evaluation_results:
+    if distance == 'MAE':
+      loss_3axis = pt.sum(((pt.abs(trajectory_gt - output)) * mask), axis=1) / pt.sum(mask, axis=1)
+      maxdist_3axis = pt.max(pt.abs(trajectory_gt - output) * mask, dim=1)[0]
+    elif distance == 'MSE':
+      loss_3axis = pt.sum((((trajectory_gt - output)**2) * mask), axis=1) / pt.sum(mask, axis=1)
+      maxdist_3axis = pt.max(((trajectory_gt - output)**2) * mask, dim=1)[0]
+
+    evaluation_results[distance]['maxdist_3axis'] = maxdist_3axis.cpu().detach().numpy()
+    evaluation_results[distance]['loss_3axis'] = loss_3axis.cpu().detach().numpy()
+    evaluation_results[distance]['mean_loss_3axis'] = pt.mean(loss_3axis, axis=0)
+    evaluation_results[distance]['sd_loss_3axis'] = pt.std(loss_3axis, axis=0)
+    evaluation_results[distance]['accepted_3axis_loss'] = pt.sum((pt.sum(loss_3axis < threshold, axis=1) == 3))
+    evaluation_results[distance]['accepted_3axis_maxdist']= pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3))
+
+    print("Distance : ", distance)
+    print("Accepted 3-Axis(X, Y, Z) Maxdist < {} : {}".format(threshold, evaluation_results[distance]['accepted_3axis_maxdist']))
+    print("Accepted 3-Axis(X, Y, Z) loss < {} : {}".format(threshold, evaluation_results[distance]['accepted_3axis_loss']))
+
+  # Accepted trajectory < Threshold
+  return evaluation_results
 
 def eot_metrics_log(eot_gt, output_eot, lengths, flag):
   output_eot = output_eot > 0.5
@@ -340,7 +355,7 @@ def predict(input_trajectory_test, input_trajectory_test_mask, input_trajectory_
   ############# Evaluation ###########
   ####################################
   # Calculate loss per trajectory
-  accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis = evaluateModel(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths, threshold=threshold)
+  evaluation_results = evaluateModel(output=output_test_xyz, trajectory_gt=output_trajectory_test_xyz[..., :-1], mask=output_trajectory_test_mask[..., :-1], lengths=output_trajectory_test_lengths, threshold=threshold)
 
   print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
   print('Trajectory Loss : {:.3f}'.format(trajectory_loss.item()), end=', ')
@@ -350,9 +365,9 @@ def predict(input_trajectory_test, input_trajectory_test_mask, input_trajectory_
   print('BelowGroundPenalize Loss : {:.3f}'.format(below_ground_loss.item()))
 
   if visualize_trajectory_flag == True:
-    make_visualize(input_trajectory_test=input_trajectory_test, output_test_xyz=output_test_xyz, output_trajectory_test_xyz=output_trajectory_test_xyz, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_uv=input_trajectory_test_uv_cumsum, output_trajectory_test_mask=output_trajectory_test_mask, visualization_path=visualization_path, mae_loss_trajectory=mae_loss_trajectory, mae_loss_3axis=mae_loss_3axis, trajectory_type=trajectory_type, animation_visualize_flag=animation_visualize_flag, gt_eot=input_trajectory_test_gt[..., -1], pred_eot=input_trajectory_test[..., -1], accepted_3axis_maxdist=accepted_3axis_maxdist, maxdist_3axis=maxdist_3axis)
+    make_visualize(input_trajectory_test=input_trajectory_test, output_test_xyz=output_test_xyz, output_trajectory_test_xyz=output_trajectory_test_xyz, output_trajectory_test_startpos=output_trajectory_test_startpos, input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_uv=input_trajectory_test_uv_cumsum, output_trajectory_test_mask=output_trajectory_test_mask, visualization_path=visualization_path, evaluation_results=evaluation_results, trajectory_type=trajectory_type, animation_visualize_flag=animation_visualize_flag, gt_eot=input_trajectory_test_gt[..., -1], pred_eot=input_trajectory_test[..., -1])
 
-  return accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss
+  return evaluation_results
 
 def initialize_folder(path):
   if not os.path.exists(path):
@@ -442,6 +457,26 @@ def load_checkpoint(model_eot, model_depth):
     print("[#] Checkpoint not found...")
     exit()
 
+def summary(evaluation_results_all):
+  print("="*100)
+  summary_evaluation = evaluation_results_all[0]
+  print("[#]Summary")
+  for distance in summary_evaluation.keys():
+    for idx, each_batch_eval in enumerate(evaluation_results_all):
+      if idx == 0:
+        continue
+      summary_evaluation[distance]['maxdist_3axis'] = np.concatenate((summary_evaluation[distance]['maxdist_3axis'], each_batch_eval[distance]['maxdist_3axis']), axis=0)
+      summary_evaluation[distance]['loss_3axis'] = np.concatenate((summary_evaluation[distance]['loss_3axis'], each_batch_eval[distance]['loss_3axis']), axis=0)
+      summary_evaluation[distance]['accepted_3axis_loss'] += each_batch_eval[distance]['accepted_3axis_loss']
+      summary_evaluation[distance]['accepted_3axis_maxdist'] += each_batch_eval[distance]['accepted_3axis_maxdist']
+
+    print("Distance : ", distance)
+    print("Mean 3-Axis(X, Y, Z) loss : {}".format(np.mean(summary_evaluation[distance]['loss_3axis'], axis=0)))
+    print("SD 3-Axis(X, Y, Z) loss : {}".format(np.std(summary_evaluation[distance]['loss_3axis'], axis=0)))
+    print("Accepted trajectory by 3axis Loss : {} from {}".format(summary_evaluation[distance]['accepted_3axis_loss'], n_trajectory))
+    print("Accepted trajectory by 3axis MaxDist : {} from {}".format(summary_evaluation[distance]['accepted_3axis_maxdist'], n_trajectory))
+    print("="*100)
+
 if __name__ == '__main__':
   print('[#]testing : Trajectory Estimation')
   # Argumentparser for input
@@ -495,10 +530,10 @@ if __name__ == '__main__':
   # Create Datasetloader for test and testidation
   print(args.dataset_test_path)
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
   # Create Datasetloader for testidation
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
+  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
   # Cast it to iterable object
   trajectory_test_iterloader = iter(trajectory_test_dataloader)
 
@@ -541,9 +576,7 @@ if __name__ == '__main__':
   print(model_depth)
 
   # Test a model iterate over dataloader to get each batch and pass to predict function
-  n_accepted_3axis_loss = 0
-  n_accepted_trajectory_loss = 0
-  n_accepted_3axis_maxdist = 0
+  evaluation_results_all = []
   n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
@@ -559,7 +592,7 @@ if __name__ == '__main__':
     output_trajectory_test_xyz = batch_test['output'][4].to(device)
 
       # Call function to test
-    accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss = predict(input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
+    evaluation_results = predict(input_trajectory_test=input_trajectory_test, input_trajectory_test_mask = input_trajectory_test_mask,
                                                                  input_trajectory_test_lengths=input_trajectory_test_lengths, input_trajectory_test_startpos=input_trajectory_test_startpos,
                                                                  output_trajectory_test=output_trajectory_test, output_trajectory_test_mask=output_trajectory_test_mask,
                                                                  output_trajectory_test_lengths=output_trajectory_test_lengths, output_trajectory_test_startpos=output_trajectory_test_startpos, output_trajectory_test_xyz=output_trajectory_test_xyz,
@@ -567,17 +600,8 @@ if __name__ == '__main__':
                                                                  visualize_trajectory_flag=args.visualize_trajectory_flag, projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, threshold=args.threshold, trajectory_type=args.trajectory_type, animation_visualize_flag=args.animation_visualize_flag,
                                                                  width=width, height=height)
 
-    n_accepted_3axis_loss += accepted_3axis_loss
-    n_accepted_trajectory_loss += accepted_trajectory_loss
-    n_accepted_3axis_maxdist += accepted_3axis_maxdist
+    evaluation_results_all.append(evaluation_results)
     n_trajectory += input_trajectory_test.shape[0]
 
-
-  print("="*100)
-  print("[#]Summary")
-  print("Accepted trajectory by MAE Loss : {} from {}".format(n_accepted_trajectory_loss, n_trajectory))
-  print("Accepted trajectory by 3axis MAE Loss : {} from {}".format(n_accepted_3axis_loss, n_trajectory))
-  print("Accepted trajectory by 3axis MaxDist : {} from {}".format(n_accepted_3axis_maxdist, n_trajectory))
-  print("="*100)
-
+  summary(evaluation_results_all)
   print("[#] Done")
