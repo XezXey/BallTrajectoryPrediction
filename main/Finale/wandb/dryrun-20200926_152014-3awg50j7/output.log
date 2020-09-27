@@ -1,0 +1,396 @@
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                              | 0/3 [00:00<?, ?it/s]Mixed: 100%|██████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 32.88it/s]
+===============================Dataset shape===============================
+Mixed : (5668,)
+===========================================================================
+Mixed:   0%|                                                                              | 0/1 [00:00<?, ?it/s]Mixed: 100%|██████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 20.55it/s]
+===============================Dataset shape===============================
+Mixed : (1850,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 847, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 847, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [0] : batch=torch.Size([128, 847, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 848, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 891, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 891, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [1] : batch=torch.Size([128, 891, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 892, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 966, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 966, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [2] : batch=torch.Size([128, 966, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 967, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 932, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 932, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [3] : batch=torch.Size([128, 932, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 933, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 951, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 951, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [4] : batch=torch.Size([128, 951, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 952, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([128, 915, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 915, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [5] : batch=torch.Size([128, 915, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 916, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([128, 962, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 962, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [6] : batch=torch.Size([128, 962, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 963, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([128, 851, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 851, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [7] : batch=torch.Size([128, 851, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 852, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([128, 992, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 992, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [8] : batch=torch.Size([128, 992, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 993, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([128, 796, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 796, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [9] : batch=torch.Size([128, 796, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 797, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([128, 904, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 904, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [10] : batch=torch.Size([128, 904, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 905, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([128, 891, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 891, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [11] : batch=torch.Size([128, 891, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 892, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([128, 882, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 882, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [12] : batch=torch.Size([128, 882, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 883, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [13] : batch=torch.Size([128, 899, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 899, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [13] : batch=torch.Size([128, 899, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 900, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [14] : batch=torch.Size([128, 811, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 811, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [14] : batch=torch.Size([128, 811, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 812, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [15] : batch=torch.Size([128, 860, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 860, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [15] : batch=torch.Size([128, 860, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 861, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [16] : batch=torch.Size([128, 898, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 898, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [16] : batch=torch.Size([128, 898, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 899, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [17] : batch=torch.Size([128, 883, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 883, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [17] : batch=torch.Size([128, 883, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 884, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [18] : batch=torch.Size([128, 876, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 876, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [18] : batch=torch.Size([128, 876, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 877, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [19] : batch=torch.Size([128, 833, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 833, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [19] : batch=torch.Size([128, 833, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 834, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [20] : batch=torch.Size([128, 918, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 918, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [20] : batch=torch.Size([128, 918, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 919, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [21] : batch=torch.Size([128, 802, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 802, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [21] : batch=torch.Size([128, 802, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 803, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [22] : batch=torch.Size([128, 960, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 960, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [22] : batch=torch.Size([128, 960, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 961, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [23] : batch=torch.Size([128, 831, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 831, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [23] : batch=torch.Size([128, 831, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 832, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [24] : batch=torch.Size([128, 885, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 885, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [24] : batch=torch.Size([128, 885, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 886, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [25] : batch=torch.Size([128, 881, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 881, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [25] : batch=torch.Size([128, 881, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 882, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [26] : batch=torch.Size([128, 959, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 959, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [26] : batch=torch.Size([128, 959, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 960, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [27] : batch=torch.Size([128, 868, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 868, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [27] : batch=torch.Size([128, 868, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 869, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [28] : batch=torch.Size([128, 990, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 990, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [28] : batch=torch.Size([128, 990, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 991, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [29] : batch=torch.Size([128, 925, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 925, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [29] : batch=torch.Size([128, 925, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 926, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [30] : batch=torch.Size([128, 758, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 758, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [30] : batch=torch.Size([128, 758, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 759, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [31] : batch=torch.Size([128, 867, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 867, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [31] : batch=torch.Size([128, 867, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 868, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [32] : batch=torch.Size([128, 763, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 763, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [32] : batch=torch.Size([128, 763, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 764, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [33] : batch=torch.Size([128, 949, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 949, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [33] : batch=torch.Size([128, 949, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 950, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [34] : batch=torch.Size([128, 837, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 837, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [34] : batch=torch.Size([128, 837, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 838, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [35] : batch=torch.Size([128, 845, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 845, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [35] : batch=torch.Size([128, 845, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 846, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [36] : batch=torch.Size([128, 807, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 807, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [36] : batch=torch.Size([128, 807, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 808, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [37] : batch=torch.Size([128, 845, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 845, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [37] : batch=torch.Size([128, 845, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 846, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [38] : batch=torch.Size([128, 844, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 844, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [38] : batch=torch.Size([128, 844, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 845, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [39] : batch=torch.Size([128, 922, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 922, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [39] : batch=torch.Size([128, 922, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 923, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [40] : batch=torch.Size([128, 866, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 866, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [40] : batch=torch.Size([128, 866, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 867, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [41] : batch=torch.Size([128, 875, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 875, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [41] : batch=torch.Size([128, 875, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 876, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [42] : batch=torch.Size([128, 939, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 939, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [42] : batch=torch.Size([128, 939, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 940, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [43] : batch=torch.Size([128, 1002, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 1002, 4]), initial position=torch.Size([128, 1, 4])
+Output batch [43] : batch=torch.Size([128, 1002, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1003, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(4, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [32,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [33,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [34,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [35,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [36,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [37,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [38,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [39,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [40,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [41,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [42,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [43,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [44,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [45,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [46,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [47,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [48,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [49,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [50,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [51,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [52,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [53,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [54,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [55,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [56,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [57,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [58,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [59,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [60,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [61,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [62,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [63,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [0,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [1,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [2,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [3,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [4,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [5,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [6,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [7,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [8,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [9,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [10,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [11,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [12,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [13,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [14,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [15,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [16,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [17,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [18,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [19,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [20,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [21,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [22,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [23,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [24,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [25,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [26,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [27,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [28,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [29,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [30,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [31,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [64,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [65,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [66,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [67,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [68,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [69,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [70,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [71,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [72,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [73,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [74,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [75,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [76,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [77,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [78,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [79,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [80,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [81,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [82,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [83,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [84,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [85,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [86,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [87,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [88,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [89,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [90,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [91,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [92,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [93,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [94,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [95,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [96,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [97,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [98,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [99,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [100,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [101,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [102,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [103,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [104,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [105,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [106,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [107,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [108,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [109,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [110,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [111,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [112,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [113,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [114,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [115,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [116,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [117,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [118,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [119,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [120,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [121,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [122,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [123,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [124,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [125,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [126,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:60: lambda [](int)->auto::operator()(int)->auto: block: [94,0,0], thread: [127,0,0] Assertion `index >= -sizes[i] && index < sizes[i] && "index out of bounds"` failed.
+THCudaCheck FAIL file=/pytorch/aten/src/THC/THCReduceAll.cuh line=327 error=710 : device-side assert triggered
+===> [Minibatch 1/44].........Traceback (most recent call last):
+  File "train_ball_trajectory_depth.py", line 380, in <module>
+    optimizer=optimizer, epoch=epoch, vis_signal=vis_signal, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
+  File "train_ball_trajectory_depth.py", line 130, in train
+    output_train_depth_cumsum, input_trajectory_train_uv_cumsum = utils_cummulative.cummulative_fn(depth=output_train_depth, uv=input_trajectory_train_gt[..., [0, 1]], depth_teacher=output_trajectory_train[..., [0]], startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=input_trajectory_train_gt[..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/utils/cummulative.py", line 20, in cummulative_fn
+    print(eot[..., [2]])
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/tensor.py", line 159, in __repr__
+    return torch._tensor_str._str(self)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_tensor_str.py", line 311, in _str
+    tensor_str = _tensor_str(self, indent)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_tensor_str.py", line 209, in _tensor_str
+    formatter = _Formatter(get_summarized_data(self) if summarize else self)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_tensor_str.py", line 87, in __init__
+    nonzero_finite_vals = torch.masked_select(tensor_view, torch.isfinite(tensor_view) & tensor_view.ne(0))
+RuntimeError: cuda runtime error (710) : device-side assert triggered at /pytorch/aten/src/THC/THCReduceAll.cuh:327

@@ -1,0 +1,11 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 3.7658941745758057, "_timestamp": 1599991750.9531605, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 4.4985809326171875, "_timestamp": 1599991751.6858473, "_step": 1}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.079996109008789, "_timestamp": 1599991753.2672625, "_step": 2}
+{"Train Loss": 34605.46875, "Validation Loss": 10387.6240234375, "_runtime": 6.09814453125, "_timestamp": 1599991753.285411, "_step": 3}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.568331241607666, "_timestamp": 1599991753.7555976, "_step": 4}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.12130856513977, "_timestamp": 1599991755.308575, "_step": 5}
+{"Train Loss": 20487.58984375, "Validation Loss": 261.50592041015625, "_runtime": 8.139493942260742, "_timestamp": 1599991755.3267603, "_step": 6}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.601317882537842, "_timestamp": 1599991755.7885842, "_step": 7}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.166962385177612, "_timestamp": 1599991757.3542287, "_step": 8}
+{"Train Loss": 608.666015625, "Validation Loss": 4616.30224609375, "_runtime": 10.184779167175293, "_timestamp": 1599991757.3720455, "_step": 9}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.645444631576538, "_timestamp": 1599991757.832711, "_step": 10}

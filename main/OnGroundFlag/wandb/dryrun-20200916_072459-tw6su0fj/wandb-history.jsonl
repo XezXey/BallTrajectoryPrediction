@@ -1,0 +1,7 @@
+{"Learning Rate (Depth & flag)": 0.01, "_runtime": 4.675402402877808, "_timestamp": 1600241103.9368577, "_step": 0}
+{"Train Precision": 0.35956010360494245, "Train Recall": 0.6886792452830188, "Train F1-score": 0.47245236700421234, "Train-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 7.193231582641602, "_timestamp": 1600241106.4546869, "_step": 1}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 7.352660894393921, "_timestamp": 1600241106.6141162, "_step": 2}
+{"Validation Precision": 0.39966865806516394, "Validation Recall": 0.8827410323224483, "Validation F1-score": 0.5502203023758099, "Validation-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 10.756853580474854, "_timestamp": 1600241110.0183089, "_step": 3}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect flag without FN, FP)": 0, "_runtime": 11.008623600006104, "_timestamp": 1600241110.270079, "_step": 4}
+{"Train Loss": 644.325927734375, "Validation Loss": 289.67626953125, "_runtime": 11.02745270729065, "_timestamp": 1600241110.288908, "_step": 5}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_6_8c1cb86b.plotly.json", "sha256": "8c1cb86baef1038f26a50f504345af4f0cd390f4cc3406d19845980be868ccf8", "size": 672276}, "_runtime": 11.909764051437378, "_timestamp": 1600241111.1712193, "_step": 6}

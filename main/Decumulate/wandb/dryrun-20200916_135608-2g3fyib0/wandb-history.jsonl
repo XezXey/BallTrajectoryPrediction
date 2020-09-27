@@ -1,0 +1,11 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 4.466288805007935, "_timestamp": 1600264572.2030768, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.881185531616211, "_timestamp": 1600264574.6179736, "_step": 1}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.468629360198975, "_timestamp": 1600264578.2054174, "_step": 2}
+{"Train Loss": 3266.052490234375, "Validation Loss": 2478.9326171875, "_runtime": 10.488473415374756, "_timestamp": 1600264578.2252614, "_step": 3}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 12.774928331375122, "_timestamp": 1600264580.5117164, "_step": 4}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 16.307432174682617, "_timestamp": 1600264584.0442202, "_step": 5}
+{"Train Loss": 2598.952392578125, "Validation Loss": 1824.334716796875, "_runtime": 16.322420358657837, "_timestamp": 1600264584.0592084, "_step": 6}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 18.558542728424072, "_timestamp": 1600264586.2953308, "_step": 7}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 22.000038623809814, "_timestamp": 1600264589.7368267, "_step": 8}
+{"Train Loss": 1852.948486328125, "Validation Loss": 906.1887817382812, "_runtime": 22.014703512191772, "_timestamp": 1600264589.7514915, "_step": 9}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 24.238956928253174, "_timestamp": 1600264591.975745, "_step": 10}

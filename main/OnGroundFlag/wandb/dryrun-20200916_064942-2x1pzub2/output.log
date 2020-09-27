@@ -1,0 +1,346 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/onGroundFlag/train_set
+Mixed:   0%|                                                                                                                           | 0/3 [00:00<?, ?it/s]Mixed:  67%|████████████████████████████████████████████████████████████████████████████▋                                      | 2/3 [00:00<00:00, 16.90it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 17.07it/s]
+===============================Dataset shape===============================
+Mixed : (4565,)
+===========================================================================
+Mixed:   0%|                                                                                                                           | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 22.81it/s]
+===============================Dataset shape===============================
+Mixed : (631,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 961, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 961, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [0] : batch=torch.Size([128, 961, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 962, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 888, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 888, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [1] : batch=torch.Size([128, 888, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 889, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 900, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 900, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [2] : batch=torch.Size([128, 900, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 901, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 911, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 911, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [3] : batch=torch.Size([128, 911, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 912, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 837, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 837, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [4] : batch=torch.Size([128, 837, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 838, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([128, 948, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 948, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [5] : batch=torch.Size([128, 948, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 949, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([128, 920, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 920, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [6] : batch=torch.Size([128, 920, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 921, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([128, 872, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 872, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [7] : batch=torch.Size([128, 872, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 873, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([128, 925, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 925, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [8] : batch=torch.Size([128, 925, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 926, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([128, 983, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 983, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [9] : batch=torch.Size([128, 983, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 984, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([128, 895, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 895, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [10] : batch=torch.Size([128, 895, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 896, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([128, 951, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 951, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [11] : batch=torch.Size([128, 951, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 952, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([128, 910, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 910, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [12] : batch=torch.Size([128, 910, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 911, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [13] : batch=torch.Size([128, 917, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 917, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [13] : batch=torch.Size([128, 917, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 918, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [14] : batch=torch.Size([128, 830, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 830, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [14] : batch=torch.Size([128, 830, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 831, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [15] : batch=torch.Size([128, 965, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 965, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [15] : batch=torch.Size([128, 965, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 966, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [16] : batch=torch.Size([128, 1030, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 1030, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [16] : batch=torch.Size([128, 1030, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1031, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [17] : batch=torch.Size([128, 842, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 842, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [17] : batch=torch.Size([128, 842, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 843, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [18] : batch=torch.Size([128, 945, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 945, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [18] : batch=torch.Size([128, 945, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 946, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [19] : batch=torch.Size([128, 749, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 749, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [19] : batch=torch.Size([128, 749, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 750, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [20] : batch=torch.Size([128, 831, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 831, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [20] : batch=torch.Size([128, 831, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 832, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [21] : batch=torch.Size([128, 851, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 851, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [21] : batch=torch.Size([128, 851, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 852, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [22] : batch=torch.Size([128, 873, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 873, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [22] : batch=torch.Size([128, 873, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 874, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [23] : batch=torch.Size([128, 969, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 969, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [23] : batch=torch.Size([128, 969, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 970, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [24] : batch=torch.Size([128, 827, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 827, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [24] : batch=torch.Size([128, 827, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 828, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [25] : batch=torch.Size([128, 959, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 959, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [25] : batch=torch.Size([128, 959, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 960, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [26] : batch=torch.Size([128, 858, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 858, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [26] : batch=torch.Size([128, 858, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 859, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [27] : batch=torch.Size([128, 837, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 837, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [27] : batch=torch.Size([128, 837, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 838, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [28] : batch=torch.Size([128, 823, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 823, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [28] : batch=torch.Size([128, 823, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 824, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [29] : batch=torch.Size([128, 899, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 899, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [29] : batch=torch.Size([128, 899, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 900, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [30] : batch=torch.Size([128, 859, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 859, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [30] : batch=torch.Size([128, 859, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 860, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [31] : batch=torch.Size([128, 893, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 893, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [31] : batch=torch.Size([128, 893, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 894, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [32] : batch=torch.Size([128, 896, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 896, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [32] : batch=torch.Size([128, 896, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 897, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [33] : batch=torch.Size([128, 842, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 842, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [33] : batch=torch.Size([128, 842, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 843, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [34] : batch=torch.Size([128, 924, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 924, 4]), initial position=torch.Size([128, 1, 5])
+Output batch [34] : batch=torch.Size([128, 924, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 925, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - Flag #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(4, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & flag) :  0.01
+===> [Minibatch 1/35].........tensor([[1.0032e+03, 4.6932e+02, 5.6588e+01, 0.0000e+00, 1.0000e+00]],
+       device='cuda:0')
+tensor([-1.6929,  3.5380,  0.0000,  1.0000], device='cuda:0')
+tensor([1.1641, 2.6783, 0.0000, 1.0000], device='cuda:0')
+tensor([-0.8381,  3.8779,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.6602,  3.5120,  0.0000,  1.0000], device='cuda:0')
+tensor([1.3719, 4.0817, 0.0000, 1.0000], device='cuda:0')
+tensor([0.5504, 1.9041, 0.0000, 1.0000], device='cuda:0')
+tensor([-0.4038,  0.8915,  0.0000,  1.0000], device='cuda:0')
+tensor([0.8746, 0.7618, 0.0000, 1.0000], device='cuda:0')
+tensor([ 2.5743, -1.9833,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.7682,  0.8260,  0.0000,  1.0000], device='cuda:0')
+tensor([0.9892, 1.3689, 0.0000, 1.0000], device='cuda:0')
+tensor([-4.0817, -1.2917,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.5358, -1.9260,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.8742, -1.0565,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.7120,  2.3181,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.6633,  2.6851,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.8610,  1.3427,  0.0000,  1.0000], device='cuda:0')
+tensor([4.0258, 1.8736, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.1339,  1.5979,  0.0000,  1.0000], device='cuda:0')
+tensor([3.0383, 1.4654, 0.0000, 1.0000], device='cuda:0')
+tensor([ 2.5599, -1.3792,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.3153,  3.4708,  0.0000,  1.0000], device='cuda:0')
+tensor([3.2707, 2.6620, 0.0000, 1.0000], device='cuda:0')
+tensor([ 3.3922, -2.4717,  0.0000,  1.0000], device='cuda:0')
+tensor([-4.6083,  2.6256,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.4869, -2.2581,  0.0000,  1.0000], device='cuda:0')
+tensor([1.3422, 4.4674, 0.0000, 1.0000], device='cuda:0')
+tensor([0.1616, 2.0223, 0.0000, 1.0000], device='cuda:0')
+tensor([0.5309, 2.5656, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.7664, -1.9365,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.0772,  1.6757,  0.0000,  1.0000], device='cuda:0')
+tensor([1.2039, 2.5574, 0.0000, 1.0000], device='cuda:0')
+tensor([1.1293, 3.5601, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.4634,  2.6628,  0.0000,  1.0000], device='cuda:0')
+tensor([0.8821, 3.4084, 0.0000, 1.0000], device='cuda:0')
+tensor([-4.6440,  3.2412,  0.0000,  1.0000], device='cuda:0')
+tensor([1.3578, 4.6862, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.5360,  2.4139,  0.0000,  1.0000], device='cuda:0')
+tensor([-2.7578,  2.5271,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.9015, -1.5572,  0.0000,  1.0000], device='cuda:0')
+tensor([3.9517, 2.5737, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.2979,  3.2886,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.2084,  2.8177,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.0385,  2.1409,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.7150,  3.0902,  0.0000,  1.0000], device='cuda:0')
+tensor([ 1.6989, -2.7076,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.6077, -1.0387,  0.0000,  1.0000], device='cuda:0')
+tensor([2.2239, 2.8918, 0.0000, 1.0000], device='cuda:0')
+tensor([ 2.9432, -2.5046,  0.0000,  1.0000], device='cuda:0')
+tensor([2.7189, 1.8813, 0.0000, 1.0000], device='cuda:0')
+tensor([4.1466, 2.6017, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.7159,  2.9637,  0.0000,  1.0000], device='cuda:0')
+tensor([-3.0270,  1.6301,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.0396, -1.6778,  0.0000,  1.0000], device='cuda:0')
+tensor([1.5986, 2.1939, 0.0000, 1.0000], device='cuda:0')
+tensor([3.9888, 1.8721, 0.0000, 1.0000], device='cuda:0')
+tensor([ 3.3845, -1.4026,  0.0000,  1.0000], device='cuda:0')
+tensor([3.4805, 4.4127, 0.0000, 1.0000], device='cuda:0')
+tensor([-0.2740,  0.9652,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.1061,  3.9305,  0.0000,  1.0000], device='cuda:0')
+tensor([1.3837, 1.0961, 0.0000, 1.0000], device='cuda:0')
+tensor([-0.3380,  1.3481,  0.0000,  1.0000], device='cuda:0')
+tensor([4.0323, 3.2638, 0.0000, 1.0000], device='cuda:0')
+tensor([-4.5110,  1.6887,  0.0000,  1.0000], device='cuda:0')
+tensor([-4.9519,  1.5751,  0.0000,  1.0000], device='cuda:0')
+tensor([0.9464, 0.9609, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.1279,  2.0232,  0.0000,  1.0000], device='cuda:0')
+tensor([1.7446, 3.5777, 0.0000, 1.0000], device='cuda:0')
+tensor([-3.2830,  2.1296,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.0608,  4.4916,  0.0000,  1.0000], device='cuda:0')
+tensor([ 1.7925, -1.3479,  0.0000,  1.0000], device='cuda:0')
+tensor([2.8884, 2.5247, 0.0000, 1.0000], device='cuda:0')
+tensor([-3.3582,  1.5413,  0.0000,  1.0000], device='cuda:0')
+tensor([-3.4249, -1.2606,  0.0000,  1.0000], device='cuda:0')
+tensor([-2.9612,  2.5702,  0.0000,  1.0000], device='cuda:0')
+tensor([1.4972, 2.8981, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.0632, -1.2535,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.9035, -1.3427,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.4294,  2.3801,  0.0000,  1.0000], device='cuda:0')
+tensor([ 1.8994, -1.0905,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.1769,  1.5146,  0.0000,  1.0000], device='cuda:0')
+tensor([1.9836, 1.6893, 0.0000, 1.0000], device='cuda:0')
+tensor([3.1828, 1.1513, 0.0000, 1.0000], device='cuda:0')
+tensor([4.2683, 3.1473, 0.0000, 1.0000], device='cuda:0')
+tensor([0.8332, 2.0269, 0.0000, 1.0000], device='cuda:0')
+tensor([0.5583, 2.6943, 0.0000, 1.0000], device='cuda:0')
+tensor([1.0037, 3.9767, 0.0000, 1.0000], device='cuda:0')
+tensor([3.4564, 3.0818, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.8394,  3.3066,  0.0000,  1.0000], device='cuda:0')
+tensor([0.9740, 1.5789, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.3819, -2.2576,  0.0000,  1.0000], device='cuda:0')
+tensor([ 1.3552, -1.8270,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.7020,  2.8181,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.8258,  3.6259,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.2615,  3.0255,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.7430,  3.5709,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.1205, -1.6591,  0.0000,  1.0000], device='cuda:0')
+tensor([-0.5468,  1.2923,  0.0000,  1.0000], device='cuda:0')
+tensor([4.0859, 3.4265, 0.0000, 1.0000], device='cuda:0')
+tensor([-3.9868,  2.9664,  0.0000,  1.0000], device='cuda:0')
+tensor([1.4176, 2.4959, 0.0000, 1.0000], device='cuda:0')
+tensor([1.0260, 1.1103, 0.0000, 1.0000], device='cuda:0')
+tensor([-2.6955, -0.2786,  0.0000,  1.0000], device='cuda:0')
+tensor([-2.0589, -1.3228,  0.0000,  1.0000], device='cuda:0')
+tensor([ 3.0023, -1.9251,  0.0000,  1.0000], device='cuda:0')
+tensor([1.2565, 0.8347, 0.0000, 1.0000], device='cuda:0')
+tensor([-4.4202,  1.8664,  0.0000,  1.0000], device='cuda:0')
+tensor([-3.1768, -1.9613,  0.0000,  1.0000], device='cuda:0')
+tensor([3.5540, 0.8628, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.0530,  0.9899,  0.0000,  1.0000], device='cuda:0')
+tensor([-2.6264, -1.8878,  0.0000,  1.0000], device='cuda:0')
+tensor([0.8093, 1.5292, 0.0000, 1.0000], device='cuda:0')
+tensor([-0.9554,  3.2503,  0.0000,  1.0000], device='cuda:0')
+tensor([ 2.7991, -1.1395,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.6404, -1.0536,  0.0000,  1.0000], device='cuda:0')
+tensor([-2.4779,  2.9542,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.2510,  1.9980,  0.0000,  1.0000], device='cuda:0')
+tensor([5.2429, 2.3852, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.5765,  4.0346,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.7270, -0.8507,  0.0000,  1.0000], device='cuda:0')
+tensor([-1.9097, -1.4334,  0.0000,  1.0000], device='cuda:0')
+tensor([2.1884, 3.2603, 0.0000, 1.0000], device='cuda:0')
+tensor([3.3638, 2.5928, 0.0000, 1.0000], device='cuda:0')
+tensor([2.1584, 4.6675, 0.0000, 1.0000], device='cuda:0')
+tensor([-1.9324, -1.1039,  0.0000,  1.0000], device='cuda:0')
+tensor([ 1.6464, -2.0888,  0.0000,  1.0000], device='cuda:0')
+tensor([-4.3779,  1.7021,  0.0000,  1.0000], device='cuda:0')
+tensor([2.4823, 3.0278, 0.0000, 1.0000], device='cuda:0')

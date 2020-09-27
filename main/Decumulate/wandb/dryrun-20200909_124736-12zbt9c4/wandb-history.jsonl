@@ -1,0 +1,132 @@
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 4.518999099731445, "_timestamp": 1599655660.5631344, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.00972843170166, "_timestamp": 1599655662.0538638, "_step": 1}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.685023307800293, "_timestamp": 1599655663.7291586, "_step": 2}
+{"Train Loss": 39725.515625, "Validation Loss": 3204.155517578125, "_runtime": 7.7014501094818115, "_timestamp": 1599655663.7455854, "_step": 3}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.522983074188232, "_timestamp": 1599655664.5671184, "_step": 4}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.187049865722656, "_timestamp": 1599655666.2311852, "_step": 5}
+{"Train Loss": 37363.9765625, "Validation Loss": 3159.41455078125, "_runtime": 10.205480575561523, "_timestamp": 1599655666.249616, "_step": 6}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 11.09738278388977, "_timestamp": 1599655667.141518, "_step": 7}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 12.835984230041504, "_timestamp": 1599655668.8801196, "_step": 8}
+{"Train Loss": 44624.26953125, "Validation Loss": 3114.52880859375, "_runtime": 12.86725926399231, "_timestamp": 1599655668.9113946, "_step": 9}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 13.651859283447266, "_timestamp": 1599655669.6959946, "_step": 10}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 15.234622478485107, "_timestamp": 1599655671.2787578, "_step": 11}
+{"Train Loss": 36747.9609375, "Validation Loss": 3070.61572265625, "_runtime": 15.25450611114502, "_timestamp": 1599655671.2986414, "_step": 12}
+{"Epoch Train Loss": 39615.4306640625, "Epoch Validation Loss": 3137.1786499023438, "_runtime": 15.350882768630981, "_timestamp": 1599655671.395018, "_step": 13}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 15.37028956413269, "_timestamp": 1599655671.414425, "_step": 14}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 16.902787685394287, "_timestamp": 1599655672.946923, "_step": 15}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 18.716681957244873, "_timestamp": 1599655674.7608173, "_step": 16}
+{"Train Loss": 39532.75, "Validation Loss": 3245.0009765625, "_runtime": 18.735046863555908, "_timestamp": 1599655674.7791822, "_step": 17}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 19.561291933059692, "_timestamp": 1599655675.6054273, "_step": 18}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 21.251094341278076, "_timestamp": 1599655677.2952297, "_step": 19}
+{"Train Loss": 34291.70703125, "Validation Loss": 3198.06884765625, "_runtime": 21.267926692962646, "_timestamp": 1599655677.312062, "_step": 20}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 22.153833150863647, "_timestamp": 1599655678.1979685, "_step": 21}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 23.921574354171753, "_timestamp": 1599655679.9657097, "_step": 22}
+{"Train Loss": 39327.69140625, "Validation Loss": 3151.347900390625, "_runtime": 23.937615156173706, "_timestamp": 1599655679.9817505, "_step": 23}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 24.80624485015869, "_timestamp": 1599655680.8503802, "_step": 24}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 26.592649459838867, "_timestamp": 1599655682.6367848, "_step": 25}
+{"Train Loss": 38193.4296875, "Validation Loss": 3105.103271484375, "_runtime": 26.610164165496826, "_timestamp": 1599655682.6542995, "_step": 26}
+{"Epoch Train Loss": 37836.39453125, "Epoch Validation Loss": 3174.8802490234375, "_runtime": 26.694696187973022, "_timestamp": 1599655682.7388315, "_step": 27}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 26.699519634246826, "_timestamp": 1599655682.743655, "_step": 28}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 28.213987588882446, "_timestamp": 1599655684.258123, "_step": 29}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 29.90830373764038, "_timestamp": 1599655685.952439, "_step": 30}
+{"Train Loss": 34638.10546875, "Validation Loss": 2870.05908203125, "_runtime": 29.919309616088867, "_timestamp": 1599655685.963445, "_step": 31}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_32_da059270.plotly.json", "sha256": "da05927040c46c78b1e0c31566a2bb51122c50250cfa370f71ed169cd51b5e17", "size": 565022}, "_runtime": 30.540580987930298, "_timestamp": 1599655686.5847163, "_step": 32}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_33_6148c2d3.html", "sha256": "6148c2d31ffdaaeb8fc799234a5ac1391552ee34c60f12f0b67e18edbfef7939", "size": 4199298}, "_runtime": 31.30156660079956, "_timestamp": 1599655687.345702, "_step": 33}
+{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_34_fb98744e.plotly.json", "sha256": "fb98744e20314cc2f357485a7ed7d6fe570c1bc6a6f1e1e1eb599922820b9619", "size": 153642}, "_runtime": 31.86666703224182, "_timestamp": 1599655687.9108024, "_step": 34}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 32.89867162704468, "_timestamp": 1599655688.942807, "_step": 35}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 34.81582832336426, "_timestamp": 1599655690.8599637, "_step": 36}
+{"Train Loss": 38295.5, "Validation Loss": 2827.718994140625, "_runtime": 34.83358430862427, "_timestamp": 1599655690.8777196, "_step": 37}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 35.76621699333191, "_timestamp": 1599655691.8103523, "_step": 38}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 37.53955841064453, "_timestamp": 1599655693.5836937, "_step": 39}
+{"Train Loss": 35628.2109375, "Validation Loss": 2785.5927734375, "_runtime": 37.556172132492065, "_timestamp": 1599655693.6003075, "_step": 40}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 38.42380118370056, "_timestamp": 1599655694.4679365, "_step": 41}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 40.16066098213196, "_timestamp": 1599655696.2047963, "_step": 42}
+{"Train Loss": 35514.66015625, "Validation Loss": 2744.060302734375, "_runtime": 40.17804169654846, "_timestamp": 1599655696.222177, "_step": 43}
+{"Epoch Train Loss": 36019.119140625, "Epoch Validation Loss": 2806.8577880859375, "_runtime": 40.25655698776245, "_timestamp": 1599655696.3006923, "_step": 44}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 40.27526617050171, "_timestamp": 1599655696.3194015, "_step": 45}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 41.80965709686279, "_timestamp": 1599655697.8537924, "_step": 46}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 43.56909418106079, "_timestamp": 1599655699.6132295, "_step": 47}
+{"Train Loss": 35340.98828125, "Validation Loss": 2691.33056640625, "_runtime": 43.584747076034546, "_timestamp": 1599655699.6288824, "_step": 48}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 44.41373825073242, "_timestamp": 1599655700.4578736, "_step": 49}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 46.05025577545166, "_timestamp": 1599655702.094391, "_step": 50}
+{"Train Loss": 30843.5859375, "Validation Loss": 2651.294921875, "_runtime": 46.0673406124115, "_timestamp": 1599655702.111476, "_step": 51}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 46.985302686691284, "_timestamp": 1599655703.029438, "_step": 52}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 48.826680183410645, "_timestamp": 1599655704.8708155, "_step": 53}
+{"Train Loss": 34315.19140625, "Validation Loss": 2611.255859375, "_runtime": 48.83843994140625, "_timestamp": 1599655704.8825753, "_step": 54}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 49.751976013183594, "_timestamp": 1599655705.7961113, "_step": 55}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 51.49036264419556, "_timestamp": 1599655707.534498, "_step": 56}
+{"Train Loss": 34236.83203125, "Validation Loss": 2571.791748046875, "_runtime": 51.50752592086792, "_timestamp": 1599655707.5516613, "_step": 57}
+{"Epoch Train Loss": 33684.1494140625, "Epoch Validation Loss": 2631.4182739257812, "_runtime": 51.59629201889038, "_timestamp": 1599655707.6404274, "_step": 58}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 51.615323066711426, "_timestamp": 1599655707.6594584, "_step": 59}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 53.135209798812866, "_timestamp": 1599655709.1793451, "_step": 60}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 54.764580726623535, "_timestamp": 1599655710.808716, "_step": 61}
+{"Train Loss": 29318.203125, "Validation Loss": 2636.5068359375, "_runtime": 54.78230953216553, "_timestamp": 1599655710.8264449, "_step": 62}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 55.71831560134888, "_timestamp": 1599655711.762451, "_step": 63}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 57.518396615982056, "_timestamp": 1599655713.562532, "_step": 64}
+{"Train Loss": 34291.7734375, "Validation Loss": 2595.505126953125, "_runtime": 57.53525161743164, "_timestamp": 1599655713.579387, "_step": 65}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 58.45145559310913, "_timestamp": 1599655714.495591, "_step": 66}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 60.23788094520569, "_timestamp": 1599655716.2820163, "_step": 67}
+{"Train Loss": 31273.48046875, "Validation Loss": 2555.090576171875, "_runtime": 60.2548086643219, "_timestamp": 1599655716.298944, "_step": 68}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 61.132588148117065, "_timestamp": 1599655717.1767235, "_step": 69}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 62.86836791038513, "_timestamp": 1599655718.9125032, "_step": 70}
+{"Train Loss": 31661.73046875, "Validation Loss": 2515.24853515625, "_runtime": 62.88458037376404, "_timestamp": 1599655718.9287157, "_step": 71}
+{"Epoch Train Loss": 31636.296875, "Epoch Validation Loss": 2575.5877685546875, "_runtime": 62.9674334526062, "_timestamp": 1599655719.0115688, "_step": 72}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 62.98573660850525, "_timestamp": 1599655719.029872, "_step": 73}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 64.49354243278503, "_timestamp": 1599655720.5376778, "_step": 74}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 66.19695734977722, "_timestamp": 1599655722.2410927, "_step": 75}
+{"Train Loss": 27790.07421875, "Validation Loss": 2437.333740234375, "_runtime": 66.21174955368042, "_timestamp": 1599655722.255885, "_step": 76}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_77_45da3667.plotly.json", "sha256": "45da3667630bc7983a959d9014b6ddc102347cb7fad6dd91c11351176df853af", "size": 546020}, "_runtime": 66.47837853431702, "_timestamp": 1599655722.5225139, "_step": 77}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_78_7a1ce608.html", "sha256": "7a1ce6083545c59464515c1bd9f7ed87c68d43cfdb52c4a9b09bda0b441555df", "size": 4133691}, "_runtime": 67.28506922721863, "_timestamp": 1599655723.3292046, "_step": 78}
+{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_79_bbc170eb.plotly.json", "sha256": "bbc170eb51c3c08ba8715fdd559c134a32dc666c2f89349fa3268034bddcd3af", "size": 141986}, "_runtime": 67.86070537567139, "_timestamp": 1599655723.9048407, "_step": 79}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 68.83758020401001, "_timestamp": 1599655724.8817155, "_step": 80}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 70.6921923160553, "_timestamp": 1599655726.7363276, "_step": 81}
+{"Train Loss": 31695.34765625, "Validation Loss": 2399.25732421875, "_runtime": 70.70519089698792, "_timestamp": 1599655726.7493262, "_step": 82}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 71.58496403694153, "_timestamp": 1599655727.6290994, "_step": 83}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 73.30972647666931, "_timestamp": 1599655729.3538618, "_step": 84}
+{"Train Loss": 28640.58984375, "Validation Loss": 2361.652587890625, "_runtime": 73.32103228569031, "_timestamp": 1599655729.3651676, "_step": 85}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 74.2387387752533, "_timestamp": 1599655730.282874, "_step": 86}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 75.98082661628723, "_timestamp": 1599655732.024962, "_step": 87}
+{"Train Loss": 31880.568359375, "Validation Loss": 2324.182861328125, "_runtime": 75.99824547767639, "_timestamp": 1599655732.0423808, "_step": 88}
+{"Epoch Train Loss": 30001.64501953125, "Epoch Validation Loss": 2380.6066284179688, "_runtime": 76.09085130691528, "_timestamp": 1599655732.1349866, "_step": 89}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 76.10819578170776, "_timestamp": 1599655732.152331, "_step": 90}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 77.69423270225525, "_timestamp": 1599655733.738368, "_step": 91}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 79.45025420188904, "_timestamp": 1599655735.4943895, "_step": 92}
+{"Train Loss": 26538.66796875, "Validation Loss": 2533.7421875, "_runtime": 79.46724247932434, "_timestamp": 1599655735.5113778, "_step": 93}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 80.34292769432068, "_timestamp": 1599655736.387063, "_step": 94}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 82.11356711387634, "_timestamp": 1599655738.1577024, "_step": 95}
+{"Train Loss": 28559.533203125, "Validation Loss": 2492.896484375, "_runtime": 82.13091850280762, "_timestamp": 1599655738.1750538, "_step": 96}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 83.05975413322449, "_timestamp": 1599655739.1038895, "_step": 97}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 84.9085910320282, "_timestamp": 1599655740.9527264, "_step": 98}
+{"Train Loss": 31958.826171875, "Validation Loss": 2452.365234375, "_runtime": 84.92389440536499, "_timestamp": 1599655740.9680297, "_step": 99}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 85.76993227005005, "_timestamp": 1599655741.8140676, "_step": 100}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 87.4776439666748, "_timestamp": 1599655743.5217793, "_step": 101}
+{"Train Loss": 25351.015625, "Validation Loss": 2412.61279296875, "_runtime": 87.49125862121582, "_timestamp": 1599655743.535394, "_step": 102}
+{"Epoch Train Loss": 28102.0107421875, "Epoch Validation Loss": 2472.9041748046875, "_runtime": 87.58216881752014, "_timestamp": 1599655743.6263041, "_step": 103}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 87.58739447593689, "_timestamp": 1599655743.6315298, "_step": 104}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 89.12110590934753, "_timestamp": 1599655745.1652412, "_step": 105}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 90.81904721260071, "_timestamp": 1599655746.8631825, "_step": 106}
+{"Train Loss": 26792.38671875, "Validation Loss": 2156.9873046875, "_runtime": 90.83912253379822, "_timestamp": 1599655746.8832579, "_step": 107}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 91.73227262496948, "_timestamp": 1599655747.776408, "_step": 108}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 93.48652267456055, "_timestamp": 1599655749.530658, "_step": 109}
+{"Train Loss": 26690.66015625, "Validation Loss": 2121.45458984375, "_runtime": 93.5070481300354, "_timestamp": 1599655749.5511835, "_step": 110}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 94.40102815628052, "_timestamp": 1599655750.4451635, "_step": 111}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 96.18136978149414, "_timestamp": 1599655752.225505, "_step": 112}
+{"Train Loss": 28369.921875, "Validation Loss": 2086.194580078125, "_runtime": 96.20225048065186, "_timestamp": 1599655752.2463858, "_step": 113}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 97.07910513877869, "_timestamp": 1599655753.1232405, "_step": 114}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 98.78606081008911, "_timestamp": 1599655754.8301961, "_step": 115}
+{"Train Loss": 25596.75390625, "Validation Loss": 2051.424560546875, "_runtime": 98.80323791503906, "_timestamp": 1599655754.8473732, "_step": 116}
+{"Epoch Train Loss": 26862.4306640625, "Epoch Validation Loss": 2104.0152587890625, "_runtime": 98.89252305030823, "_timestamp": 1599655754.9366584, "_step": 117}
+{"Learning Rate (Depth & EOT)": 0.001, "_runtime": 98.91016006469727, "_timestamp": 1599655754.9542954, "_step": 118}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 100.46948218345642, "_timestamp": 1599655756.5136175, "_step": 119}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 102.23362588882446, "_timestamp": 1599655758.2777612, "_step": 120}
+{"Train Loss": 24993.3203125, "Validation Loss": 1778.6302490234375, "_runtime": 102.24623703956604, "_timestamp": 1599655758.2903724, "_step": 121}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_122_6e4c6e35.plotly.json", "sha256": "6e4c6e35f72029fb0142b6ede297ad94565fc66fd6215740b066d43167d31358", "size": 677287}, "_runtime": 102.515216588974, "_timestamp": 1599655758.559352, "_step": 122}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_123_2303005b.html", "sha256": "2303005b30ff8151ea810dc75c0cac974e7642058b7a91d83ae35a80755ae9a1", "size": 4330559}, "_runtime": 103.37970042228699, "_timestamp": 1599655759.4238358, "_step": 123}
+{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_124_7ffa7cdd.plotly.json", "sha256": "7ffa7cdd0e3de3427d64e5c188082f69061f3e90ee8ab652853ea6fb71c06cfc", "size": 175854}, "_runtime": 103.84227919578552, "_timestamp": 1599655759.8864145, "_step": 124}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 104.875244140625, "_timestamp": 1599655760.9193795, "_step": 125}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 106.87122821807861, "_timestamp": 1599655762.9153636, "_step": 126}
+{"Train Loss": 25222.26953125, "Validation Loss": 1748.768310546875, "_runtime": 106.88353371620178, "_timestamp": 1599655762.927669, "_step": 127}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 107.81575059890747, "_timestamp": 1599655763.859886, "_step": 128}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 109.67024397850037, "_timestamp": 1599655765.7143793, "_step": 129}
+{"Train Loss": 25710.146484375, "Validation Loss": 1719.304443359375, "_runtime": 109.68837404251099, "_timestamp": 1599655765.7325094, "_step": 130}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 110.5601167678833, "_timestamp": 1599655766.604252, "_step": 131}

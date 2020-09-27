@@ -1,0 +1,1 @@
+{"_timestamp": 1600175588.0593889, "_runtime": 7.42703652381897, "_step": 1, "Learning Rate (Depth & EOT)": 0.01, "Train Precision": 0.004421187157832927, "Train F1-score": 0.008803452604068156, "Train Recall": 1.0, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0}

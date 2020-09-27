@@ -1,0 +1,364 @@
+==============================================Features==============================================
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'g-9']
+Selected features :  [6, 8]
+1. input_col =  [3, 4, 6, 8]
+2. input_startpos_col =  [3, 4, 5, 6, 8]
+3. output_col =  [5, 6, 8]
+4. output_startpos_col =  [0, 1, 2, 6, 8]
+5. output_xyz_col =  [0, 1, 2, 6, 8]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 30.31it/s]
+===============================Dataset shape===============================
+Mixed : (5668,)
+===========================================================================
+Mixed:   0%|                                                                                                | 0/1 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 20.89it/s]
+===============================Dataset shape===============================
+Mixed : (1850,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 840, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 840, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [0] : batch=torch.Size([128, 840, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 841, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 862, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 862, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [1] : batch=torch.Size([128, 862, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 863, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 885, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 885, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [2] : batch=torch.Size([128, 885, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 886, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 966, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 966, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [3] : batch=torch.Size([128, 966, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 967, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 865, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 865, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [4] : batch=torch.Size([128, 865, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 866, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([128, 862, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 862, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [5] : batch=torch.Size([128, 862, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 863, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([128, 811, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 811, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [6] : batch=torch.Size([128, 811, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 812, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([128, 876, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 876, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [7] : batch=torch.Size([128, 876, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 877, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([128, 876, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 876, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [8] : batch=torch.Size([128, 876, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 877, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([128, 990, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 990, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [9] : batch=torch.Size([128, 990, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 991, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([128, 787, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 787, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [10] : batch=torch.Size([128, 787, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 788, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([128, 953, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 953, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [11] : batch=torch.Size([128, 953, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 954, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([128, 915, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 915, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [12] : batch=torch.Size([128, 915, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 916, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [13] : batch=torch.Size([128, 852, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 852, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [13] : batch=torch.Size([128, 852, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 853, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [14] : batch=torch.Size([128, 892, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 892, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [14] : batch=torch.Size([128, 892, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 893, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [15] : batch=torch.Size([128, 803, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 803, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [15] : batch=torch.Size([128, 803, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 804, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [16] : batch=torch.Size([128, 949, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 949, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [16] : batch=torch.Size([128, 949, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 950, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [17] : batch=torch.Size([128, 959, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 959, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [17] : batch=torch.Size([128, 959, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 960, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [18] : batch=torch.Size([128, 791, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 791, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [18] : batch=torch.Size([128, 791, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 792, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [19] : batch=torch.Size([128, 951, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 951, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [19] : batch=torch.Size([128, 951, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 952, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [20] : batch=torch.Size([128, 939, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 939, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [20] : batch=torch.Size([128, 939, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 940, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [21] : batch=torch.Size([128, 874, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 874, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [21] : batch=torch.Size([128, 874, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 875, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [22] : batch=torch.Size([128, 844, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 844, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [22] : batch=torch.Size([128, 844, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 845, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [23] : batch=torch.Size([128, 881, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 881, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [23] : batch=torch.Size([128, 881, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 882, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [24] : batch=torch.Size([128, 826, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 826, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [24] : batch=torch.Size([128, 826, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 827, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [25] : batch=torch.Size([128, 855, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 855, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [25] : batch=torch.Size([128, 855, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 856, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [26] : batch=torch.Size([128, 932, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 932, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [26] : batch=torch.Size([128, 932, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 933, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [27] : batch=torch.Size([128, 860, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 860, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [27] : batch=torch.Size([128, 860, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 861, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [28] : batch=torch.Size([128, 918, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 918, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [28] : batch=torch.Size([128, 918, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 919, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [29] : batch=torch.Size([128, 882, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 882, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [29] : batch=torch.Size([128, 882, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 883, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [30] : batch=torch.Size([128, 922, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 922, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [30] : batch=torch.Size([128, 922, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 923, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [31] : batch=torch.Size([128, 962, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 962, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [31] : batch=torch.Size([128, 962, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 963, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [32] : batch=torch.Size([128, 1002, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 1002, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [32] : batch=torch.Size([128, 1002, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1003, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [33] : batch=torch.Size([128, 899, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 899, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [33] : batch=torch.Size([128, 899, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 900, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [34] : batch=torch.Size([128, 900, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 900, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [34] : batch=torch.Size([128, 900, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 901, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [35] : batch=torch.Size([128, 830, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 830, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [35] : batch=torch.Size([128, 830, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 831, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [36] : batch=torch.Size([128, 855, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 855, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [36] : batch=torch.Size([128, 855, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 856, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [37] : batch=torch.Size([128, 992, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 992, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [37] : batch=torch.Size([128, 992, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 993, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [38] : batch=torch.Size([128, 831, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 831, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [38] : batch=torch.Size([128, 831, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 832, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [39] : batch=torch.Size([128, 858, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 858, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [39] : batch=torch.Size([128, 858, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 859, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [40] : batch=torch.Size([128, 904, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 904, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [40] : batch=torch.Size([128, 904, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 905, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [41] : batch=torch.Size([128, 898, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 898, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [41] : batch=torch.Size([128, 898, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 899, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [42] : batch=torch.Size([128, 847, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 847, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [42] : batch=torch.Size([128, 847, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 848, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [43] : batch=torch.Size([128, 928, 4]), lengths=torch.Size([128]), mask=torch.Size([128, 928, 4]), initial position=torch.Size([128, 1, 5])
+gt batch [43] : batch=torch.Size([128, 928, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 929, 5]), initial position=torch.Size([128, 1, 5])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(4, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/44].........Train Loss : 146.710, Val Loss : 145.360
+======> Trajectory Loss : 0.009, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.382, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.009
+Opening in existing browser session.
+[0927/205754.694382:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0927/205755.009661:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0927/205755.355004:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/44].........Train Loss : 145.055, Val Loss : 140.739
+======> Trajectory Loss : 0.008, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.376, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.007
+===> [Minibatch 3/44].........Train Loss : 140.220, Val Loss : 138.382
+======> Trajectory Loss : 0.004, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.367, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.003
+===> [Minibatch 4/44].........Train Loss : 137.775, Val Loss : 136.042
+======> Trajectory Loss : 0.003, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.350, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.003
+===> [Minibatch 5/44].........Train Loss : 135.707, Val Loss : 133.858
+======> Trajectory Loss : 0.003, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.329, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.003
+===> [Minibatch 6/44].........Train Loss : 132.944, Val Loss : 129.663
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.307, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 7/44].........Train Loss : 128.476, Val Loss : 123.895
+======> Trajectory Loss : 0.003, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.259, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.003
+===> [Minibatch 8/44].........Train Loss : 122.882, Val Loss : 114.936
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.206, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 9/44].........Train Loss : 114.887, Val Loss : 105.646
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.127, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 10/44].........Train Loss : 104.745, Val Loss : 95.731
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.028, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 11/44].........Train Loss : 95.969, Val Loss : 87.317
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.942, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 12/44].........Train Loss : 84.805, Val Loss : 80.250
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.830, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 13/44].........Train Loss : 77.716, Val Loss : 76.021
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.761, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 14/44].........Train Loss : 74.985, Val Loss : 75.425
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.734, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 15/44].........Train Loss : 72.928, Val Loss : 73.522
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.713, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 16/44].........Train Loss : 71.415, Val Loss : 72.514
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.700, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 17/44].........Train Loss : 70.235, Val Loss : 70.573
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.689, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 18/44].........Train Loss : 68.935, Val Loss : 69.525
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.674, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 19/44].........Train Loss : 68.195, Val Loss : 67.480
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.664, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 20/44].........Train Loss : 66.054, Val Loss : 67.354
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.646, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 21/44].........Train Loss : 67.195, Val Loss : 65.636
+======> Trajectory Loss : 0.002, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.655, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.002
+===> [Minibatch 22/44].........Train Loss : 64.302, Val Loss : 65.044
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.631, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 23/44].........Train Loss : 63.897, Val Loss : 64.562
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.625, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 24/44].........Train Loss : 63.299, Val Loss : 62.899
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.621, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 25/44].........Train Loss : 62.748, Val Loss : 62.393
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.617, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 26/44].........Train Loss : 61.741, Val Loss : 61.858
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.606, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 27/44].........Train Loss : 60.557, Val Loss : 60.908
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.597, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 28/44].........Train Loss : 59.889, Val Loss : 60.939
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.590, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 29/44].........Train Loss : 62.844, Val Loss : 58.980
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.619, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 30/44].........Train Loss : 58.808, Val Loss : 58.791
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.579, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 31/44].........Train Loss : 58.215, Val Loss : 58.268
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.573, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 32/44].........Train Loss : 59.902, Val Loss : 57.928
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.591, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 33/44].........Train Loss : 56.973, Val Loss : 60.437
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.563, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 34/44].........Train Loss : 58.604, Val Loss : 57.032
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.578, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 35/44].........Train Loss : 56.439, Val Loss : 55.807
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.557, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 36/44].........Train Loss : 55.478, Val Loss : 55.771
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.549, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 37/44].........Train Loss : 56.164, Val Loss : 55.455
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.555, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 38/44].........Train Loss : 54.619, Val Loss : 55.047
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.541, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 39/44].........Train Loss : 54.204, Val Loss : 53.573
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.537, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000
+===> [Minibatch 40/44].........Train Loss : 54.296, Val Loss : 53.312
+======> Trajectory Loss : 0.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.538, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.001
+===> [Minibatch 41/44].........Train Loss : 53.475, Val Loss : 54.384
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.530, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000
+===> [Minibatch 42/44].........Train Loss : 52.129, Val Loss : 52.271
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.517, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000
+===> [Minibatch 43/44].........Train Loss : 51.704, Val Loss : 52.407
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.513, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000
+===> [Minibatch 44/44].........Train Loss : 51.564, Val Loss : 52.625
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.512, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000
+[#]Finish Epoch : 1/100000.........Train loss : 78.629, Val loss : 77.285
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 77.285
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/44].........Train Loss : 51.467, Val Loss : 50.389
+======> Trajectory Loss : 0.000, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.511, BelowGroundPenalize Loss : 0.000, Depth Loss : 0.000

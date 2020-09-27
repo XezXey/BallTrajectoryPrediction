@@ -1,0 +1,11 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise_old/train_set
+Mixed: 0it [00:00, ?it/s]Mixed: 0it [00:00, ?it/s]
+===============================Dataset shape===============================
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_decumulate.py", line 613, in <module>
+    trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/utils/dataloader.py", line 37, in __init__
+    self.trajectory_dataset[trajectory_type] = np.concatenate([self.trajectory_dataset[trajectory_type][i] for i in range(len(self.trajectory_dataset[trajectory_type]))])
+  File "<__array_function__ internals>", line 6, in concatenate
+ValueError: need at least one array to concatenate

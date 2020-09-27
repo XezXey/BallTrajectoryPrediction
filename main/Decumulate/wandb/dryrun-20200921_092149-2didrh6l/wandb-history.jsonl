@@ -1,0 +1,10 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 4.833806991577148, "_timestamp": 1600680113.7947142, "_step": 0}
+{"Train Precision": 0.004525526799604016, "Train Recall": 1.0, "Train F1-score": 0.009010277347599604, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 5.871533155441284, "_timestamp": 1600680114.8324404, "_step": 1}
+{"Validation Precision": 0.004489475723750744, "Validation Recall": 1.0, "Validation F1-score": 0.008938820828393458, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.480337142944336, "_timestamp": 1600680116.4412444, "_step": 2}
+{"Train Loss": 24444.62109375, "Validation Loss": 106700.5078125, "_runtime": 7.499213695526123, "_timestamp": 1600680116.460121, "_step": 3}
+{"Train Precision": 0.004510774760805596, "Train Recall": 1.0, "Train F1-score": 0.008981038081706397, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.939213037490845, "_timestamp": 1600680116.9001203, "_step": 4}
+{"Validation Precision": 0.004489475723750744, "Validation Recall": 1.0, "Validation F1-score": 0.008938820828393458, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 9.458363771438599, "_timestamp": 1600680118.419271, "_step": 5}
+{"Train Loss": 19814.849609375, "Validation Loss": 89824.71875, "_runtime": 9.475083351135254, "_timestamp": 1600680118.4359906, "_step": 6}
+{"Train Precision": 0.00447568096786601, "Train Recall": 1.0, "Train F1-score": 0.008911477007693111, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 9.930862426757812, "_timestamp": 1600680118.8917696, "_step": 7}
+{"Validation Precision": 0.004489475723750744, "Validation Recall": 1.0, "Validation F1-score": 0.008938820828393458, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 11.50104284286499, "_timestamp": 1600680120.46195, "_step": 8}
+{"Train Loss": 17444.439453125, "Validation Loss": 80882.890625, "_runtime": 11.517489433288574, "_timestamp": 1600680120.4783967, "_step": 9}

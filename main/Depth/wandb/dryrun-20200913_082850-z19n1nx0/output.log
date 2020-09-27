@@ -1,0 +1,538 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise/train_set
+Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed:  67%|██████████████████████████████████████████████████████████▋                             | 2/3 [00:00<00:00, 14.02it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 12.67it/s]
+===============================Dataset shape===============================
+Mixed : (7434,)
+===========================================================================
+Mixed:   0%|                                                                                                | 0/2 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 19.50it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 19.45it/s]
+===============================Dataset shape===============================
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 512)=========================================================================
+Input batch [0] : batch=torch.Size([512, 925, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 925, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [0] : batch=torch.Size([512, 926, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 926, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([512, 920, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 920, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [1] : batch=torch.Size([512, 921, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 921, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([512, 928, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 928, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [2] : batch=torch.Size([512, 929, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 929, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([512, 953, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 953, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [3] : batch=torch.Size([512, 954, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 954, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([512, 939, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 939, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [4] : batch=torch.Size([512, 940, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 940, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([512, 937, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 937, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [5] : batch=torch.Size([512, 938, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 938, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([512, 835, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 835, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [6] : batch=torch.Size([512, 836, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 836, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([512, 904, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 904, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [7] : batch=torch.Size([512, 905, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 905, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([512, 967, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 967, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [8] : batch=torch.Size([512, 968, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 968, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([512, 912, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 912, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [9] : batch=torch.Size([512, 913, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 913, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([512, 918, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 918, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [10] : batch=torch.Size([512, 919, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 919, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([512, 919, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 919, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [11] : batch=torch.Size([512, 920, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 920, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([512, 859, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 859, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [12] : batch=torch.Size([512, 860, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 860, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [13] : batch=torch.Size([512, 869, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 869, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [13] : batch=torch.Size([512, 870, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 870, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(3, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(2485.7705, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(10754.1504, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 6554.644, Val Loss : 33181.676
+===> [Minibatch 2/14].........tensor(2450.5342, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(10459.4805, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 6444.357, Val Loss : 32305.234
+===> [Minibatch 3/14].........tensor(2420.7578, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(10168.6123, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 6250.699, Val Loss : 31374.949
+===> [Minibatch 4/14].........tensor(2387.3079, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(9884.3789, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 6200.588, Val Loss : 30530.867
+===> [Minibatch 5/14].........tensor(2296.9690, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(9601.6064, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 5943.457, Val Loss : 29622.742
+===> [Minibatch 6/14].........tensor(2129.2886, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(9323.4600, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 5590.461, Val Loss : 28778.062
+===> [Minibatch 7/14].........tensor(2337.7761, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(9048.2021, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 6087.434, Val Loss : 27919.312
+===> [Minibatch 8/14].........tensor(2352.4753, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(8778.1201, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 5871.852, Val Loss : 27095.090
+===> [Minibatch 9/14].........tensor(2186.4006, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(8511.9004, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 5679.464, Val Loss : 26266.557
+===> [Minibatch 10/14].........tensor(1806.6168, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(8250.6367, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4914.200, Val Loss : 25464.828
+===> [Minibatch 11/14].........tensor(1826.5061, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(7992.7817, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4785.151, Val Loss : 24666.877
+===> [Minibatch 12/14].........tensor(1969.7649, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(7737.8896, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 5159.284, Val Loss : 23897.324
+===> [Minibatch 13/14].........tensor(1815.2450, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(7489.0220, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4654.219, Val Loss : 23115.959
+===> [Minibatch 14/14].........tensor(1734.1685, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(7243.5146, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4509.858, Val Loss : 22367.922
+[#]Finish Epoch : 1/10000.........Train loss : 5617.548, Val loss : 27613.386
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 27613.386
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(1558.9829, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(6511.5547, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4164.046, Val Loss : 20910.320
+===> [Minibatch 2/14].........tensor(1602.3121, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(6291.1514, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4251.706, Val Loss : 20179.434
+===> [Minibatch 3/14].........tensor(1731.6534, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(6075.3633, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4283.475, Val Loss : 19490.000
+===> [Minibatch 4/14].........tensor(1421.0044, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5862.8223, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3836.169, Val Loss : 18807.621
+===> [Minibatch 5/14].........tensor(1569.8728, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5653.9521, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3995.833, Val Loss : 18140.180
+===> [Minibatch 6/14].........tensor(1582.4314, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5448.9473, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 4066.646, Val Loss : 17490.660
+===> [Minibatch 7/14].........tensor(1247.1755, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5247.5610, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3291.269, Val Loss : 16839.834
+===> [Minibatch 8/14].........tensor(1354.0684, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5049.6035, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3460.733, Val Loss : 16209.902
+===> [Minibatch 9/14].........tensor(1237.8411, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4856.7432, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3244.153, Val Loss : 15587.631
+===> [Minibatch 10/14].........tensor(1160.6910, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4666.4434, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3127.696, Val Loss : 14990.972
+===> [Minibatch 11/14].........tensor(1205.0366, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4481.0654, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 3101.170, Val Loss : 14384.460
+===> [Minibatch 12/14].........tensor(1154.6504, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4298.9355, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2923.850, Val Loss : 13804.349
+===> [Minibatch 13/14].........tensor(1110.6245, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4120.4395, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2926.624, Val Loss : 13231.329
+===> [Minibatch 14/14].........tensor(1086.9541, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3945.5950, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2856.441, Val Loss : 12670.254
+[#]Finish Epoch : 2/10000.........Train loss : 3537.843, Val loss : 16624.068
+[+++]Saving the best model checkpoint : Prev loss 27613.386 > Curr loss 16624.068
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(1038.5790, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3867.8315, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2698.703, Val Loss : 11634.439
+===> [Minibatch 2/14].........tensor(904.2017, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3696.9766, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2422.097, Val Loss : 11110.676
+===> [Minibatch 3/14].........tensor(973.3369, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3530.0420, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2472.770, Val Loss : 10618.846
+===> [Minibatch 4/14].........tensor(859.6215, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3364.3076, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2247.592, Val Loss : 10119.406
+===> [Minibatch 5/14].........tensor(831.2599, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3204.7649, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2127.305, Val Loss : 9638.895
+===> [Minibatch 6/14].........tensor(776.5727, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3048.1323, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 2072.366, Val Loss : 9173.183
+===> [Minibatch 7/14].........tensor(697.8859, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2895.7468, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1828.562, Val Loss : 8714.380
+===> [Minibatch 8/14].........tensor(705.8195, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2747.2964, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1865.705, Val Loss : 8267.803
+===> [Minibatch 9/14].........tensor(726.3214, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2602.8352, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1870.415, Val Loss : 7837.507
+===> [Minibatch 10/14].........tensor(622.6156, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2462.4263, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1675.899, Val Loss : 7413.924
+===> [Minibatch 11/14].........tensor(618.5157, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2325.5840, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1627.073, Val Loss : 7003.561
+===> [Minibatch 12/14].........tensor(549.0588, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2192.9231, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1470.414, Val Loss : 6606.725
+===> [Minibatch 13/14].........tensor(531.3456, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2064.2012, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1423.057, Val Loss : 6221.165
+===> [Minibatch 14/14].........tensor(502.8044, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1939.4822, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1317.373, Val Loss : 5853.830
+[#]Finish Epoch : 3/10000.........Train loss : 1937.095, Val loss : 8586.738
+[+++]Saving the best model checkpoint : Prev loss 16624.068 > Curr loss 8586.738
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 4/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(506.7160, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1629.0494, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1313.484, Val Loss : 5350.614
+===> [Minibatch 2/14].........tensor(484.6523, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1524.5604, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1234.804, Val Loss : 5009.362
+===> [Minibatch 3/14].........tensor(446.2608, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1423.2804, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1154.057, Val Loss : 4678.175
+===> [Minibatch 4/14].........tensor(364.5162, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1325.8905, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 1000.204, Val Loss : 4359.866
+===> [Minibatch 5/14].........tensor(335.8517, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1231.8342, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 920.379, Val Loss : 4054.284
+===> [Minibatch 6/14].........tensor(338.6589, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1141.1833, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 891.075, Val Loss : 3758.899
+===> [Minibatch 7/14].........tensor(327.8279, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1054.1260, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 897.534, Val Loss : 3477.366
+===> [Minibatch 8/14].........tensor(289.7799, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(970.5280, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 772.644, Val Loss : 3207.994
+===> [Minibatch 9/14].........tensor(249.9328, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(890.3878, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 692.335, Val Loss : 2941.128
+===> [Minibatch 10/14].........tensor(238.9037, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(813.9056, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 646.784, Val Loss : 2692.654
+===> [Minibatch 11/14].........tensor(218.9175, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(740.7351, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 599.710, Val Loss : 2454.828
+===> [Minibatch 12/14].........tensor(200.5773, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(671.0739, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 555.685, Val Loss : 2225.951
+===> [Minibatch 13/14].........tensor(192.3826, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(604.9028, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 538.248, Val Loss : 2011.018
+===> [Minibatch 14/14].........tensor(156.7486, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(542.1494, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 448.967, Val Loss : 1805.735
+[#]Finish Epoch : 4/10000.........Train loss : 833.279, Val loss : 3430.562
+[+++]Saving the best model checkpoint : Prev loss 8586.738 > Curr loss 3430.562
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 5/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(150.4013, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(497.2928, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 434.025, Val Loss : 1643.699
+===> [Minibatch 2/14].........tensor(140.0412, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(439.5452, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 387.920, Val Loss : 1456.703
+===> [Minibatch 3/14].........tensor(106.0336, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(385.4978, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 314.884, Val Loss : 1282.594
+===> [Minibatch 4/14].........tensor(97.9775, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(334.9070, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 293.020, Val Loss : 1119.584
+===> [Minibatch 5/14].........tensor(86.3204, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(288.2104, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 259.656, Val Loss : 969.629
+===> [Minibatch 6/14].........tensor(74.7019, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(244.9223, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 237.287, Val Loss : 830.143
+===> [Minibatch 7/14].........tensor(70.6627, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(205.2488, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 220.157, Val Loss : 701.831
+===> [Minibatch 8/14].........tensor(54.0762, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(169.3467, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 179.656, Val Loss : 584.399
+===> [Minibatch 9/14].........tensor(49.8303, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(136.9752, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 166.296, Val Loss : 482.421
+===> [Minibatch 10/14].........tensor(40.4778, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(108.3597, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 144.210, Val Loss : 388.415
+===> [Minibatch 11/14].........tensor(35.2574, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(83.2057, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 125.502, Val Loss : 306.111
+===> [Minibatch 12/14].........tensor(27.2713, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(61.6846, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 108.548, Val Loss : 236.942
+===> [Minibatch 13/14].........tensor(22.7346, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(43.7451, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 98.796, Val Loss : 179.221
+===> [Minibatch 14/14].........tensor(17.7525, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(29.3194, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 85.993, Val Loss : 133.265
+[#]Finish Epoch : 5/10000.........Train loss : 218.282, Val loss : 736.783
+[+++]Saving the best model checkpoint : Prev loss 3430.562 > Curr loss 736.783
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 6/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(13.6964, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(21.0815, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 81.727, Val Loss : 107.141
+===> [Minibatch 2/14].........tensor(11.0249, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(12.3050, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 73.412, Val Loss : 81.010
+===> [Minibatch 3/14].........tensor(7.1946, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(6.7434, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 66.004, Val Loss : 66.698
+===> [Minibatch 4/14].........tensor(4.4814, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.6627, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 60.867, Val Loss : 62.505
+===> [Minibatch 5/14].........tensor(3.6935, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.1104, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.033, Val Loss : 69.278
+===> [Minibatch 6/14].........tensor(2.4794, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.4083, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.792, Val Loss : 80.355
+===> [Minibatch 7/14].........tensor(2.5954, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.0368, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 66.252, Val Loss : 92.761
+===> [Minibatch 8/14].........tensor(2.2608, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.8339, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 67.731, Val Loss : 103.191
+===> [Minibatch 9/14].........tensor(1.5778, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.7195, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 68.506, Val Loss : 112.390
+===> [Minibatch 10/14].........tensor(1.6449, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.6623, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 71.693, Val Loss : 115.589
+===> [Minibatch 11/14].........tensor(1.3033, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.6474, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 70.020, Val Loss : 116.918
+===> [Minibatch 12/14].........tensor(1.6597, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.6673, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 70.379, Val Loss : 115.098
+===> [Minibatch 13/14].........tensor(1.2797, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.7213, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.294, Val Loss : 110.694
+===> [Minibatch 14/14].........tensor(1.6488, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(0.8156, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 69.388, Val Loss : 104.628
+[#]Finish Epoch : 6/10000.........Train loss : 68.221, Val loss : 95.590
+[+++]Saving the best model checkpoint : Prev loss 736.783 > Curr loss 95.590
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 7/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(2.3051, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.1657, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 66.728, Val Loss : 94.160
+===> [Minibatch 2/14].........tensor(2.5194, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.3936, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.871, Val Loss : 85.600
+===> [Minibatch 3/14].........tensor(2.8315, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.7197, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.657, Val Loss : 77.319
+===> [Minibatch 4/14].........tensor(3.0427, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.1954, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 59.634, Val Loss : 70.438
+===> [Minibatch 5/14].........tensor(4.1192, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.9178, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.716, Val Loss : 64.856
+===> [Minibatch 6/14].........tensor(4.6227, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.8122, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 64.239, Val Loss : 62.211
+===> [Minibatch 7/14].........tensor(5.0909, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4.6264, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.767, Val Loss : 62.469
+===> [Minibatch 8/14].........tensor(6.7223, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5.2158, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.903, Val Loss : 62.679
+===> [Minibatch 9/14].........tensor(7.2285, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5.4778, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.577, Val Loss : 62.330
+===> [Minibatch 10/14].........tensor(5.6538, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5.3924, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 66.337, Val Loss : 62.415
+===> [Minibatch 11/14].........tensor(4.9355, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(5.0113, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.647, Val Loss : 62.167
+===> [Minibatch 12/14].........tensor(5.0656, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(4.4299, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.624, Val Loss : 61.861
+===> [Minibatch 13/14].........tensor(5.5083, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.7477, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.989, Val Loss : 63.742
+===> [Minibatch 14/14].........tensor(4.3618, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.0735, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.258, Val Loss : 64.304
+[#]Finish Epoch : 7/10000.........Train loss : 63.925, Val loss : 68.325
+[+++]Saving the best model checkpoint : Prev loss 95.590 > Curr loss 68.325
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 8/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(4.5898, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.8773, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.852, Val Loss : 66.142
+===> [Minibatch 2/14].........tensor(3.5134, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.7235, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.053, Val Loss : 67.899
+===> [Minibatch 3/14].........tensor(3.8311, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.6848, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 59.856, Val Loss : 68.110
+===> [Minibatch 4/14].........tensor(3.9383, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.7467, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 64.180, Val Loss : 69.339
+===> [Minibatch 5/14].........tensor(4.4331, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(1.9106, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.440, Val Loss : 65.285
+===> [Minibatch 6/14].........tensor(4.5915, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.0981, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.358, Val Loss : 63.941
+===> [Minibatch 7/14].........tensor(4.4841, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.1568, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.406, Val Loss : 64.314
+===> [Minibatch 8/14].........tensor(4.5637, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.0823, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.963, Val Loss : 65.051
+===> [Minibatch 9/14].........tensor(3.3283, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.0993, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 58.760, Val Loss : 63.664
+===> [Minibatch 10/14].........tensor(4.3140, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.2375, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.346, Val Loss : 62.903
+===> [Minibatch 11/14].........tensor(4.8319, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.4170, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.774, Val Loss : 61.787
+===> [Minibatch 12/14].........tensor(4.9865, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.4412, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 68.174, Val Loss : 62.711
+===> [Minibatch 13/14].........tensor(4.9364, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.6180, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 64.308, Val Loss : 63.545
+===> [Minibatch 14/14].........tensor(4.6390, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.6153, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.728, Val Loss : 61.411
+[#]Finish Epoch : 8/10000.........Train loss : 63.014, Val loss : 64.722
+[+++]Saving the best model checkpoint : Prev loss 68.325 > Curr loss 64.722
+[+++]Saving the best model checkpoint to :  model_checkpoints/test/Test_Bigru_residual_add_gg//Test_Bigru_residual_add_gg_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 9/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(4.5730, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.2215, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.764, Val Loss : 63.527
+===> [Minibatch 2/14].........tensor(4.7949, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.9157, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.755, Val Loss : 66.449
+===> [Minibatch 3/14].........tensor(3.6283, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.5142, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 60.983, Val Loss : 65.835
+===> [Minibatch 4/14].........tensor(3.8758, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.3337, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.251, Val Loss : 66.922
+===> [Minibatch 5/14].........tensor(3.3166, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.3142, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.775, Val Loss : 66.965
+===> [Minibatch 6/14].........tensor(4.0349, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.4263, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.495, Val Loss : 66.279
+===> [Minibatch 7/14].........tensor(4.0899, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.6849, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.133, Val Loss : 65.520
+===> [Minibatch 8/14].........tensor(4.4005, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.1198, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 61.239, Val Loss : 64.907
+===> [Minibatch 9/14].........tensor(4.9584, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.3756, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.974, Val Loss : 63.105
+===> [Minibatch 10/14].........tensor(4.9970, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.4296, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.818, Val Loss : 62.745
+===> [Minibatch 11/14].........tensor(4.1516, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.2770, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.856, Val Loss : 63.843
+===> [Minibatch 12/14].........tensor(5.7007, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(3.0752, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 65.987, Val Loss : 63.712
+===> [Minibatch 13/14].........tensor(3.9983, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.7390, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 63.533, Val Loss : 64.920
+===> [Minibatch 14/14].........tensor(4.2708, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.4580, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.927, Val Loss : 66.162
+[#]Finish Epoch : 9/10000.........Train loss : 62.964, Val loss : 65.064
+[#]Not saving the best model checkpoint : Val loss 65.064 not improved from 64.722
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 10/10000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate :  0.005
+===> [Minibatch 1/14].........tensor(2.9906, device='cuda:0', grad_fn=<MeanBackward0>)
+tensor(2.9282, device='cuda:0', grad_fn=<MeanBackward0>)
+Train Loss : 62.276, Val Loss : 68.048
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_without_eot_prediction.py", line 528, in <module>
+    optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
+  File "train_ball_trajectory_depth_without_eot_prediction.py", line 267, in train
+    make_visualize(input_trajectory_train=input_trajectory_train, output_train=output_train, input_trajectory_val=input_trajectory_val, output_val=output_val, output_train_xyz=output_train_xyz, output_trajectory_train_xyz=output_trajectory_train_xyz, output_trajectory_train_startpos=output_trajectory_train_startpos, input_trajectory_train_lengths=input_trajectory_train_lengths, output_trajectory_train_maks=output_trajectory_train_mask, output_val_xyz=output_val_xyz, output_trajectory_val_xyz=output_trajectory_val_xyz, output_trajectory_val_startpos=output_trajectory_val_startpos, input_trajectory_val_lengths=input_trajectory_val_lengths, output_trajectory_val_mask=output_trajectory_val_mask, visualization_path=visualization_path)
+  File "train_ball_trajectory_depth_without_eot_prediction.py", line 60, in make_visualize
+    visualize_trajectory(output=pt.mul(output_train_xyz, output_trajectory_train_mask[..., :-1]), trajectory_gt=output_trajectory_train_xyz[..., :-1], trajectory_startpos=output_trajectory_train_startpos[..., :-1], lengths=input_trajectory_train_lengths, mask=output_trajectory_train_mask[..., :-1], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+  File "train_ball_trajectory_depth_without_eot_prediction.py", line 101, in visualize_trajectory
+    fig.add_trace(go.Scatter3d(x=output[i][:lengths[i]+1, 0], y=output[i][:lengths[i]+1, 1], z=output[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}".format(flag, i, MSELoss(pt.tensor(output[i]).to(device), pt.tensor(trajectory_gt[i]).to(device), mask=mask[i]))), row=idx+1, col=col)
+  File "train_ball_trajectory_depth_without_eot_prediction.py", line 149, in MSELoss
+    mse_loss = (pt.sum((((trajectory_gt - output))**2) * mask) / pt.sum(mask)) + (gravity_constraint_penalize) + below_ground_constraint_penalize
+UnboundLocalError: local variable 'below_ground_constraint_penalize' referenced before assignment

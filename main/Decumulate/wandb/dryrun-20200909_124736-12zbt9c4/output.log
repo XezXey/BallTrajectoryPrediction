@@ -1,0 +1,234 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise_old/train_set
+Mixed:   0%|                                                                                                                               | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed : (555,)
+===========================================================================
+Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 18.99it/s]
+Mixed:   0%|                                                                                                                               | 0/2 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 16.94it/s]===============================Dataset shape===============================
+Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 16.91it/s]
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1922, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1922, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [0] : batch=torch.Size([128, 1923, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1923, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 2345, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2345, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [1] : batch=torch.Size([128, 2346, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2346, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 2317, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2317, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [2] : batch=torch.Size([128, 2318, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2318, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 2043, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2043, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [3] : batch=torch.Size([128, 2044, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2044, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(3, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+train_ball_trajectory_depth_jointly_decumulate.py:247: RuntimeWarning:
+
+invalid value encountered in long_scalars
+
+===> [Minibatch 1/4].........Train Loss : 39725.516, Val Loss : 3204.156
+======> Trajectory Loss : 3743.499, Gravity Loss : 150.157, EndOfTrajectory Loss : 22.890
+===> [Minibatch 2/4].........Train Loss : 37363.977, Val Loss : 3159.415
+======> Trajectory Loss : 3507.585, Gravity Loss : 140.393, EndOfTrajectory Loss : 22.867
+===> [Minibatch 3/4].........Train Loss : 44624.270, Val Loss : 3114.529
+======> Trajectory Loss : 4233.450, Gravity Loss : 184.213, EndOfTrajectory Loss : 22.879
+===> [Minibatch 4/4].........Train Loss : 36747.961, Val Loss : 3070.616
+======> Trajectory Loss : 3445.655, Gravity Loss : 141.224, EndOfTrajectory Loss : 22.900
+[#]Finish Epoch : 1/100000.........Train loss : 39615.431, Val loss : 3137.179
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 3137.179
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 39532.750, Val Loss : 3245.001
+======> Trajectory Loss : 3724.605, Gravity Loss : 158.453, EndOfTrajectory Loss : 22.851
+===> [Minibatch 2/4].........Train Loss : 34291.707, Val Loss : 3198.069
+======> Trajectory Loss : 3200.367, Gravity Loss : 129.642, EndOfTrajectory Loss : 22.867
+===> [Minibatch 3/4].........Train Loss : 39327.691, Val Loss : 3151.348
+======> Trajectory Loss : 3704.019, Gravity Loss : 156.002, EndOfTrajectory Loss : 22.859
+===> [Minibatch 4/4].........Train Loss : 38193.430, Val Loss : 3105.103
+======> Trajectory Loss : 3590.550, Gravity Loss : 150.683, EndOfTrajectory Loss : 22.864
+[#]Finish Epoch : 2/100000.........Train loss : 37836.395, Val loss : 3174.880
+[#]Not saving the best model checkpoint : Val loss 3174.880 not improved from 3137.179
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 34638.105, Val Loss : 2870.059
+======> Trajectory Loss : 3234.970, Gravity Loss : 136.318, EndOfTrajectory Loss : 22.870
+Opening in existing browser session.
+[0909/194808.127274:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+train_ball_trajectory_depth_jointly_decumulate.py:247: RuntimeWarning:
+
+invalid value encountered in long_scalars
+
+===> [Minibatch 2/4].........Train Loss : 38295.500, Val Loss : 2827.719
+======> Trajectory Loss : 3600.672, Gravity Loss : 153.091, EndOfTrajectory Loss : 22.873
+[1195:1195:0909/194810.911947:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 3/4].........Train Loss : 35628.211, Val Loss : 2785.593
+======> Trajectory Loss : 3333.665, Gravity Loss : 142.534, EndOfTrajectory Loss : 22.901
+===> [Minibatch 4/4].........Train Loss : 35514.660, Val Loss : 2744.060
+======> Trajectory Loss : 3322.983, Gravity Loss : 138.133, EndOfTrajectory Loss : 22.835
+[#]Finish Epoch : 3/100000.........Train loss : 36019.119, Val loss : 2806.858
+[+++]Saving the best model checkpoint : Prev loss 3137.179 > Curr loss 2806.858
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 4/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 35340.988, Val Loss : 2691.331
+======> Trajectory Loss : 3305.624, Gravity Loss : 141.085, EndOfTrajectory Loss : 22.833
+===> [Minibatch 2/4].........Train Loss : 30843.586, Val Loss : 2651.295
+======> Trajectory Loss : 2855.235, Gravity Loss : 122.830, EndOfTrajectory Loss : 22.900
+[0909/194824.825691:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 3/4].........Train Loss : 34315.191, Val Loss : 2611.256
+======> Trajectory Loss : 3202.908, Gravity Loss : 135.584, EndOfTrajectory Loss : 22.848
+===> [Minibatch 4/4].........Train Loss : 34236.832, Val Loss : 2571.792
+======> Trajectory Loss : 3194.387, Gravity Loss : 141.763, EndOfTrajectory Loss : 22.915
+[#]Finish Epoch : 4/100000.........Train loss : 33684.149, Val loss : 2631.418
+[+++]Saving the best model checkpoint : Prev loss 2806.858 > Curr loss 2631.418
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 5/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 29318.203, Val Loss : 2636.507
+======> Trajectory Loss : 2702.826, Gravity Loss : 118.838, EndOfTrajectory Loss : 22.888
+===> [Minibatch 2/4].........Train Loss : 34291.773, Val Loss : 2595.505
+======> Trajectory Loss : 3200.245, Gravity Loss : 138.168, EndOfTrajectory Loss : 22.879
+===> [Minibatch 3/4].........Train Loss : 31273.480, Val Loss : 2555.091
+======> Trajectory Loss : 2898.935, Gravity Loss : 129.555, EndOfTrajectory Loss : 22.828
+===> [Minibatch 4/4].........Train Loss : 31661.730, Val Loss : 2515.249
+======> Trajectory Loss : 2937.505, Gravity Loss : 126.516, EndOfTrajectory Loss : 22.854
+[#]Finish Epoch : 5/100000.........Train loss : 31636.297, Val loss : 2575.588
+[+++]Saving the best model checkpoint : Prev loss 2631.418 > Curr loss 2575.588
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 6/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 27790.074, Val Loss : 2437.334
+======> Trajectory Loss : 2550.592, Gravity Loss : 112.293, EndOfTrajectory Loss : 22.830
+Opening in existing browser session.
+[0909/194844.115271:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+train_ball_trajectory_depth_jointly_decumulate.py:247: RuntimeWarning:
+
+invalid value encountered in long_scalars
+
+===> [Minibatch 2/4].........Train Loss : 31695.348, Val Loss : 2399.257
+======> Trajectory Loss : 2941.041, Gravity Loss : 132.539, EndOfTrajectory Loss : 22.836
+[2224:2224:0909/194847.064749:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+[0909/194848.289359:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 3/4].........Train Loss : 28640.590, Val Loss : 2361.653
+======> Trajectory Loss : 2634.754, Gravity Loss : 116.826, EndOfTrajectory Loss : 22.919
+===> [Minibatch 4/4].........Train Loss : 31880.568, Val Loss : 2324.183
+======> Trajectory Loss : 2959.115, Gravity Loss : 133.185, EndOfTrajectory Loss : 22.881
+[#]Finish Epoch : 6/100000.........Train loss : 30001.645, Val loss : 2380.607
+[+++]Saving the best model checkpoint : Prev loss 2575.588 > Curr loss 2380.607
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 7/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 26538.668, Val Loss : 2533.742
+======> Trajectory Loss : 2425.009, Gravity Loss : 106.628, EndOfTrajectory Loss : 22.875
+===> [Minibatch 2/4].........Train Loss : 28559.533, Val Loss : 2492.896
+======> Trajectory Loss : 2627.326, Gravity Loss : 115.398, EndOfTrajectory Loss : 22.851
+===> [Minibatch 3/4].........Train Loss : 31958.826, Val Loss : 2452.365
+======> Trajectory Loss : 2966.492, Gravity Loss : 137.291, EndOfTrajectory Loss : 22.925
+===> [Minibatch 4/4].........Train Loss : 25351.016, Val Loss : 2412.613
+======> Trajectory Loss : 2305.929, Gravity Loss : 109.116, EndOfTrajectory Loss : 22.906
+[#]Finish Epoch : 7/100000.........Train loss : 28102.011, Val loss : 2472.904
+[#]Not saving the best model checkpoint : Val loss 2472.904 not improved from 2380.607
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 8/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 26792.387, Val Loss : 2156.987
+======> Trajectory Loss : 2450.525, Gravity Loss : 112.720, EndOfTrajectory Loss : 22.860
+===> [Minibatch 2/4].........Train Loss : 26690.660, Val Loss : 2121.455
+======> Trajectory Loss : 2440.597, Gravity Loss : 113.904, EndOfTrajectory Loss : 22.836
+===> [Minibatch 3/4].........Train Loss : 28369.922, Val Loss : 2086.195
+======> Trajectory Loss : 2608.154, Gravity Loss : 119.407, EndOfTrajectory Loss : 22.872
+===> [Minibatch 4/4].........Train Loss : 25596.754, Val Loss : 2051.425
+======> Trajectory Loss : 2330.418, Gravity Loss : 107.801, EndOfTrajectory Loss : 22.915
+[#]Finish Epoch : 8/100000.........Train loss : 26862.431, Val loss : 2104.015
+[+++]Saving the best model checkpoint : Prev loss 2380.607 > Curr loss 2104.015
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 9/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 24993.320, Val Loss : 1778.630
+======> Trajectory Loss : 2270.418, Gravity Loss : 108.977, EndOfTrajectory Loss : 22.881
+Opening in existing browser session.
+[0909/194920.099350:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+train_ball_trajectory_depth_jointly_decumulate.py:247: RuntimeWarning:
+
+invalid value encountered in long_scalars
+
+[3092:3092:0909/194922.914827:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 2/4].........Train Loss : 25222.270, Val Loss : 1748.768
+======> Trajectory Loss : 2293.188, Gravity Loss : 104.453, EndOfTrajectory Loss : 22.893
+[0909/194924.405854:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 3/4].........Train Loss : 25710.146, Val Loss : 1719.304
+======> Trajectory Loss : 2342.031, Gravity Loss : 108.687, EndOfTrajectory Loss : 22.887

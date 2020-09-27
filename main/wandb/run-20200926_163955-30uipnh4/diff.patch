@@ -1,0 +1,215 @@
+diff --git a/main/Decumulate/predict_ball_trajectory_depth_jointly_decumulate.py b/main/Decumulate/predict_ball_trajectory_depth_jointly_decumulate.py
+index 6782926..0499ecb 100644
+--- a/main/Decumulate/predict_ball_trajectory_depth_jointly_decumulate.py
++++ b/main/Decumulate/predict_ball_trajectory_depth_jointly_decumulate.py
+@@ -600,10 +600,10 @@ if __name__ == '__main__':
+   # Create Datasetloader for test and testidation
+   print(args.dataset_test_path)
+   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
+-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
++  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
+   # Create Datasetloader for testidation
+   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
+-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
++  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
+   # Cast it to iterable object
+   trajectory_test_iterloader = iter(trajectory_test_dataloader)
+ 
+diff --git a/main/Decumulate/train_ball_trajectory_depth_jointly_decumulate.py b/main/Decumulate/train_ball_trajectory_depth_jointly_decumulate.py
+index 39d947c..893fe22 100644
+--- a/main/Decumulate/train_ball_trajectory_depth_jointly_decumulate.py
++++ b/main/Decumulate/train_ball_trajectory_depth_jointly_decumulate.py
+@@ -256,6 +256,7 @@ def add_noise(input_trajectory, startpos, lengths):
+     for j in range(100):
+      x.append(np.all(noise_uv.cpu().numpy() < 3))
+     print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
++  exit()
+   '''
+   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+   n_noise = int(args.batch_size * factor)
+@@ -373,6 +374,32 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, p
+   depth_cumsum = pt.stack(depth_cumsum, dim=0)
+   return depth_cumsum, uv_cumsum
+ 
++def cumsum_trajectory_teacherforcing(depth, depth_teacher, uv, trajectory_startpos):
++  '''
++  Perform a cummulative summation to the output
++  Argument :
++  1. depth : The displacement from the network with shape = (batch_size, sequence_length,)
++  2. uv : The input_trajectory (displacement of u, v) with shape = (batch_size, sequence_length, 2)
++  3. trajectory_startpos : The start position of input trajectory with shape = (batch_size, 1, )
++  Output :
++  1. output : concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1,)
++  2. uv_cumsum : u, v by concat with startpos and perform cumsum with shape = (batch_size, sequence_length+1, 2)
++  '''
++  # Teacher forcing use the ground truth depth
++  depth_teacher = pt.stack([pt.cat([trajectory_startpos[i][:, -1], depth_teacher[i][:, 0]]) for i in range(trajectory_startpos.shape[0])])
++  depth_teacher = pt.cumsum(depth_teacher, dim=1).unsqueeze(dim=-1)
++  # Apply cummulative summation to output
++  # trajectory_cumsum : concat with startpos and stack back to (batch_size, sequence_length+1, 2)
++  uv_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, :2], uv[i].clone().detach()]) for i in range(trajectory_startpos.shape[0])])
++  # trajectory_cumsum : perform cumsum along the sequence_length axis
++  uv_cumsum = pt.cumsum(uv_cumsum, dim=1)
++  # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
++  depth_cumsum = depth + depth_teacher[:, :-1, :]
++  depth_cumsum = pt.stack([pt.cat([trajectory_startpos[i][:, -1], depth_cumsum[i][:, 0]]) for i in range(trajectory_startpos.shape[0])])
++  # output = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), depth[i]]) for i in range(trajectory_startpos.shape[0])])
++  # output : perform cumsum along the sequence_length axis
++  return pt.unsqueeze(depth_cumsum, dim=-1), uv_cumsum
++
+ def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model_eot, model_depth, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
+   # Training RNN/LSTM model
+   # Run over each example
+@@ -412,6 +439,16 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
+     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=input_trajectory_train_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+     # output_train_depth, input_trajectory_train_uv = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=(output_train_eot > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+ 
++  elif args.teacherforcing_depth:
++    output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory_teacherforcing(depth=output_train_depth, depth_teacher=output_trajectory_train, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
++
++  elif args.teacherforcing_mixed:
++    factor = np.random.uniform(low=0.3, high=0.6)
++    n_teacherforcing = int(args.batch_size * factor)
++    teacher_idx = np.random.choice(a=args.batch_size, size=(n_teacherforcing,), replace=False)
++    output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
++    output_train_depth_cumsum[teacher_idx, ...], _ = cumsum_trajectory_teacherforcing(depth=output_train_depth[teacher_idx, ...], depth_teacher=output_trajectory_train[teacher_idx, ...], uv=input_trajectory_train_gt[teacher_idx, :, :-1], trajectory_startpos=input_trajectory_train_startpos[teacher_idx, :, :-1])
++
+   else:
+     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
+ 
+@@ -452,6 +489,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
+   if args.decumulate and epoch > args.start_decumulate:
+     output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, eot=input_trajectory_val_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+     # output_val_depth, input_trajectory_val_uv = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, eot=(output_val_eot > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
++  # elif args.teacherforcing_depth:
++    # output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_trajectory_teacherforcing(depth=output_val_depth, depth_teacher=output_trajectory_val, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+   else:
+     # (This step we get the displacement of depth by input the displacement of u and v)
+     # Apply cummulative summation to output using cumsum_trajectory function
+@@ -583,6 +622,8 @@ if __name__ == '__main__':
+   parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
+   parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
+   parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
++  parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
++  parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
+   parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
+   parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
+   args = parser.parse_args()
+@@ -708,7 +749,7 @@ if __name__ == '__main__':
+ 
+     # Visualize signal to make a plot and save to wandb every epoch is done.
+     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+-    vis_signal = True if epoch % 10 == 0 else False
++    vis_signal = True if epoch % 1 == 0 else False
+ 
+     # Training a model iterate over dataloader to get each batch and pass to train function
+     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
+diff --git a/main/OnGroundFlag/predict_ball_trajectory_depth_jointly_ongroundflag.py b/main/OnGroundFlag/predict_ball_trajectory_depth_jointly_ongroundflag.py
+index 88cacec..c04d440 100644
+--- a/main/OnGroundFlag/predict_ball_trajectory_depth_jointly_ongroundflag.py
++++ b/main/OnGroundFlag/predict_ball_trajectory_depth_jointly_ongroundflag.py
+@@ -351,7 +351,7 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, flag,
+   # Reset the depth when flag == 1
+   plane_normal = get_plane_normal()
+ 
+-  flag_all = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), flag[i]]) for i in range(trajectory_startpos.shape[0])])
++  flag_all = pt.stack([pt.cat([trajectory_startpos[i][:, -1], flag[i][:, 0]]) for i in range(trajectory_startpos.shape[0])])
+   reset_idx = [pt.where((flag_all[i][:lengths[i]+1]) == 1.) for i in range(flag_all.shape[0])]
+   reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
+   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
+diff --git a/utils/preprocessing.py b/utils/preprocessing.py
+index d7ddaac..a411bed 100644
+--- a/utils/preprocessing.py
++++ b/utils/preprocessing.py
+@@ -11,9 +11,30 @@ import plotly.graph_objects as go
+ from plotly.subplots import make_subplots
+ import matplotlib.pyplot as plt
+ 
++def get_selected_cols():
++  # Flag/Extra features columns
++  features_cols = []
++  if 'eot' in args.selected_features:
++    features_cols.append('end_of_trajectory')
++  if 'og' in args.selected_features:
++    features_cols.append('on_ground_flag')
++  if 'f_rad' in args.selected_features:
++    features_cols.append('force_angle_rad')
++
++  # Position columns
++  position_cols = ['ball_world_x', 'ball_world_y', 'ball_world_z']
++  for axis in ['x', 'y', 'z']:
++    position_cols.append('ball_{}_{}_{}'.format(args.selected_space, args.selected_cams, axis))
++
++  print("Selected features columns : ", features_cols)
++  print("Selected position columns : ", position_cols)
++  return features_cols, position_cols
++
++
+ def computeDisplacement(trajectory_split, trajectory_type):
+   # Compute the displacement
+-  drop_cols = ["end_of_trajectory", "on_ground_flag", "add_force_flag", "outside_flag", "trajectory_type", "t"]
++  features_cols, position_cols = get_selected_cols()
++  drop_cols = ["outside_flag", "trajectory_type", "t"] + features_cols
+   trajectory_npy = trajectory_split.copy()
+   for traj_type in trajectory_type:
+     print("Average of Y-axis Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
+@@ -26,18 +47,10 @@ def computeDisplacement(trajectory_split, trajectory_type):
+     # print(np.zeros((1, 1)).shape)
+     # print(np.concatenate((trajectory_split[traj_type][0].loc[1:, ['on_ground_flag']].values, np.ones((1, 1)))).shape)
+     # exit()
+-    if args.on_ground_flag:
+-      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
+-                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
+-                                              # trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64),
+-                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory', 'on_ground_flag']].values.astype(np.int64),
+-                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].iloc[1:, :].values, np.ones((1, 1))))
+-                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].values))
+-                                              )) for i in range(len(trajectory_split[traj_type]))]
+-    else :
+-      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
+-                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
+-                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64))) for i in range(len(trajectory_split[traj_type]))]
++    trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i][position_cols].iloc[0].values,
++                                                       np.diff(trajectory_split[traj_type][i][position_cols].values, axis=0))),
++                                            trajectory_split[traj_type][i][features_cols].values,))
++                                 for i in range(len(trajectory_split[traj_type]))]
+     # Cast to ndarray (Bunch of trajectory)
+     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
+     # Remove some dataset that goes below the ground (Error from unity)
+@@ -55,7 +68,7 @@ def remove_below_ground_trajectory(trajectory, traj_type):
+     if (np.any(traj_cumsum_temp[:, 1] <= -0.1)):
+       remove_idx.append(idx)
+       count+=1
+-  print("\n{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
++  print("\n{}===>Remove the below ground trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
+   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
+   return trajectory
+ 
+@@ -137,7 +150,7 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, tim
+       trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * mask_y
+       # print("After froce zero ground")
+ 
+-    trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
++    trajectory_df[traj_type] = trajectory_df[traj_type].replace({True:1, False:0})
+     # Split each dataframe by using the flag == True as an index of starting point
+     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
+     # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
+@@ -268,8 +281,9 @@ if __name__ == '__main__':
+   parser.add_argument('--no_vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_false')
+   parser.add_argument('--masking', dest='masking', help='Masking of Noise', action='store_true')
+   parser.add_argument('--no_masking', dest='masking', help='Masking of Noise', action='store_false')
+-  parser.add_argument('--og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_true')
+-  parser.add_argument('--no_og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_false')
++  parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
++  parser.add_argument('--selected_cams', dest='selected_cams', help='Specify the selected cams(main, along, top)', type=str, required=True)
++  parser.add_argument('--selected_space', dest='selected_space', help='Specify the selected spaces(ndc, screen)', type=str, required=True)
+ 
+   args = parser.parse_args()
+   # List trial in directory
+diff --git a/utils/process_trial_index.txt b/utils/process_trial_index.txt
+index 1e8b314..c8d76bf 100644
+--- a/utils/process_trial_index.txt
++++ b/utils/process_trial_index.txt
+@@ -1 +1 @@
+-6
++11 12 13 14

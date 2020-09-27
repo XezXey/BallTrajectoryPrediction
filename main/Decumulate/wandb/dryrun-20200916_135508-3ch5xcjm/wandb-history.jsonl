@@ -1,0 +1,14 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 4.743398189544678, "_timestamp": 1600264512.7952569, "_step": 0}
+{"Train Precision": 0.004234624673305323, "Train Recall": 1.0, "Train F1-score": 0.008433536484928348, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.132056713104248, "_timestamp": 1600264515.1839154, "_step": 1}
+{"Validation Precision": 0.00438546853779991, "Validation Recall": 1.0, "Validation F1-score": 0.008732640356066367, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.62227201461792, "_timestamp": 1600264518.6741307, "_step": 2}
+{"Train Loss": 8446.5654296875, "Validation Loss": 6642.04833984375, "_runtime": 10.640324354171753, "_timestamp": 1600264518.692183, "_step": 3}
+{"Train Precision": 0.0045373980857851826, "Train Recall": 1.0, "Train F1-score": 0.009033806196626437, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 12.858859062194824, "_timestamp": 1600264520.9107177, "_step": 4}
+{"Validation Precision": 0.00438546853779991, "Validation Recall": 1.0, "Validation F1-score": 0.008732640356066367, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 16.342833995819092, "_timestamp": 1600264524.3946927, "_step": 5}
+{"Train Loss": 6789.5947265625, "Validation Loss": 6054.74853515625, "_runtime": 16.363330125808716, "_timestamp": 1600264524.4151888, "_step": 6}
+{"Train Precision": 0.004313031758065875, "Train Recall": 1.0, "Train F1-score": 0.008589018805254063, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 18.542027235031128, "_timestamp": 1600264526.593886, "_step": 7}
+{"Validation Precision": 0.00438546853779991, "Validation Recall": 1.0, "Validation F1-score": 0.008732640356066367, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 22.093045949935913, "_timestamp": 1600264530.1449046, "_step": 8}
+{"Train Loss": 6482.6171875, "Validation Loss": 5189.46484375, "_runtime": 22.10885763168335, "_timestamp": 1600264530.1607163, "_step": 9}
+{"Train Precision": 0.004526006859729147, "Train Recall": 1.0, "Train F1-score": 0.009011228835932276, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 24.32472538948059, "_timestamp": 1600264532.376584, "_step": 10}
+{"Validation Precision": 0.00438546853779991, "Validation Recall": 1.0, "Validation F1-score": 0.008732640356066367, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 27.710837602615356, "_timestamp": 1600264535.7626963, "_step": 11}
+{"Train Loss": 5069.9794921875, "Validation Loss": 3305.577880859375, "_runtime": 27.723361253738403, "_timestamp": 1600264535.77522, "_step": 12}
+{"Train Precision": 0.0042678758981711485, "Train Recall": 1.0, "Train F1-score": 0.008499477082952905, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 29.9697482585907, "_timestamp": 1600264538.021607, "_step": 13}

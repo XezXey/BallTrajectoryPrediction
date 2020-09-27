@@ -1,0 +1,11 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 3.8114726543426514, "_timestamp": 1599991872.4032257, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 4.55723237991333, "_timestamp": 1599991873.1489854, "_step": 1}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.201098203659058, "_timestamp": 1599991874.7928512, "_step": 2}
+{"Train Loss": 37186.4140625, "Validation Loss": 18896.685546875, "_runtime": 6.219256639480591, "_timestamp": 1599991874.8110096, "_step": 3}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.6904823780059814, "_timestamp": 1599991875.2822354, "_step": 4}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.315982580184937, "_timestamp": 1599991876.9077356, "_step": 5}
+{"Train Loss": 26242.5859375, "Validation Loss": 368.582763671875, "_runtime": 8.330437421798706, "_timestamp": 1599991876.9221904, "_step": 6}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 8.767121315002441, "_timestamp": 1599991877.3588743, "_step": 7}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.340498685836792, "_timestamp": 1599991878.9322517, "_step": 8}
+{"Train Loss": 1221.4842529296875, "Validation Loss": 24772.5390625, "_runtime": 10.357498407363892, "_timestamp": 1599991878.9492514, "_step": 9}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.813889980316162, "_timestamp": 1599991879.405643, "_step": 10}

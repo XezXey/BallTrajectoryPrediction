@@ -1,0 +1,148 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise/val_set
+Mixed:   0%|                                                                                                     | 0/2 [00:00<?, ?it/s]Mixed: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 15.18it/s]Mixed: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 15.15it/s]
+===============================Dataset shape===============================
+Mixed : (2000,)
+===========================================================================
+Mixed:   0%|                                                                                                     | 0/2 [00:00<?, ?it/s]Mixed: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 15.42it/s]===============================Dataset shape===============================
+Mixed: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 15.40it/s]
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1915, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1915, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [0] : batch=torch.Size([128, 1916, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1916, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 2248, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2248, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [1] : batch=torch.Size([128, 2249, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2249, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 2255, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2255, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [2] : batch=torch.Size([128, 2256, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2256, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 2364, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2364, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [3] : batch=torch.Size([128, 2365, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2365, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1910, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1910, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [4] : batch=torch.Size([128, 1911, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1911, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([128, 1709, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1709, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [5] : batch=torch.Size([128, 1710, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1710, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([128, 1800, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1800, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [6] : batch=torch.Size([128, 1801, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1801, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([128, 2187, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2187, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [7] : batch=torch.Size([128, 2188, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2188, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([128, 1985, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1985, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [8] : batch=torch.Size([128, 1986, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1986, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([128, 2112, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2112, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [9] : batch=torch.Size([128, 2113, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2113, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([128, 1817, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1817, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [10] : batch=torch.Size([128, 1818, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1818, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([128, 2024, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2024, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [11] : batch=torch.Size([128, 2025, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2025, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([128, 2097, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2097, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [12] : batch=torch.Size([128, 2098, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2098, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [13] : batch=torch.Size([128, 1953, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1953, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [13] : batch=torch.Size([128, 1954, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1954, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [14] : batch=torch.Size([128, 1871, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1871, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [14] : batch=torch.Size([128, 1872, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1872, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(3, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/15].........torch.Size([128, 2171, 1]) torch.Size([128, 2171, 2]) torch.Size([128, 1, 4]) torch.Size([128, 2171, 1])
+[(tensor([277, 611], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([340, 516], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([425, 810, 978], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([312, 649], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 157,  644,  798, 1024, 1233, 1507], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 180,  439,  701,  887, 1324], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([159, 476, 596, 831], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([271], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([285, 413], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([155, 612, 758], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([181], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 407,  545,  956, 1242, 1401], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([157], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([167, 300], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([147, 287, 459, 888], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([287], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([240, 752, 984], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 180,  447,  588,  940, 1102, 1233, 1533], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 444,  670, 1014, 1256, 1713, 2032, 2171], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([157, 355, 484], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([156, 464, 636], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([299, 449], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 418,  775, 1228], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 145,  291,  440,  727,  887, 1169, 1287], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 419,  810,  999, 1166, 1315], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([182], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([137, 295, 678, 883], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([177, 316, 797], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 302,  664, 1034], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 500,  631, 1026, 1160, 1327, 1472, 1608], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([172, 648, 807], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 135,  283,  436,  780,  960, 1367], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([175], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([141, 306, 491], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([114, 479], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([389], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 308,  745,  917, 1057, 1434], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([135, 298], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([168, 283, 712], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([155, 483], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 475,  664,  866, 1026, 1497, 1639], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 345,  603,  833, 1130, 1561, 1718], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([295, 446, 582, 856], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([219, 340, 622, 744, 882], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 165,  323,  675,  955, 1218, 1443], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 383,  544, 1020], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([278, 429, 694, 851], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([172, 321, 476, 703], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([155], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([166], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([200], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 149,  567,  723,  902, 1060, 1378, 1751], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([160, 314, 435, 669, 902], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 304,  757,  904, 1054], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([ 326,  562,  888, 1292, 1566, 2028], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([152], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([335, 458], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([285], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([157], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 150,  308,  609, 1081, 1419, 1551], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([124], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([166, 459, 724], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 140,  465,  618,  952, 1117, 1258], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 148,  312,  490,  923, 1062, 1218, 1332], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([170], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([319, 452, 604], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([158], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([193, 605, 770], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 313,  477,  627,  805, 1299], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([130], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 195,  369,  562,  844, 1107], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([150, 518], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 338,  487,  683,  862, 1325, 1504, 1860], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([136], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([126, 291, 578], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([143], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([179, 434, 585], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 337,  676,  833,  957, 1126], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 107,  272,  440,  886, 1072], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([187, 371], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([257, 427, 678], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([158], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 313,  418,  662,  825,  949, 1179], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 397,  536,  699,  858, 1020, 1176], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([190, 308, 612, 915], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([142, 293, 438], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([150, 295], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([268], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([396, 525, 973], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 242,  397,  542,  691,  984, 1126], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([156, 318, 573], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([252, 517, 656, 836], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([291, 580], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 438,  645,  807, 1036, 1207, 1652], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([ 172,  316,  469,  796, 1020], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([161, 449, 580], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([150, 310, 664, 831, 999], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([121, 559, 705], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 405,  673,  819, 1145], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([ 313,  550,  913, 1077, 1341, 1560], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([169, 394, 622], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([162, 328], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([181, 425], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([306, 671], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([346, 463, 632, 781], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([ 153,  289,  425,  576,  959, 1155, 1299], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([365, 501, 666], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([154, 600], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([148, 323], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 342,  477,  637,  789, 1225], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([496, 626], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 409,  571,  705,  927, 1156, 1449], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([270], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([157, 313, 513], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 478,  632,  818, 1236, 1562], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([112, 473, 606, 921], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([166], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([149, 268, 429], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([141, 265, 525], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([ 289,  619,  803, 1199], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([398, 526], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([180], device='cuda:0'), tensor([0], device='cuda:0')), (tensor([ 280,  416,  603,  924, 1100, 1259], device='cuda:0'), tensor([0, 0, 0, 0, 0, 0], device='cuda:0')), (tensor([134, 277, 427], device='cuda:0'), tensor([0, 0, 0], device='cuda:0')), (tensor([162, 317], device='cuda:0'), tensor([0, 0], device='cuda:0')), (tensor([ 347,  606,  821,  976, 1175], device='cuda:0'), tensor([0, 0, 0, 0, 0], device='cuda:0')), (tensor([351, 505, 736, 981], device='cuda:0'), tensor([0, 0, 0, 0], device='cuda:0')), (tensor([158], device='cuda:0'), tensor([0], device='cuda:0'))]
+tensor([[804.8488, 281.6412,  48.3219,   0.0000]], device='cuda:0')
+tensor([[-0.2780],
+        [-0.2773],
+        [-0.2774],
+        ...,
+        [-0.2324],
+        [-0.2324],
+        [-0.2324]], device='cuda:0', grad_fn=<SelectBackward>)
+tensor([[52.7997],
+        [59.1345]], device='cuda:0')

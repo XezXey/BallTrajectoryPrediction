@@ -1,0 +1,102 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise_old/train_set
+Mixed:   0%|                                                                                                                               | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 12.14it/s]
+===============================Dataset shape===============================
+Mixed : (2035,)
+===========================================================================
+Mixed:   0%|                                                                                                                               | 0/2 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 16.85it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 16.82it/s]
+===============================Dataset shape===============================
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 512)=========================================================================
+Input batch [0] : batch=torch.Size([512, 951, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 951, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [0] : batch=torch.Size([512, 952, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 952, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([512, 960, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 960, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [1] : batch=torch.Size([512, 961, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 961, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([512, 928, 3]), lengths=torch.Size([512]), mask=torch.Size([512, 928, 3]), initial position=torch.Size([512, 1, 4])
+Output batch [2] : batch=torch.Size([512, 929, 2]), lengths=torch.Size([512]), mask=torch.Size([512, 929, 4]), initial position=torch.Size([512, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(3, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/3].........Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_decumulate.py", line 699, in <module>
+    optimizer=optimizer, epoch=epoch, n_epochs=n_epochs, vis_signal=vis_signal, width=width, height=height)
+  File "train_ball_trajectory_depth_jointly_decumulate.py", line 380, in train
+    output_train_depth, (_, _) = model_depth(input_trajectory_train, hidden_depth, cell_state_depth, lengths=input_trajectory_train_lengths)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/models/Simple/bigru_model_residual_add.py", line 65, in forward
+    residual = self.get_residual(out_packed=out_packed, lengths=lengths, residual=residual, apply_skip=False)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/models/Simple/bigru_model_residual_add.py", line 87, in get_residual
+    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/utils/rnn.py", line 284, in pad_packed_sequence
+    return padded_output.index_select(batch_dim, unsorted_indices), lengths[unsorted_indices]
+RuntimeError: CUDA out of memory. Tried to allocate 120.00 MiB (GPU 0; 7.79 GiB total capacity; 2.77 GiB already allocated; 193.81 MiB free; 2.96 GiB reserved in total by PyTorch)

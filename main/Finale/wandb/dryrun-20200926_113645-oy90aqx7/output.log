@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth.py", line 614, in <module>
+    cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/utils/transformation.py", line 30, in get_cam_params_dict
+    cam_params_dict['E'] = cam_params['worldToCameraMatrix'].view(4, 4).to(device)
+AttributeError: 'list' object has no attribute 'view'

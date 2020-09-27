@@ -1,0 +1,10 @@
+{"Learning Rate (Discriminator)": 0.001, "_runtime": 5.199482679367065, "_timestamp": 1599639049.8520696, "_step": 0}
+{"Learning Rate (Generator)": 0.001, "_runtime": 5.206695318222046, "_timestamp": 1599639049.8592823, "_step": 1}
+{"Train Precision": 0.004390118692523521, "Train Recall": 1.0, "Train F1-score": 0.008741859583880433, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 6.816180944442749, "_timestamp": 1599639051.468768, "_step": 2}
+{"Validation Precision": 0.0044106252359287145, "Validation Recall": 1.0, "Validation F1-score": 0.008782514093561468, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 9.419931411743164, "_timestamp": 1599639054.0725183, "_step": 3}
+{"Generator Loss": 717052.3125, "Discriminator Loss": 77.37777709960938, "Validation Loss": 7718.962890625, "_runtime": 9.437971830368042, "_timestamp": 1599639054.0905588, "_step": 4}
+{"Train Precision": 0.0044023663955996125, "Train Recall": 1.0, "Train F1-score": 0.008766141026524964, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 10.254957675933838, "_timestamp": 1599639054.9075446, "_step": 5}
+{"Validation Precision": 0.0044106252359287145, "Validation Recall": 1.0, "Validation F1-score": 0.008782514093561468, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 12.695482969284058, "_timestamp": 1599639057.34807, "_step": 6}
+{"Generator Loss": 731025.625, "Discriminator Loss": 74.2974853515625, "Validation Loss": 7718.8759765625, "_runtime": 12.713983297348022, "_timestamp": 1599639057.3665702, "_step": 7}
+{"Train Precision": 0.0044421540839989695, "Train Recall": 1.0, "Train F1-score": 0.00884501723854868, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 13.520535707473755, "_timestamp": 1599639058.1731226, "_step": 8}
+{"Validation Precision": 0.0044106252359287145, "Validation Recall": 1.0, "Validation F1-score": 0.008782514093561468, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 16.0163516998291, "_timestamp": 1599639060.6689386, "_step": 9}

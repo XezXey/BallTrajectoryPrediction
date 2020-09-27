@@ -1,0 +1,5 @@
+{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 4.467301845550537, "_timestamp": 1600173968.4147294, "_step": 0}
+{"Train Precision": NaN, "Train Recall": 0.0, "Train F1-score": NaN, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.7024548053741455, "_timestamp": 1600173971.6498823, "_step": 1}
+{"Validation Precision": NaN, "Validation Recall": 0.0, "Validation F1-score": NaN, "Validation-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 11.631826162338257, "_timestamp": 1600173975.5792537, "_step": 2}
+{"Train Loss": 36710.71875, "Validation Loss": 1991.52880859375, "_runtime": 11.650057554244995, "_timestamp": 1600173975.597485, "_step": 3}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_4_a081b9bf.plotly.json", "sha256": "a081b9bf1e6cb8a11e6e4a4115d7f4417ec8a80d1778cac792812252b6d18f88", "size": 709222}, "_runtime": 12.276501417160034, "_timestamp": 1600173976.223929, "_step": 4}

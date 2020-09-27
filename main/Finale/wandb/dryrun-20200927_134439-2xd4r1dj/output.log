@@ -1,0 +1,59 @@
+==============================================Features==============================================
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'g-9']
+Selected features :  [6, 8]
+1. input_col =  [3, 4, 6, 8]
+2. input_startpos_col =  [3, 4, 5, 6, 8]
+3. output_col =  [5, 6, 8]
+4. output_startpos_col =  [0, 1, 2, 6, 8]
+5. output_xyz_col =  [0, 1, 2, 6, 8]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 32.02it/s]
+===============================Dataset shape===============================
+Mixed : (5668,)
+===========================================================================
+Mixed:   0%|                                                                                                | 0/1 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 22.18it/s]
+===============================Dataset shape===============================
+Mixed : (1850,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+torch.Size([392, 3])
+None
+torch.Size([475, 3])
+None
+torch.Size([1679, 3])
+None
+torch.Size([490, 3])
+None
+torch.Size([347, 3])
+None
+torch.Size([551, 3])
+None
+torch.Size([154, 3])
+None
+torch.Size([443, 3])
+None
+torch.Size([164, 3])
+None
+torch.Size([1393, 3])
+None
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth.py", line 292, in <module>
+    for key, batch in enumerate(trajectory_train_dataloader):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 279, in __iter__
+    return _MultiProcessingDataLoaderIter(self)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 719, in __init__
+    w.start()
+  File "/usr/lib/python3.6/multiprocessing/process.py", line 105, in start
+    self._popen = self._Popen(self)
+  File "/usr/lib/python3.6/multiprocessing/context.py", line 223, in _Popen
+    return _default_context.get_context().Process._Popen(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/context.py", line 277, in _Popen
+    return Popen(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/usr/lib/python3.6/multiprocessing/popen_fork.py", line 66, in _launch
+    self.pid = os.fork()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 30833) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.

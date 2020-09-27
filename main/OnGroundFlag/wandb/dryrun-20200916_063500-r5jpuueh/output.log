@@ -1,0 +1,34 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/onGroundFlag/train_set
+Mixed:   0%|                                                                                                                           | 0/3 [00:00<?, ?it/s]Mixed:  33%|██████████████████████████████████████▎                                                                            | 1/3 [00:00<00:01,  1.57it/s]Mixed:  67%|████████████████████████████████████████████████████████████████████████████▋                                      | 2/3 [00:01<00:00,  1.57it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:01<00:00,  1.58it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:01<00:00,  1.58it/s]
+===============================Dataset shape===============================
+Mixed : (4565,)
+===========================================================================
+Mixed:   0%|                                                                                                                           | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 26.98it/s]
+Mixed : (650,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 640, in <module>
+    for key, batch in enumerate(trajectory_train_dataloader):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 345, in __next__
+    data = self._next_data()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 856, in _next_data
+    return self._process_data(data)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 881, in _process_data
+    data.reraise()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_utils.py", line 394, in reraise
+    raise self.exc_type(msg)
+TypeError: Caught TypeError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/worker.py", line 178, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/fetch.py", line 47, in fetch
+    return self.collate_fn(data)
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 507, in collate_fn_padd
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -3, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory, is_on_ground)
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 507, in <listcomp>
+    input_batch = [pt.Tensor(trajectory[1:, [4, 5, -3, -2]]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory, is_on_ground)
+TypeError: can't convert np.ndarray of type numpy.object_. The only supported types are: float64, float32, float16, int64, int32, int16, int8, uint8, and bool.
+

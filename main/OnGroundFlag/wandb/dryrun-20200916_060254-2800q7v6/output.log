@@ -1,0 +1,32 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise/train_set
+Mixed:   0%|                                                                                                                           | 0/3 [00:00<?, ?it/s]Mixed:  33%|██████████████████████████████████████▎                                                                            | 1/3 [00:00<00:00,  6.20it/s]Mixed:  67%|████████████████████████████████████████████████████████████████████████████▋                                      | 2/3 [00:00<00:00,  6.23it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00,  5.81it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00,  5.78it/s]
+===============================Dataset shape===============================
+Mixed : (7434,)
+===========================================================================
+Mixed:   0%|                                                                                                                           | 0/2 [00:00<?, ?it/s]Mixed:  50%|█████████████████████████████████████████████████████████▌                                                         | 1/2 [00:00<00:00,  7.79it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00,  7.91it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00,  7.98it/s]
+===============================Dataset shape===============================
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 631, in <module>
+    for key, batch in enumerate(trajectory_train_dataloader):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 345, in __next__
+    data = self._next_data()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 856, in _next_data
+    return self._process_data(data)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 881, in _process_data
+    data.reraise()
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_utils.py", line 394, in reraise
+    raise self.exc_type(msg)
+RuntimeError: Caught RuntimeError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/worker.py", line 178, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/fetch.py", line 47, in fetch
+    return self.collate_fn(data)
+  File "train_ball_trajectory_depth_jointly_ongroundflag.py", line 520, in collate_fn_padd
+    output_xyz = pt.cat((pt.cumsum(output_xyz[..., :-2], dim=1), pt.unsqueeze(output_xyz[..., [-3, -2]], dim=2)), dim=2)
+RuntimeError: invalid argument 0: Tensors must have same number of dimensions: got 3 and 4 at /pytorch/aten/src/TH/generic/THTensor.cpp:603
+

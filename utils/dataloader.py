@@ -9,17 +9,27 @@ class TrajectoryDataset(Dataset):
 
   def __init__(self, dataset_path, trajectory_type):
     # Initialization
+    '''
     self.dataset_path = {"Rolling" : glob.glob(dataset_path + "/Rolling*.npy"),
-                      "MagnusProjectile" : glob.glob(dataset_path + "/MagnusProjectile*.npy"),
-                      "Projectile" : glob.glob(dataset_path + "/Projectile*.npy")}
+                         "MagnusProjectile" : glob.glob(dataset_path + "/MagnusProjectile*.npy"),
+                         "Projectile" : glob.glob(dataset_path + "/Projectile*.npy"),
+                         "Mixed" : glob.glob(dataset_path + "/Mixed*.npy")}
+                         '''
+
+    self.dataset_path = {trajectory_type : glob.glob(dataset_path + "/{}*.npy".format(trajectory_type))}
     self.trajectory_type = trajectory_type
     # print(self.dataset_path["Rolling"])
     # print(self.dataset_path["MagnusProjectile"])
     # print(self.dataset_path["Projectile"])
     # Load data
+
+    self.trajectory_dataset = {trajectory_type : [np.load(self.dataset_path[trajectory_type][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path[trajectory_type])), desc=trajectory_type)]}
+    '''
     self.trajectory_dataset = {"Rolling" : [np.load(self.dataset_path["Rolling"][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path["Rolling"])), desc="Rolling")],
                                "Projectile" : [np.load(self.dataset_path["Projectile"][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path["Projectile"])), desc="Projectile")],
-                               "MagnusProjectile" : [np.load(self.dataset_path["MagnusProjectile"][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path["MagnusProjectile"])), desc="MagnusProjectile")]}
+                               "MagnusProjectile" : [np.load(self.dataset_path["MagnusProjectile"][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path["MagnusProjectile"])), desc="MagnusProjectile")],
+                               "Mixed" : [np.load(self.dataset_path["Mixed"][i], allow_pickle=True) for i in tqdm(range(len(self.dataset_path["Mixed"])), desc="Mixed")]}
+                               '''
 
     # Select trajectory type
     print("===============================Dataset shape===============================")

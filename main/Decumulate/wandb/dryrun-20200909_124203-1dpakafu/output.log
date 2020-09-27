@@ -1,0 +1,252 @@
+[%]GPU Enabled
+/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/No_noise_old/train_set
+Mixed:   0%|                                                                                                                               | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 18.84it/s]
+===============================Dataset shape===============================
+Mixed : (555,)
+===========================================================================
+Mixed:   0%|                                                                                                                               | 0/2 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 17.03it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 17.00it/s]
+===============================Dataset shape===============================
+Mixed : (2000,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 2032, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2032, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [0] : batch=torch.Size([128, 2033, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2033, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 2345, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2345, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [1] : batch=torch.Size([128, 2346, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2346, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 2043, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2043, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [2] : batch=torch.Size([128, 2044, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2044, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 2317, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 2317, 3]), initial position=torch.Size([128, 1, 4])
+Output batch [3] : batch=torch.Size([128, 2318, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 2318, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(2, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+####### Model - Depth #######
+BiGRUResidualAdd(
+  (recurrent_blocks): ModuleList(
+    (0): GRU(3, 32, batch_first=True, bidirectional=True)
+    (1): GRU(64, 32, batch_first=True, bidirectional=True)
+    (2): GRU(64, 32, batch_first=True, bidirectional=True)
+    (3): GRU(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): ReLU()
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): ReLU()
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): ReLU()
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): ReLU()
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 196968.297, Val Loss : 15126.992
+======> Trajectory Loss : 19681.951, Gravity Loss : 1097.039, EndOfTrajectory Loss : 1.378
+Opening in existing browser session.
+[0909/194212.922410:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194213.482039:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 169499.172, Val Loss : 14305.005
+======> Trajectory Loss : 16935.197, Gravity Loss : 946.884, EndOfTrajectory Loss : 1.377
+===> [Minibatch 3/4].........Train Loss : 170163.766, Val Loss : 13575.139
+======> Trajectory Loss : 17001.627, Gravity Loss : 975.862, EndOfTrajectory Loss : 1.377
+===> [Minibatch 4/4].........Train Loss : 157791.922, Val Loss : 12889.076
+======> Trajectory Loss : 15764.551, Gravity Loss : 872.467, EndOfTrajectory Loss : 1.377
+[#]Finish Epoch : 1/100000.........Train loss : 173605.789, Val loss : 13974.053
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 13974.053
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 153994.656, Val Loss : 10068.912
+======> Trajectory Loss : 15384.768, Gravity Loss : 909.906, EndOfTrajectory Loss : 1.379
+Opening in existing browser session.
+[0909/194230.137027:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194230.609881:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 164710.469, Val Loss : 9421.009
+======> Trajectory Loss : 16456.230, Gravity Loss : 1028.144, EndOfTrajectory Loss : 1.379
+===> [Minibatch 3/4].........Train Loss : 128533.148, Val Loss : 8717.392
+======> Trajectory Loss : 12838.794, Gravity Loss : 737.196, EndOfTrajectory Loss : 1.378
+===> [Minibatch 4/4].........Train Loss : 113744.797, Val Loss : 7941.217
+======> Trajectory Loss : 11360.008, Gravity Loss : 660.909, EndOfTrajectory Loss : 1.381
+[#]Finish Epoch : 2/100000.........Train loss : 140245.768, Val loss : 9037.132
+[+++]Saving the best model checkpoint : Prev loss 13974.053 > Curr loss 9037.132
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 114964.391, Val Loss : 7939.704
+======> Trajectory Loss : 11481.928, Gravity Loss : 713.813, EndOfTrajectory Loss : 1.380
+Opening in existing browser session.
+[0909/194251.587759:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194252.152602:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 97225.750, Val Loss : 6882.425
+======> Trajectory Loss : 9708.136, Gravity Loss : 628.863, EndOfTrajectory Loss : 1.381
+===> [Minibatch 3/4].........Train Loss : 82010.422, Val Loss : 5768.513
+======> Trajectory Loss : 8186.699, Gravity Loss : 513.685, EndOfTrajectory Loss : 1.383
+===> [Minibatch 4/4].........Train Loss : 75192.844, Val Loss : 4645.870
+======> Trajectory Loss : 7504.875, Gravity Loss : 570.392, EndOfTrajectory Loss : 1.384
+[#]Finish Epoch : 3/100000.........Train loss : 92348.352, Val loss : 6309.128
+[+++]Saving the best model checkpoint : Prev loss 9037.132 > Curr loss 6309.128
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 4/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 59206.254, Val Loss : 3615.621
+======> Trajectory Loss : 5906.314, Gravity Loss : 473.552, EndOfTrajectory Loss : 1.384
+Opening in existing browser session.
+[0909/194331.170474:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194331.662318:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 46468.398, Val Loss : 2580.215
+======> Trajectory Loss : 4632.579, Gravity Loss : 414.141, EndOfTrajectory Loss : 1.385
+===> [Minibatch 3/4].........Train Loss : 32091.602, Val Loss : 1675.447
+======> Trajectory Loss : 3195.008, Gravity Loss : 300.143, EndOfTrajectory Loss : 1.385
+===> [Minibatch 4/4].........Train Loss : 18999.666, Val Loss : 980.054
+======> Trajectory Loss : 1885.854, Gravity Loss : 220.668, EndOfTrajectory Loss : 1.389
+[#]Finish Epoch : 4/100000.........Train loss : 39191.480, Val loss : 2212.834
+[+++]Saving the best model checkpoint : Prev loss 6309.128 > Curr loss 2212.834
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 5/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 10867.176, Val Loss : 580.128
+======> Trajectory Loss : 1072.621, Gravity Loss : 176.173, EndOfTrajectory Loss : 1.392
+Opening in existing browser session.
+[0909/194356.910410:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194357.412278:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 5861.194, Val Loss : 254.045
+======> Trajectory Loss : 572.015, Gravity Loss : 144.108, EndOfTrajectory Loss : 1.396
+===> [Minibatch 3/4].........Train Loss : 2125.186, Val Loss : 103.718
+======> Trajectory Loss : 198.412, Gravity Loss : 110.446, EndOfTrajectory Loss : 1.400
+===> [Minibatch 4/4].........Train Loss : 409.173, Val Loss : 149.982
+======> Trajectory Loss : 26.781, Gravity Loss : 88.196, EndOfTrajectory Loss : 1.405
+[#]Finish Epoch : 5/100000.........Train loss : 4815.682, Val loss : 271.969
+[+++]Saving the best model checkpoint : Prev loss 2212.834 > Curr loss 271.969
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 6/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 929.338, Val Loss : 336.664
+======> Trajectory Loss : 78.742, Gravity Loss : 75.161, EndOfTrajectory Loss : 1.412
+Opening in existing browser session.
+[0909/194414.639496:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194415.085041:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 2835.175, Val Loss : 525.902
+======> Trajectory Loss : 269.261, Gravity Loss : 73.251, EndOfTrajectory Loss : 1.418
+===> [Minibatch 3/4].........Train Loss : 5670.914, Val Loss : 594.996
+======> Trajectory Loss : 552.811, Gravity Loss : 75.435, EndOfTrajectory Loss : 1.420
+===> [Minibatch 4/4].........Train Loss : 5743.537, Val Loss : 541.027
+======> Trajectory Loss : 560.056, Gravity Loss : 75.383, EndOfTrajectory Loss : 1.422
+[#]Finish Epoch : 6/100000.........Train loss : 3794.741, Val loss : 499.647
+[#]Not saving the best model checkpoint : Val loss 499.647 not improved from 271.969
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 7/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 5382.349, Val Loss : 414.078
+======> Trajectory Loss : 523.961, Gravity Loss : 73.897, EndOfTrajectory Loss : 1.420
+Opening in existing browser session.
+[0909/194446.426233:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[0909/194447.351181:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 3671.120, Val Loss : 237.927
+======> Trajectory Loss : 352.882, Gravity Loss : 71.011, EndOfTrajectory Loss : 1.416
+===> [Minibatch 3/4].........Train Loss : 1827.131, Val Loss : 118.929
+======> Trajectory Loss : 168.542, Gravity Loss : 70.990, EndOfTrajectory Loss : 1.410
+===> [Minibatch 4/4].........Train Loss : 722.528, Val Loss : 96.430
+======> Trajectory Loss : 58.116, Gravity Loss : 73.683, EndOfTrajectory Loss : 1.406
+[#]Finish Epoch : 7/100000.........Train loss : 2900.782, Val loss : 216.841
+[+++]Saving the best model checkpoint : Prev loss 271.969 > Curr loss 216.841
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test/decumulate_jointly//decumulate_jointly_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 8/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 376.617, Val Loss : 157.306
+======> Trajectory Loss : 23.547, Gravity Loss : 81.996, EndOfTrajectory Loss : 1.403
+Opening in existing browser session.
+[0909/194507.220018:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+[31650:31650:0909/194511.018120:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 2/4].........Train Loss : 1022.218, Val Loss : 246.078
+======> Trajectory Loss : 88.125, Gravity Loss : 86.508, EndOfTrajectory Loss : 1.401
+[0909/194512.985706:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 3/4].........Train Loss : 2031.078, Val Loss : 294.514
+======> Trajectory Loss : 189.011, Gravity Loss : 102.726, EndOfTrajectory Loss : 1.399
+===> [Minibatch 4/4].........Train Loss : 2037.330, Val Loss : 293.611
+======> Trajectory Loss : 189.660, Gravity Loss : 94.547, EndOfTrajectory Loss : 1.398
+[#]Finish Epoch : 8/100000.........Train loss : 1366.811, Val loss : 247.877
+[#]Not saving the best model checkpoint : Val loss 247.877 not improved from 216.841
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 9/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.001
+===> [Minibatch 1/4].........Train Loss : 2347.176, Val Loss : 230.242
+======> Trajectory Loss : 220.664, Gravity Loss : 101.103, EndOfTrajectory Loss : 1.395
+Opening in existing browser session.
+[0909/194526.306150:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+[32099:32099:0909/194529.339534:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+[0909/194534.057541:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/4].........Train Loss : 1983.631, Val Loss : 169.098
+======> Trajectory Loss : 184.328, Gravity Loss : 99.169, EndOfTrajectory Loss : 1.394
