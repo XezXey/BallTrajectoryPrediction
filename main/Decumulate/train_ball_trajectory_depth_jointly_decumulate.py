@@ -256,7 +256,10 @@ def add_noise(input_trajectory, startpos, lengths):
     for j in range(100):
      x.append(np.all(noise_uv.cpu().numpy() < 3))
     print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
+<<<<<<< HEAD
   exit()
+=======
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   '''
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
@@ -374,6 +377,7 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, p
   depth_cumsum = pt.stack(depth_cumsum, dim=0)
   return depth_cumsum, uv_cumsum
 
+<<<<<<< HEAD
 def cumsum_trajectory_teacherforcing(depth, depth_teacher, uv, trajectory_startpos):
   '''
   Perform a cummulative summation to the output
@@ -400,6 +404,8 @@ def cumsum_trajectory_teacherforcing(depth, depth_teacher, uv, trajectory_startp
   # output : perform cumsum along the sequence_length axis
   return pt.unsqueeze(depth_cumsum, dim=-1), uv_cumsum
 
+=======
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
 def train(output_trajectory_train, output_trajectory_train_mask, output_trajectory_train_lengths, output_trajectory_train_startpos, output_trajectory_train_xyz, input_trajectory_train, input_trajectory_train_mask, input_trajectory_train_lengths, input_trajectory_train_startpos, model_eot, model_depth, output_trajectory_val, output_trajectory_val_mask, output_trajectory_val_lengths, output_trajectory_val_startpos, output_trajectory_val_xyz, input_trajectory_val, input_trajectory_val_mask, input_trajectory_val_lengths, input_trajectory_val_startpos, projection_matrix, camera_to_world_matrix, epoch, n_epochs, vis_signal, optimizer, width, height, visualize_trajectory_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
@@ -439,6 +445,7 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=input_trajectory_train_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
     # output_train_depth, input_trajectory_train_uv = cumsum_decumulate_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos, lengths=input_trajectory_train_lengths, eot=(output_train_eot > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
 
+<<<<<<< HEAD
   elif args.teacherforcing_depth:
     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory_teacherforcing(depth=output_train_depth, depth_teacher=output_trajectory_train, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
 
@@ -449,6 +456,8 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
     output_train_depth_cumsum[teacher_idx, ...], _ = cumsum_trajectory_teacherforcing(depth=output_train_depth[teacher_idx, ...], depth_teacher=output_trajectory_train[teacher_idx, ...], uv=input_trajectory_train_gt[teacher_idx, :, :-1], trajectory_startpos=input_trajectory_train_startpos[teacher_idx, :, :-1])
 
+=======
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   else:
     output_train_depth_cumsum, input_trajectory_train_uv_cumsum = cumsum_trajectory(depth=output_train_depth, uv=input_trajectory_train_gt[..., :-1], trajectory_startpos=input_trajectory_train_startpos[..., :-1])
 
@@ -489,8 +498,11 @@ def train(output_trajectory_train, output_trajectory_train_mask, output_trajecto
   if args.decumulate and epoch > args.start_decumulate:
     output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, eot=input_trajectory_val_gt[..., -1].unsqueeze(dim=-1), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
     # output_val_depth, input_trajectory_val_uv = cumsum_decumulate_trajectory(depth=output_val_depth, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos, lengths=input_trajectory_val_lengths, eot=(output_val_eot > 0.5).type(pt.cuda.FloatTensor), projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height)
+<<<<<<< HEAD
   # elif args.teacherforcing_depth:
     # output_val_depth_cumsum, input_trajectory_val_uv_cumsum = cumsum_trajectory_teacherforcing(depth=output_val_depth, depth_teacher=output_trajectory_val, uv=input_trajectory_val_gt[..., :-1], trajectory_startpos=input_trajectory_val_startpos[..., :-1])
+=======
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   else:
     # (This step we get the displacement of depth by input the displacement of u and v)
     # Apply cummulative summation to output using cumsum_trajectory function
@@ -622,8 +634,11 @@ if __name__ == '__main__':
   parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
   parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
   parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
+<<<<<<< HEAD
   parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
   parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
+=======
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
   parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
   args = parser.parse_args()
@@ -749,7 +764,11 @@ if __name__ == '__main__':
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     # vis_signal = True if batch_idx+1 == len(trajectory_train_dataloader) else False
+<<<<<<< HEAD
     vis_signal = True if epoch % 1 == 0 else False
+=======
+    vis_signal = True if epoch % 10 == 0 else False
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

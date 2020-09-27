@@ -351,7 +351,11 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, flag, 
   # Reset the depth when flag == 1
   plane_normal = get_plane_normal()
 
+<<<<<<< HEAD
   flag_all = pt.stack([pt.cat([trajectory_startpos[i][:, -1], flag[i][:, 0]]) for i in range(trajectory_startpos.shape[0])])
+=======
+  flag_all = pt.stack([pt.cat([trajectory_startpos[i][:, -1].view(-1, 1), flag[i]]) for i in range(trajectory_startpos.shape[0])])
+>>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   reset_idx = [pt.where((flag_all[i][:lengths[i]+1]) == 1.) for i in range(flag_all.shape[0])]
   reset_depth = [raycasting(reset_idx=reset_idx[i], depth=depth[i], uv=uv_cumsum[i], lengths=lengths[i], projection_matrix=projection_matrix, camera_to_world_matrix=camera_to_world_matrix, width=width, height=height, plane_normal=plane_normal) for i in range(trajectory_startpos.shape[0])]
   # output : concat with startpos and stack back to (batch_size, sequence_length+1, 1)
