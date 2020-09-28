@@ -2,6 +2,12 @@ import torch as pt
 import json
 import numpy as np
 
+# GPU initialization
+if pt.cuda.is_available():
+  device = pt.device('cuda')
+else:
+  device = pt.device('cpu')
+
 def projectToWorldSpace(uv, depth, cam_params_dict, device):
   # print(uv.shape, depth.shape)
   depth = depth.view(-1)
@@ -26,7 +32,7 @@ def get_cam_params_dict(cam_params_file, device):
     cam_params = dict({'projectionMatrix':cam_params_file['mainCameraParams']['projectionMatrix'], 'worldToCameraMatrix':cam_params_file['mainCameraParams']['worldToCameraMatrix'], 'width':cam_params_file['mainCameraParams']['width'], 'height':cam_params_file['mainCameraParams']['height']})
   projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
   projection_matrix = pt.tensor([projection_matrix[0, :], projection_matrix[1, :], projection_matrix[3, :], [0, 0, 0, 1]], dtype=pt.float32)
-  cam_params_dict['I'] = projection_matrix
+  cam_params_dict['I'] = projection_matrix.to(device)
   cam_params_dict['I_inv'] = pt.inverse(projection_matrix).to(device)
 
   cam_params_dict['E'] = pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4).to(device)
@@ -36,4 +42,15 @@ def get_cam_params_dict(cam_params_file, device):
 
   return cam_params_dict
 
+def projectToScreenSpace(world, cam_params_dict):
+  world = pt.cat((world, pt.ones(world.shape[0], world.shape[1], 1).to(device)), dim=-1)
+  I = cam_params_dict['I']
+  E = cam_params_dict['E']
+  width = cam_params_dict['width']
+  height = cam_params_dict['height']
+  transformation = (I @ E)
+  ndc = (world @ transformation.t())
+  u = (((ndc[..., [0]]/ndc[..., [2]] + 1) * .5) * width)
+  v = (((ndc[..., [1]]/ndc[..., [2]] + 1) * .5) * height)
+  return u, v
 

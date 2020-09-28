@@ -1,10 +1,0 @@
-[%]GPU Enabled
-/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/Latent/train_set
-Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 28.15it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 28.08it/s]
-===============================Dataset shape===============================
-Mixed : (5668,)
-===========================================================================
-Traceback (most recent call last):
-  File "train_ball_trajectory_depth.py", line 669, in <module>
-    print(batch.shape)
-AttributeError: 'dict' object has no attribute 'shape'

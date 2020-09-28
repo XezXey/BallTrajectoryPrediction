@@ -1,14 +1,26 @@
 import torch as pt
 import numpy as np
+import sys
+import os
+sys.path.append(os.path.realpath('../..'))
 from sklearn.metrics import confusion_matrix
 import plotly
 import wandb
+import utils.transformation as transformation
 
 # GPU initialization
 if pt.cuda.is_available():
   device = pt.device('cuda')
 else:
   device = pt.device('cpu')
+
+def ReprojectionLoss(pred, gt, mask, lengths, cam_params_dict):
+  u_pred, v_pred = transformation.projectToScreenSpace(pred, cam_params_dict)
+  u_gt, v_gt = transformation.projectToScreenSpace(gt, cam_params_dict)
+  u_reprojection_loss = (pt.sum((((u_gt[..., 0] - u_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
+  v_reprojection_loss = (pt.sum((((v_gt[..., 0] - v_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
+  return (u_reprojection_loss + v_reprojection_loss)/2
+
 
 def GravityLoss(pred, gt, mask, lengths):
   # Compute the 2nd finite difference of the y-axis to get the gravity should be equal in every time step

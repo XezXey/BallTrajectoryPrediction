@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "train_ball_trajectory_depth.py", line 626, in <module>
-    iutils_func.nitialize_folder(args.visualization_path)
-NameError: name 'iutils_func' is not defined

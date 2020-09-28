@@ -1,10 +1,0 @@
-[%]GPU Enabled
-/home/puntawat/Mint/Work/Vision/BallTrajectory/UnityDataset//RealWorld/Unity/Mixed/NormalScaled/Latent/train_set
-Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed:  67%|██████████████████████████████████████████████████████████▋                             | 2/3 [00:00<00:00, 17.20it/s]===============================Dataset shape===============================
-Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 17.23it/s]
-Mixed : (5668,)
-===========================================================================
-Traceback (most recent call last):
-  File "train_ball_trajectory_depth.py", line 669, in <module>
-    print(batch[0])
-KeyError: 0

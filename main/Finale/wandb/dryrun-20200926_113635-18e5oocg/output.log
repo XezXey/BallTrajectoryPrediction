@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "train_ball_trajectory_depth.py", line 614, in <module>
-    cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
-  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/utils/transformation.py", line 24, in get_cam_params_dict
-    projection_matrix = np.array(cam_params['projectionMatrix']).reshape(4, 4)
-NameError: name 'np' is not defined

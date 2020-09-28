@@ -10,7 +10,6 @@ import re
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
 
 def get_selected_cols():
   # Flag/Extra features columns
@@ -40,12 +39,6 @@ def computeDisplacement(trajectory_split, trajectory_type):
   # Compute the displacement
   features_cols, position_cols = get_selected_cols()
   drop_cols = ["outside_flag", "trajectory_type", "t"] + features_cols
-=======
-
-def computeDisplacement(trajectory_split, trajectory_type):
-  # Compute the displacement
-  drop_cols = ["end_of_trajectory", "on_ground_flag", "add_force_flag", "outside_flag", "trajectory_type", "t"]
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
     print("Average of Y-axis Trajectory : ", np.mean([np.mean(trajectory_split[traj_type][i]['ball_world_y'].values) for i in range(len(trajectory_split[traj_type]))]))
@@ -58,25 +51,10 @@ def computeDisplacement(trajectory_split, trajectory_type):
     # print(np.zeros((1, 1)).shape)
     # print(np.concatenate((trajectory_split[traj_type][0].loc[1:, ['on_ground_flag']].values, np.ones((1, 1)))).shape)
     # exit()
-<<<<<<< HEAD
     trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i][position_cols].iloc[0].values,
                                                        np.diff(trajectory_split[traj_type][i][position_cols].values, axis=0))),
                                             trajectory_split[traj_type][i][features_cols].values,))
                                  for i in range(len(trajectory_split[traj_type]))]
-=======
-    if args.on_ground_flag:
-      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
-                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
-                                              # trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64),
-                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory', 'on_ground_flag']].values.astype(np.int64),
-                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].iloc[1:, :].values, np.ones((1, 1))))
-                                              # np.concatenate((trajectory_split[traj_type][i][['on_ground_flag']].values))
-                                              )) for i in range(len(trajectory_split[traj_type]))]
-    else :
-      trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i].drop(drop_cols, axis=1).iloc[0, :].values,
-                                                         np.diff(trajectory_split[traj_type][i].drop(drop_cols, axis=1).values, axis=0))),
-                                              trajectory_split[traj_type][i].loc[:, ['end_of_trajectory']].values.astype(np.int64))) for i in range(len(trajectory_split[traj_type]))]
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
     # Cast to ndarray (Bunch of trajectory)
     temp = trajectory_npy[traj_type][0]
     plt.plot(np.arange(temp.shape[0]-1), temp[1:, [3]], '-or')
@@ -99,11 +77,7 @@ def remove_below_ground_trajectory(trajectory, traj_type):
     if (np.any(traj_cumsum_temp[:, 1] <= -0.1)):
       remove_idx.append(idx)
       count+=1
-<<<<<<< HEAD
   print("\n{}===>Remove the below ground trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
-=======
-  print("\n{}===>Remove the below ground trajectory : {} at {}".format(traj_type, count, remove_idx))
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   return trajectory
 
@@ -185,11 +159,7 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, tim
       trajectory_df[traj_type].iloc[:, 1] = trajectory_df[traj_type].iloc[:, 1] * mask_y
       # print("After froce zero ground")
 
-<<<<<<< HEAD
     trajectory_df[traj_type] = trajectory_df[traj_type].replace({True:1, False:0})
-=======
-    trajectory_df[traj_type] = trajectory_df[traj_type].replace({"True":True, "False":False})
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
     # Split each dataframe by using the flag == True as an index of starting point
     index_split_by_flag = list(trajectory_df[traj_type].loc[trajectory_df[traj_type][flag] == True].index)[0:-1] # remove the first trajectory and the last trajectory
     # Store splitted dataframe in list (Not use the first and last trajectory : First one can be bug if the ball is not on the 100% ground, Last one is the the complete trajectory)
@@ -198,7 +168,6 @@ def split_by_flag(trajectory_df, trajectory_type, num_continuous_trajectory, tim
     else:
       trajectory_split[traj_type] = generate_constant_num_continuous_trajectory(trajectory_df=trajectory_df, index_split_by_flag=index_split_by_flag, num_continuous_trajectory=num_continuous_trajectory, traj_type=traj_type, timelag=timelag)
     trajectory_split[traj_type] = get_end_of_trajectory_flag(trajectory_split=trajectory_split[traj_type], timelag=timelag)
-<<<<<<< HEAD
   return trajectory_split
 
 def get_end_of_trajectory_flag(trajectory_split, timelag):
@@ -222,25 +191,6 @@ def get_end_of_trajectory_flag(trajectory_split, timelag):
     # print(flipped_add_force)
   return trajectory_split
 
-=======
-  return trajectory_split
-
-def get_end_of_trajectory_flag(trajectory_split, timelag):
-  for i in range(len(trajectory_split)):
-    unflip_add_force = trajectory_split[i]['add_force_flag'].values # Get the unflip add_force_flag value columns on the trajectory i-th index
-    index_split_by_add_force_flag = list(trajectory_split[i].loc[trajectory_split[i]['add_force_flag'] == True].index)[:] # remove the first trajectory and the last trajectory
-    index_split_by_add_force_flag.append(len(unflip_add_force) + index_split_by_add_force_flag[0]) # Index of each trajectory
-    index_split_by_add_force_flag = np.array(index_split_by_add_force_flag) - index_split_by_add_force_flag[0]  # Re-index every row to start from 0
-    flipped_add_force = [np.flip(unflip_add_force[index_split_by_add_force_flag[j]:index_split_by_add_force_flag[j+1]]) for j in range(len(index_split_by_add_force_flag)-1)]   # Get each trajectory in from index_split_by_add_force_flag
-    flipped_add_force = np.concatenate(flipped_add_force)   # Concatenate together to make its shape as (-1, )
-    if timelag != '0':
-      flipped_add_force[-1] = 0 # If adding timelag, the last trajectory which is a lag flag is up should be ignored for the end_of_trajectory flag since it's not the real end point of trajectory
-    trajectory_split[i]['end_of_trajectory'] = flipped_add_force.astype(int) # + unflip_add_force.astype(int)    # Assign to new columns
-    # print(unflip_add_force + flipped_add_force)
-    # print(flipped_add_force)
-  return trajectory_split
-
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
 def generate_constant_num_continuous_trajectory(trajectory_df, index_split_by_flag, num_continuous_trajectory, traj_type, timelag):
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
@@ -346,15 +296,10 @@ if __name__ == '__main__':
   parser.add_argument('--no_vis_noise', dest='vis_noise', help='Visualize effect of Noise', action='store_false')
   parser.add_argument('--masking', dest='masking', help='Masking of Noise', action='store_true')
   parser.add_argument('--no_masking', dest='masking', help='Masking of Noise', action='store_false')
-<<<<<<< HEAD
   parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
   parser.add_argument('--selected_cams', dest='selected_cams', help='Specify the selected cams(main, along, top)', type=str, required=True)
   parser.add_argument('--selected_space', dest='selected_space', help='Specify the selected spaces(ndc, screen)', type=str, required=True)
   parser.add_argument('--shift_eot', dest='shift_eot', help='Shift eot flag by 1 position', default=False, action='store_true')
-=======
-  parser.add_argument('--og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_true')
-  parser.add_argument('--no_og_flag', dest='on_ground_flag', help='Data has the on ground flag', action='store_false')
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
 
   args = parser.parse_args()
   # List trial in directory

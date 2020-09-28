@@ -21,7 +21,7 @@ import json
 # Utils
 from utils.dataloader import TrajectoryDataset
 import utils.utils_func as utils_func
-import utils.cummulative_depth as utils_cummulative
+import utils.cummulative_xyz as utils_cummulative
 import utils.transformation as utils_transform
 # Loss
 import loss
@@ -50,11 +50,11 @@ parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=fl
 parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
 parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.8)
 parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=150)
-parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
-parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
+parser.add_argument('--teacherforcing_xyz', help='Use a teacher forcing training scheme for xyz displacement estimation', action='store_true', default=False)
+parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for xyz displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
-parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
+parser.add_argument('--decumulate', help='Decumulate the xyz by ray casting', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
 args = parser.parse_args()
 
@@ -72,7 +72,7 @@ wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args
 # Get selected features to input into a network
 features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
 x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
-input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='depth')
+input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='xyz')
 
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
@@ -100,21 +100,21 @@ def add_noise(input_trajectory, startpos, lengths):
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
 
-def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_flag, model_depth, epoch, vis_signal, optimizer, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
+def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_flag, model_xyz, epoch, vis_signal, optimizer, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
   # Train a model
-  # Initial the state for EOT and Depth
+  # Initial the state for EOT and xyz
   hidden_eot = model_flag.initHidden(batch_size=args.batch_size)
   cell_state_eot = model_flag.initCellState(batch_size=args.batch_size)
-  hidden_depth = model_depth.initHidden(batch_size=args.batch_size)
-  cell_state_depth = model_depth.initCellState(batch_size=args.batch_size)
+  hidden_xyz = model_xyz.initHidden(batch_size=args.batch_size)
+  cell_state_xyz = model_xyz.initCellState(batch_size=args.batch_size)
 
   ####################################
   ############# Training #############
   ####################################
   model_flag.train()
-  model_depth.train()
+  model_xyz.train()
   # Add noise on the fly
   in_train = input_train_dict['input'][..., [0, 1]].clone()
   in_val = input_val_dict['input'][..., [0, 1]].clone()
@@ -128,30 +128,30 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   pred_eot_train, (_, _) = model_flag(in_train, hidden_eot, cell_state_eot, lengths=input_train_dict['lengths'])
   pred_eot_train = pt.sigmoid(pred_eot_train).clone()
   ####################################
-  ############### Depth ##############
+  ############### xyz ##############
   ####################################
   in_train = pt.cat((in_train, pred_eot_train, input_train_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_depth_train, (_, _) = model_depth(in_train, hidden_depth, cell_state_depth, lengths=input_train_dict['lengths'])
+  pred_xyz_train, (_, _) = model_xyz(in_train, hidden_xyz, cell_state_xyz, lengths=input_train_dict['lengths'])
 
-  pred_depth_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(depth=pred_depth_train, uv=input_train_dict['input'][..., [0, 1]], depth_teacher=gt_train_dict['o_with_f'][..., [0]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_train_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
+  pred_xyz_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(xyz=pred_xyz_train, uv=input_train_dict['input'][..., [0, 1]], xyz_teacher=gt_train_dict['o_with_f'][..., [0, 1, 2]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_train_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
 
-  # Project the (u, v, depth) to world space
-  pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
+  # Project the (u, v, xyz) to world space
+  pred_xyz_train = pred_xyz_cumsum_train
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
   train_gravity_loss = loss.GravityLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
-  train_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_train, gt=gt_train_dict['o_with_f'][..., [1]], mask=input_train_dict['mask'][..., [2]], lengths=input_train_dict['lengths'], startpos=input_train_dict['startpos'][..., [2]], flag='Train')
-  train_depth_loss = loss.DepthLoss(pred=pred_depth_train, gt=gt_train_dict['o_with_f'][..., [0]], lengths=input_train_dict['lengths'], mask=input_train_dict['mask'])
+  train_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_train, gt=gt_train_dict['o_with_f'][..., [3]], mask=input_train_dict['mask'][..., [2]], lengths=input_train_dict['lengths'], startpos=input_train_dict['startpos'][..., [3]], flag='Train')
   train_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
+  train_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict)
 
   # Sum up all train loss 
-  train_loss = train_trajectory_loss + train_eot_loss*100 + train_depth_loss*1000 + train_gravity_loss + train_below_ground_loss
+  train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss + train_reprojection_loss
   train_loss.backward()
   for name, p in model_flag.named_parameters():
     # print(name, p.grad)
     p.data.clamp_(-args.clip, args.clip)
-  for name, p in model_depth.named_parameters():
+  for name, p in model_xyz.named_parameters():
     # print(name, p.grad)
     p.data.clamp_(-args.clip, args.clip)
   optimizer.step()
@@ -161,7 +161,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ####################################
   # Evaluating mode
   model_flag.eval()
-  model_depth.eval()
+  model_xyz.eval()
 
   # Forward Passing
   ####################################
@@ -170,25 +170,25 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   pred_eot_val, (_, _) = model_flag(in_val, hidden_eot, cell_state_eot, lengths=input_val_dict['lengths'])
   pred_eot_val = pt.sigmoid(pred_eot_val).clone()
   ####################################
-  ############### Depth ##############
+  ############### xyz ##############
   ####################################
   in_val = pt.cat((in_val, pred_eot_val, input_val_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_depth_val, (_, _) = model_depth(in_val, hidden_depth, cell_state_depth, lengths=input_val_dict['lengths'])
+  pred_xyz_val, (_, _) = model_xyz(in_val, hidden_xyz, cell_state_xyz, lengths=input_val_dict['lengths'])
 
-  pred_depth_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(depth=pred_depth_val, uv=input_val_dict['input'][..., [0, 1]], depth_teacher=gt_val_dict['o_with_f'][..., [0]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_val_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
+  pred_xyz_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(xyz=pred_xyz_val, uv=input_val_dict['input'][..., [0, 1]], xyz_teacher=gt_val_dict['o_with_f'][..., [0, 1, 2]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_val_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
 
-  # Project the (u, v, depth) to world space
-  pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
+  # Project the (u, v, xyz) to world space
+  pred_xyz_val = pred_xyz_cumsum_val
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   val_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
   val_gravity_loss = loss.GravityLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
-  val_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_val, gt=gt_val_dict['o_with_f'][..., [1]], mask=input_val_dict['mask'][..., [2]], lengths=input_val_dict['lengths'], startpos=input_val_dict['startpos'][..., [2]], flag='val')
-  val_depth_loss = loss.DepthLoss(pred=pred_depth_val, gt=gt_val_dict['o_with_f'][..., [0]], lengths=input_val_dict['lengths'], mask=input_val_dict['mask'])
+  val_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_val, gt=gt_val_dict['o_with_f'][..., [3]], mask=input_val_dict['mask'][..., [2]], lengths=input_val_dict['lengths'], startpos=input_val_dict['startpos'][..., [3]], flag='val')
   val_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
+  val_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict)
 
   # Sum up all val loss 
-  val_loss = val_trajectory_loss + val_eot_loss*100 + val_depth_loss*1000 + val_gravity_loss + val_below_ground_loss
+  val_loss = val_trajectory_loss + val_eot_loss*100 + val_gravity_loss + val_below_ground_loss + val_reprojection_loss
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()))
@@ -196,15 +196,15 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   print('Gravity Loss : {:.3f}'.format(train_gravity_loss.item()), end=', ')
   print('EndOfTrajectory Loss : {:.3f}'.format(train_eot_loss.item()), end=', ')
   print('BelowGroundPenalize Loss : {:.3f}'.format(train_below_ground_loss.item()), end=', ')
-  print('Depth Loss : {:.3f}'.format(train_depth_loss.item()))
+  print('Reprojection Loss : {:.3f}'.format(train_reprojection_loss.item()))
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if vis_flag == True and vis_signal == True:
-    pred_train_dict = {'input':in_train, 'flag':pred_eot_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train}
-    pred_val_dict = {'input':in_val, 'flag':pred_eot_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val}
-    utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth')
+    pred_train_dict = {'input':in_train, 'flag':pred_eot_train, 'xyz':pred_xyz_train, 'xyz':pred_xyz_train}
+    pred_val_dict = {'input':in_val, 'flag':pred_eot_val, 'xyz':pred_xyz_val, 'xyz':pred_xyz_val}
+    utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='xyz')
 
-  return train_loss.item(), val_loss.item(), model_flag, model_depth
+  return train_loss.item(), val_loss.item(), model_flag, model_xyz
 
 def collate_fn_padd(batch):
     # Padding batch of variable length
@@ -216,13 +216,13 @@ def collate_fn_padd(batch):
     ## Padding
     input_batch = [pt.Tensor(trajectory[1:, input_col]) for trajectory in batch] # (4, 5, -2) = (u, v ,end_of_trajectory)
     input_batch = pad_sequence(input_batch, batch_first=True, padding_value=padding_value)
-    ## Retrieve initial position (u, v, depth)
-    input_startpos = pt.stack([pt.Tensor(trajectory[0, input_startpos_col]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, depth, end_of_trajectory)
+    ## Retrieve initial position (u, v, xyz)
+    input_startpos = pt.stack([pt.Tensor(trajectory[0, input_startpos_col]) for trajectory in batch])  # (4, 5, 6, -2) = (u, v, xyz, end_of_trajectory)
     input_startpos = pt.unsqueeze(input_startpos, dim=1)
     ## Compute mask
     input_mask = (input_batch != padding_value)
 
-    # Output features : columns 6 cotain depth from camera to projected screen
+    # Output features : columns 6 cotain xyz from camera to projected screen
     ## Padding
     gt_batch = [pt.Tensor(trajectory[1:, gt_col]) for trajectory in batch]
     gt_batch = pad_sequence(gt_batch, batch_first=True)
@@ -239,7 +239,7 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
 
-def load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler):
+def load_checkpoint(model_flag, model_xyz, optimizer, lr_scheduler):
   if args.load_checkpoint == 'best':
     load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
   elif args.load_checkpoint == 'lastest':
@@ -253,12 +253,12 @@ def load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler):
     checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
     model_flag.load_state_dict(checkpoint['model_flag'])
-    model_depth.load_state_dict(checkpoint['model_depth'])
+    model_xyz.load_state_dict(checkpoint['model_xyz'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return model_flag, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss
+    return model_flag, model_xyz, optimizer, start_epoch, lr_scheduler, min_val_loss
 
   else:
     print("[#] Checkpoint not found...")
@@ -301,13 +301,13 @@ if __name__ == '__main__':
 
   # Model definition
   min_val_loss = 2e10
-  model_flag, model_depth, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
+  model_flag, model_xyz, model_cfg = utils_func.get_model_xyz(model_arch=args.model_arch, features_cols=features_cols, args=args)
   print(model_cfg)
   model_flag = model_flag.to(device)
-  model_depth = model_depth.to(device)
+  model_xyz = model_xyz.to(device)
 
   # Define optimizer, learning rate, decay and scheduler parameters
-  params = list(model_flag.parameters()) + list(model_depth.parameters())
+  params = list(model_flag.parameters()) + list(model_xyz.parameters())
   optimizer = pt.optim.Adam(params, lr=args.lr)
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=args.decay_gamma)
 
@@ -319,17 +319,17 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    model_flag, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler)
+    model_flag, model_xyz, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_flag, model_xyz, optimizer, lr_scheduler)
 
   print('[#]Model Architecture')
   print('####### Model - EOT #######')
   print(model_flag)
-  print('####### Model - Depth #######')
-  print(model_depth)
+  print('####### Model - xyz #######')
+  print(model_xyz)
 
   # Log metrics with wandb
   wandb.watch(model_flag)
-  wandb.watch(model_depth)
+  wandb.watch(model_xyz)
 
   # Training settings
   n_epochs = 100000
@@ -351,8 +351,8 @@ if __name__ == '__main__':
 
     # Log the learning rate
     for param_group in optimizer.param_groups:
-      print("[#]Learning rate (Depth & EOT) : ", param_group['lr'])
-      wandb.log({'Learning Rate (Depth & EOT)':param_group['lr']})
+      print("[#]Learning rate (xyz & EOT) : ", param_group['lr'])
+      wandb.log({'Learning Rate (xyz & EOT)':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     vis_signal = True if epoch % 1 == 0 else False
@@ -365,8 +365,8 @@ if __name__ == '__main__':
       gt_train_dict = {'o_with_f':batch_train['gt'][0].to(device), 'lengths':batch_train['gt'][1].to(device), 'mask':batch_train['gt'][2].to(device), 'startpos':batch_train['gt'][3].to(device), 'xyz':batch_train['gt'][4].to(device)}
 
       # Call function to train
-      train_loss, val_loss, model_flag, model_depth = train(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict,
-                                                            model_flag=model_flag, model_depth=model_depth, vis_flag=args.vis_flag,
+      train_loss, val_loss, model_flag, model_xyz = train(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict,
+                                                            model_flag=model_flag, model_xyz=model_xyz, vis_flag=args.vis_flag,
                                                             optimizer=optimizer, epoch=epoch, vis_signal=vis_signal,
                                                             cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
@@ -395,19 +395,18 @@ if __name__ == '__main__':
       print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
       # Save to directory
-      checkpoint = {'epoch':epoch+1, 'model_depth':model_depth.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
+      checkpoint = {'epoch':epoch+1, 'model_xyz':model_xyz.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
       pt.save(checkpoint, save_checkpoint_best)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_best.pth'))
 
     else:
       print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
 
-
     if epoch % 20 == 0:
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_name)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
-      checkpoint = {'epoch':epoch+1, 'model_depth':model_depth.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
+      checkpoint = {'epoch':epoch+1, 'model_xyz':model_xyz.state_dict(), 'model_flag':model_flag.state_dict(), 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
       pt.save(checkpoint, save_checkpoint_lastest)
       pt.save(checkpoint, os.path.join(wandb.run.dir, 'checkpoint_lastest.pth'))
 

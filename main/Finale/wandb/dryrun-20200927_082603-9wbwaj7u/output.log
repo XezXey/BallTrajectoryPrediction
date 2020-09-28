@@ -1,40 +1,0 @@
-==============================================Features==============================================
-Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'g-9']
-Selected features :  [6, 8]
-1. input_col =  [3, 4, 6, 8]
-2. input_startpos_col =  [3, 4, 5, 6, 8]
-3. output_col =  [5, 6, 8]
-4. output_startpos_col =  [0, 1, 2, 6, 8]
-5. output_xyz_col =  [0, 1, 2, 6, 8]
-====================================================================================================
-[#]Training : Trajectory Estimation
-Mixed:   0%|                                                                                                | 0/3 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 29.71it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00, 29.62it/s]
-===============================Dataset shape===============================
-Mixed : (5668,)
-===========================================================================
-Mixed:   0%|                                                                                                | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
-Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 18.66it/s]
-Mixed : (1850,)
-===========================================================================
-======================================================Summary Batch (batch_size = 128)=========================================================================
-Traceback (most recent call last):
-  File "train_ball_trajectory_depth.py", line 280, in <module>
-    for key, batch in enumerate(trajectory_train_dataloader):
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 345, in __next__
-    data = self._next_data()
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 856, in _next_data
-    return self._process_data(data)
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 881, in _process_data
-    data.reraise()
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/_utils.py", line 394, in reraise
-    raise self.exc_type(msg)
-IndexError: Caught IndexError in DataLoader worker process 0.
-Original Traceback (most recent call last):
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/worker.py", line 178, in _worker_loop
-    data = fetcher.fetch(index)
-  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/utils/data/_utils/fetch.py", line 47, in fetch
-    return self.collate_fn(data)
-  File "train_ball_trajectory_depth.py", line 227, in collate_fn_padd
-    gt_xyz = pt.cat((pt.cumsum(gt_xyz[..., [x, y, z]], dim=1), gt_xyz[..., features_cols]), dim=2)
-IndexError: index 6 is out of bounds for dimension 0 with size 5
-

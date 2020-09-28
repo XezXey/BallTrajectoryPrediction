@@ -1,4 +1,0 @@
-{"Learning Rate (Depth & EOT)": 0.01, "_runtime": 4.645854949951172, "_timestamp": 1601207700.2749069, "_step": 0}
-{"Train Precision": 0.004469898030451181, "Train Recall": 1.0, "Train F1-score": 0.00890001390627173, "Train-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 5.769793272018433, "_timestamp": 1601207701.3988452, "_step": 1}
-{"val Precision": 0.004253981009949249, "val Recall": 1.0, "val F1-score": 0.008471922621946976, "val-#N accepted trajectory(Perfect EOT without FN, FP)": 0, "_runtime": 7.453582048416138, "_timestamp": 1601207703.082634, "_step": 2}
-{"Train Loss": 786.5170288085938, "Validation Loss": 545.4547729492188, "_runtime": 7.470626354217529, "_timestamp": 1601207703.0996783, "_step": 3}
