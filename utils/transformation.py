@@ -42,7 +42,7 @@ def get_cam_params_dict(cam_params_file, device):
 
   return cam_params_dict
 
-def projectToScreenSpace(world, cam_params_dict):
+def projectToScreenSpace(world, cam_params_dict, normalize=True):
   world = pt.cat((world, pt.ones(world.shape[0], world.shape[1], 1).to(device)), dim=-1)
   I = cam_params_dict['I']
   E = cam_params_dict['E']
@@ -50,7 +50,11 @@ def projectToScreenSpace(world, cam_params_dict):
   height = cam_params_dict['height']
   transformation = (I @ E)
   ndc = (world @ transformation.t())
-  u = (((ndc[..., [0]]/ndc[..., [2]] + 1) * .5) * width)
-  v = (((ndc[..., [1]]/ndc[..., [2]] + 1) * .5) * height)
+  if normalize:
+    u = (ndc[..., [0]]/ndc[..., [2]] + 1) * .5
+    v = (ndc[..., [1]]/ndc[..., [2]] + 1) * .5
+  else:
+    u = (((ndc[..., [0]]/ndc[..., [2]] + 1) * .5) * width)
+    v = (((ndc[..., [1]]/ndc[..., [2]] + 1) * .5) * height)
   return u, v
 

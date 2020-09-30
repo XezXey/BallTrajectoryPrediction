@@ -14,9 +14,9 @@ if pt.cuda.is_available():
 else:
   device = pt.device('cpu')
 
-def ReprojectionLoss(pred, gt, mask, lengths, cam_params_dict):
-  u_pred, v_pred = transformation.projectToScreenSpace(pred, cam_params_dict)
-  u_gt, v_gt = transformation.projectToScreenSpace(gt, cam_params_dict)
+def ReprojectionLoss(pred, gt, mask, lengths, cam_params_dict, normalize):
+  u_pred, v_pred = transformation.projectToScreenSpace(pred, cam_params_dict, normalize)
+  u_gt, v_gt = transformation.projectToScreenSpace(gt, cam_params_dict, normalize)
   u_reprojection_loss = (pt.sum((((u_gt[..., 0] - u_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
   v_reprojection_loss = (pt.sum((((v_gt[..., 0] - v_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
   return (u_reprojection_loss + v_reprojection_loss)/2
@@ -76,14 +76,8 @@ def DepthLoss(pred, gt, mask, lengths):
 
 def EndOfTrajectoryLoss(pred, gt, startpos, mask, lengths, flag='Train'):
   # Here we use output mask so we need to append the startpos to the pred before multiplied with mask(already included the startpos)
-  pred *= mask
-  gt *= mask
-
-  # Log the precision, recall, confusion_matrix and using wandb
-  gt_log = gt.clone().cpu().detach().numpy()
-  pred_log = pred.clone().cpu().detach().numpy()
-  eot_metrics_log(gt=gt_log, pred=pred_log, lengths=lengths.cpu().detach().numpy(), flag=flag)
-
+  pred = pred * mask
+  gt = gt * mask
   # Implement from scratch
   # Flatten and concat all trajectory together
   gt = pt.cat(([gt[i][:lengths[i]+1] for i in range(startpos.shape[0])]))
@@ -95,6 +89,12 @@ def EndOfTrajectoryLoss(pred, gt, startpos, mask, lengths, flag='Train'):
   eps = 1e-10
   # Calculate the BCE loss
   eot_loss = pt.mean(-((pos_weight * gt * pt.log(pred + eps)) + (neg_weight * (1-gt)*pt.log(1-pred + eps))))
+
+  # Log the precision, recall, confusion_matrix and using wandb
+  # gt_log = gt.clone().cpu().detach().numpy()
+  # pred_log = pred.clone().cpu().detach().numpy()
+  # eot_metrics_log(gt=gt_log, pred=pred_log, lengths=lengths.cpu().detach().numpy(), flag=flag)
+
   return eot_loss
 
 def eot_metrics_log(gt, pred, lengths, flag):

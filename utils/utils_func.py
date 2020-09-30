@@ -41,17 +41,17 @@ def initialize_folder(path):
 
 def get_model_depth(model_arch, features_cols, args):
   if model_arch=='lstm_residual':
-    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_depth = LSTMResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size)
+    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = LSTMResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm_residual':
-    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_depth = BiLSTMResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size)
+    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiLSTMResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size, model='depth')
   elif model_arch=='gru_residual':
-    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_depth = GRUResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size)
+    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = GRUResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size, model='depth')
   elif model_arch=='bigru_residual':
-    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_depth = BiGRUResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size)
+    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiGRUResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size, model='depth')
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -63,17 +63,17 @@ def get_model_depth(model_arch, features_cols, args):
 
 def get_model_xyz(model_arch, features_cols, args):
   if model_arch=='lstm_residual':
-    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_xyz = LSTMResidual(input_size=2 + len(features_cols), output_size=1, batch_size=args.batch_size)
+    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_xyz = LSTMResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
   elif model_arch=='bilstm_residual':
-    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_xyz = BiLSTMResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size)
+    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_xyz = BiLSTMResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
   elif model_arch=='gru_residual':
-    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_xyz = GRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size)
+    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_xyz = GRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
   elif model_arch=='bigru_residual':
-    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size)
-    model_xyz = BiGRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size)
+    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_xyz = BiGRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -204,20 +204,33 @@ def get_selected_cols(args, pred):
   if 'f_cos' in args.selected_features:
     features_cols.append(f_cos)
 
-  if pred=='depth':
+  if pred=='depth' and args.env=='unity':
     input_col = [u, v] + features_cols
     input_startpos_col = [u, v, d] + features_cols
     gt_col = [d] + features_cols
     gt_startpos_col = [x, y, z] + features_cols
     gt_xyz_col = [x, y, z] + features_cols
-  elif pred=='xyz':
+  elif pred=='xyz' and args.env=='unity':
     input_col = [u, v] + features_cols
     input_startpos_col = [u, v, x, y, z] + features_cols
     gt_col = [x, y, z] + features_cols
     gt_startpos_col = [x, y, z] + features_cols
     gt_xyz_col = [x, y, z] + features_cols
+  elif pred=='depth' and args.env=='mocap':
+    input_col = [u, v]
+    input_startpos_col = [u, v, d]
+    gt_col = [d]
+    gt_startpos_col = [x, y, z]
+    gt_xyz_col = [x, y, z]
+  elif pred=='xyz' and args.env=='mocap':
+    input_col = [u, v]
+    input_startpos_col = [u, v, x, y, z]
+    gt_col = [x, y, z]
+    gt_startpos_col = [x, y, z]
+    gt_xyz_col = [x, y, z]
 
   print('='*46 + "Features" + '='*46)
+  print('Prediction = {}, Environment = {}'.format(pred, args.env))
   print("Available features : ", ['{}-{}'.format(features[idx], idx) for idx in range(len(features))])
   print("Selected features : ", features_cols)
   print("1. input_col = ", input_col)

@@ -48,14 +48,15 @@ parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='st
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
-parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.8)
-parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=150)
+parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.9)
+parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=70)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
+parser.add_argument('--env', dest='env', help='Environment', tdefault='unity')
 args = parser.parse_args()
 
 # GPU initialization
@@ -126,7 +127,6 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ################ EOT ###############
   ####################################
   pred_eot_train, (_, _) = model_flag(in_train, hidden_eot, cell_state_eot, lengths=input_train_dict['lengths'])
-  pred_eot_train = pt.sigmoid(pred_eot_train).clone()
   ####################################
   ############### Depth ##############
   ####################################
@@ -148,12 +148,8 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   # Sum up all train loss 
   train_loss = train_trajectory_loss + train_eot_loss*100 + train_depth_loss*1000 + train_gravity_loss + train_below_ground_loss
   train_loss.backward()
-  for name, p in model_flag.named_parameters():
-    # print(name, p.grad)
-    p.data.clamp_(-args.clip, args.clip)
-  for name, p in model_depth.named_parameters():
-    # print(name, p.grad)
-    p.data.clamp_(-args.clip, args.clip)
+  pt.nn.utils.clip_grad_norm_(model_flag.parameters(), args.clip)
+  pt.nn.utils.clip_grad_norm_(model_depth.parameters(), args.clip)
   optimizer.step()
 
   ####################################
@@ -168,7 +164,6 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ################ EOT ###############
   ####################################
   pred_eot_val, (_, _) = model_flag(in_val, hidden_eot, cell_state_eot, lengths=input_val_dict['lengths'])
-  pred_eot_val = pt.sigmoid(pred_eot_val).clone()
   ####################################
   ############### Depth ##############
   ####################################
@@ -352,10 +347,10 @@ if __name__ == '__main__':
     # Log the learning rate
     for param_group in optimizer.param_groups:
       print("[#]Learning rate (Depth & EOT) : ", param_group['lr'])
-      wandb.log({'Learning Rate (Depth & EOT)':param_group['lr']})
+      wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 10 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

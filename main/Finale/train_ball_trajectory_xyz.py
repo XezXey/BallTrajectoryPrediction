@@ -48,14 +48,16 @@ parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='st
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
-parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.8)
-parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=150)
+parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.9)
+parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=70)
 parser.add_argument('--teacherforcing_xyz', help='Use a teacher forcing training scheme for xyz displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for xyz displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--decumulate', help='Decumulate the xyz by ray casting', action='store_true', default=False)
-parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
+parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ...)', nargs='+', required=True)
+parser.add_argument('--normalize', dest='normalize', help='Use NDC to calculate the loss', default=False, action='store_true')
+parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
 args = parser.parse_args()
 
 # GPU initialization
@@ -126,14 +128,13 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ################ EOT ###############
   ####################################
   pred_eot_train, (_, _) = model_flag(in_train, hidden_eot, cell_state_eot, lengths=input_train_dict['lengths'])
-  pred_eot_train = pt.sigmoid(pred_eot_train).clone()
   ####################################
-  ############### xyz ##############
+  ################ XYZ ###############
   ####################################
-  in_train = pt.cat((in_train, pred_eot_train, input_train_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_xyz_train, (_, _) = model_xyz(in_train, hidden_xyz, cell_state_xyz, lengths=input_train_dict['lengths'])
+  in_train = pt.cat((in_train.clone(), pred_eot_train, input_train_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+  pred_dxyz_train, (_, _) = model_xyz(in_train, hidden_xyz, cell_state_xyz, lengths=input_train_dict['lengths'])
 
-  pred_xyz_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(xyz=pred_xyz_train, uv=input_train_dict['input'][..., [0, 1]], xyz_teacher=gt_train_dict['o_with_f'][..., [0, 1, 2]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_train_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
+  pred_xyz_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(xyz=pred_dxyz_train, uv=input_train_dict['input'][..., [0, 1]], xyz_teacher=gt_train_dict['o_with_f'][..., [0, 1, 2]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_train_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
 
   # Project the (u, v, xyz) to world space
   pred_xyz_train = pred_xyz_cumsum_train
@@ -143,17 +144,13 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   train_gravity_loss = loss.GravityLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
   train_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_train, gt=gt_train_dict['o_with_f'][..., [3]], mask=input_train_dict['mask'][..., [2]], lengths=input_train_dict['lengths'], startpos=input_train_dict['startpos'][..., [3]], flag='Train')
   train_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
-  train_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict)
+  train_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict, normalize=args.normalize)
 
   # Sum up all train loss 
-  train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss + train_reprojection_loss
+  train_loss = train_trajectory_loss + train_eot_loss*1e4 + train_gravity_loss + train_below_ground_loss + train_reprojection_loss
   train_loss.backward()
-  for name, p in model_flag.named_parameters():
-    # print(name, p.grad)
-    p.data.clamp_(-args.clip, args.clip)
-  for name, p in model_xyz.named_parameters():
-    # print(name, p.grad)
-    p.data.clamp_(-args.clip, args.clip)
+  pt.nn.utils.clip_grad_norm_(model_flag.parameters(), args.clip)
+  pt.nn.utils.clip_grad_norm_(model_xyz.parameters(), args.clip)
   optimizer.step()
 
   ####################################
@@ -168,16 +165,14 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ################ EOT ###############
   ####################################
   pred_eot_val, (_, _) = model_flag(in_val, hidden_eot, cell_state_eot, lengths=input_val_dict['lengths'])
-  pred_eot_val = pt.sigmoid(pred_eot_val).clone()
   ####################################
-  ############### xyz ##############
+  ################ XYZ ###############
   ####################################
   in_val = pt.cat((in_val, pred_eot_val, input_val_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
   pred_xyz_val, (_, _) = model_xyz(in_val, hidden_xyz, cell_state_xyz, lengths=input_val_dict['lengths'])
 
   pred_xyz_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(xyz=pred_xyz_val, uv=input_val_dict['input'][..., [0, 1]], xyz_teacher=gt_val_dict['o_with_f'][..., [0, 1, 2]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_val_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
 
-  # Project the (u, v, xyz) to world space
   pred_xyz_val = pred_xyz_cumsum_val
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
@@ -185,10 +180,10 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   val_gravity_loss = loss.GravityLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
   val_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_val, gt=gt_val_dict['o_with_f'][..., [3]], mask=input_val_dict['mask'][..., [2]], lengths=input_val_dict['lengths'], startpos=input_val_dict['startpos'][..., [3]], flag='val')
   val_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
-  val_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict)
+  val_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict, normalize=args.normalize)
 
   # Sum up all val loss 
-  val_loss = val_trajectory_loss + val_eot_loss*100 + val_gravity_loss + val_below_ground_loss + val_reprojection_loss
+  val_loss = val_trajectory_loss + val_eot_loss*1e4 + val_gravity_loss + val_below_ground_loss + val_reprojection_loss
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()))
@@ -310,6 +305,7 @@ if __name__ == '__main__':
   params = list(model_flag.parameters()) + list(model_xyz.parameters())
   optimizer = pt.optim.Adam(params, lr=args.lr)
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=args.decay_gamma)
+  start_epoch = 1
 
   # Load the checkpoint if it's available.
   if args.load_checkpoint is None:
@@ -333,7 +329,6 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 100000
-  start_epoch = 1
   for epoch in range(start_epoch, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []
@@ -351,11 +346,11 @@ if __name__ == '__main__':
 
     # Log the learning rate
     for param_group in optimizer.param_groups:
-      print("[#]Learning rate (xyz & EOT) : ", param_group['lr'])
-      wandb.log({'Learning Rate (xyz & EOT)':param_group['lr']})
+      print("[#]Learning rate (XYZ & EOT) : ", param_group['lr'])
+      wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 10 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

@@ -33,6 +33,7 @@ from models.Simple.gru_model import GRU
 from models.Simple.bigru_model import BiGRU
 from models.Simple.bigru_model_residual_list import BiGRUResidualList
 from models.Simple.bigru_model_residual_add import BiGRUResidualAdd
+from models.Finale.residual.gru_residual import GRUResidual
 from torch.utils.tensorboard import SummaryWriter
 
 def visualize_layout_update(fig=None, n_vis=3):
@@ -505,6 +506,9 @@ def get_model(input_size, output_size, model_arch):
   if model_arch=='bigru_residual_add':
     model_eot = BiGRUResidualAdd(input_size=2, output_size=1)
     model_depth = BiGRUResidualAdd(input_size=3, output_size=1)
+  elif model_arch=='gru_residual':
+    model_eot = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size)
+    model_depth = GRUResidual(input_size=3, output_size=1, batch_size=args.batch_size)
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -516,7 +520,7 @@ def load_checkpoint(model_eot, model_depth):
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
-    model_eot.load_state_dict(checkpoint['model_eot'])
+    model_eot.load_state_dict(checkpoint['model_flag'])
     model_depth.load_state_dict(checkpoint['model_depth'])
     start_epoch = checkpoint['epoch']
     return model_eot, model_depth, start_epoch
@@ -600,17 +604,7 @@ if __name__ == '__main__':
   # Create Datasetloader for test and testidation
   print(args.dataset_test_path)
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-<<<<<<< HEAD
   trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
-  # Create Datasetloader for testidation
-  trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
-=======
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
-  # Create Datasetloader for testidation
-  trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
->>>>>>> 089ae3e542e8ea85ecac4da4d9d04183a5910226
   # Cast it to iterable object
   trajectory_test_iterloader = iter(trajectory_test_dataloader)
 
