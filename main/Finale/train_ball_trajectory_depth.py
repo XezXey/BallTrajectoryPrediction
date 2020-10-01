@@ -56,7 +56,7 @@ parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, def
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--env', dest='env', help='Environment', tdefault='unity')
+parser.add_argument('--env', dest='env', help='Environment', default='unity')
 args = parser.parse_args()
 
 # GPU initialization
@@ -305,6 +305,7 @@ if __name__ == '__main__':
   params = list(model_flag.parameters()) + list(model_depth.parameters())
   optimizer = pt.optim.Adam(params, lr=args.lr)
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=args.decay_gamma)
+  start_epoch = 1
 
   # Load the checkpoint if it's available.
   if args.load_checkpoint is None:
@@ -328,7 +329,6 @@ if __name__ == '__main__':
 
   # Training settings
   n_epochs = 100000
-  start_epoch = 1
   for epoch in range(start_epoch, n_epochs+1):
     accumulate_train_loss = []
     accumulate_val_loss = []

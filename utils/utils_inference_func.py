@@ -117,8 +117,8 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
     col_idx = 1
     row_idx = (idx*2) + 2
     if args.env == 'unity':
-      fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT'.format(flag, i)), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT'.format(flag, i)), row=row_idx, col=col_idx)
+      fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 0].shape[0]), y=uv[i][:lengths[i]+1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], U'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 1].shape[0]), y=uv[i][:lengths[i]+1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], V'.format(flag, i)), row=row_idx, col=col_idx)
   return fig

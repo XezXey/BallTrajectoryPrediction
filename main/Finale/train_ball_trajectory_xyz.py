@@ -147,7 +147,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   train_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict, normalize=args.normalize)
 
   # Sum up all train loss 
-  train_loss = train_trajectory_loss + train_eot_loss*1e4 + train_gravity_loss + train_below_ground_loss + train_reprojection_loss
+  train_loss = train_trajectory_loss*1e-2 + train_eot_loss*1e4 + train_gravity_loss + train_below_ground_loss + train_reprojection_loss
   train_loss.backward()
   pt.nn.utils.clip_grad_norm_(model_flag.parameters(), args.clip)
   pt.nn.utils.clip_grad_norm_(model_xyz.parameters(), args.clip)
@@ -183,7 +183,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   val_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict, normalize=args.normalize)
 
   # Sum up all val loss 
-  val_loss = val_trajectory_loss + val_eot_loss*1e4 + val_gravity_loss + val_below_ground_loss + val_reprojection_loss
+  val_loss = val_trajectory_loss*1e-2 + val_eot_loss*1e4 + val_gravity_loss + val_below_ground_loss + val_reprojection_loss
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()))

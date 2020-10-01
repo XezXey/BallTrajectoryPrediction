@@ -43,6 +43,7 @@ parser.add_argument('--threshold', dest='threshold', type=float, help='Provide t
 parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
 parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
+parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--save', dest='save', help='Save the prediction trajectory for doing optimization', action='store_true', default=False)
@@ -83,6 +84,14 @@ def add_noise(input_trajectory, startpos, lengths):
   input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
+
+def add_flag_noise(flag, lengths):
+  flag = flag * 0.
+  # for idx in range(flag.shape[0]):
+    # print(flag)
+    # flag_active = pt.where(flag[idx]==1.)
+    # exit()
+  return flag
 
 def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
   # accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis, mse_loss_3axis
@@ -137,6 +146,8 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   ################ EOT ###############
   ####################################
   pred_eot_test, (_, _) = model_flag(in_test, hidden_eot, cell_state_eot, lengths=input_test_dict['lengths'])
+  if args.flag_noise:
+    pred_eot_test = add_flag_noise(flag=pred_eot_test, lengths=input_test_dict['input'])
 
   ####################################
   ############### Depth ##############
@@ -154,7 +165,6 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
     np.save(file='./gt_xyz.npy', arr=output_trajectory_test_xyz.detach().cpu().numpy())
     np.save(file='./seq_lengths.npy', arr=output_trajectory_test_lengths.detach().cpu().numpy())
     exit()
-
 
   test_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
   test_gravity_loss = loss.GravityLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
@@ -273,7 +283,7 @@ if __name__ == '__main__':
 
   # Create Datasetloader for test and testidation
   trajectory_test_dataset = TrajectoryDataset(dataset_path=args.dataset_test_path, trajectory_type=args.trajectory_type)
-  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
+  trajectory_test_dataloader = DataLoader(trajectory_test_dataset, batch_size=args.batch_size, num_workers=10, shuffle=False, collate_fn=collate_fn_padd, pin_memory=True, drop_last=False)
   # Cast it to iterable object
   trajectory_test_iterloader = iter(trajectory_test_dataloader)
 

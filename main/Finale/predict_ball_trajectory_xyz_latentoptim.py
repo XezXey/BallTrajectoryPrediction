@@ -8,6 +8,10 @@ import os
 import argparse
 import sys
 import time
+import plotly
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from mpl_toolkits import mplot3d
 sys.path.append(os.path.realpath('../..'))
 from tqdm import tqdm
 from torchvision.transforms import ToTensor
@@ -42,8 +46,8 @@ parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the
 parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
 parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
 parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
-parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
+parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--save', dest='save', help='Save the prediction trajectory for doing optimization', action='store_true', default=False)
@@ -51,7 +55,6 @@ parser.add_argument('--decumulate', help='Decumulate the xyz by ray casting', ac
 parser.add_argument('--teacherforcing_xyz', help='Use a teacher forcing training scheme for xyz displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for xyz displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--normalize', dest='normalize', help='Use NDC to calculate the loss', default=False, action='store_true')
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
 
 args = parser.parse_args()
@@ -76,23 +79,13 @@ def add_noise(input_trajectory, startpos, lengths):
     noise_sd = np.random.uniform(low=0.3, high=0.7)
   else:
     noise_sd = args.noise_sd
-
-  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
+  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
-  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory.shape).to(device)
-  ''' For see the maximum range of noise in uv-coordinate space
-  for i in np.arange(0.3, 2, 0.1):
-    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
-    x = []
-    for j in range(100):
-     x.append(np.all(noise_uv.cpu().numpy() < 3))
-    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
-  exit()
-  '''
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
   n_noise = int(args.batch_size * factor)
   noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
-  input_trajectory[noise_idx] += noise_uv[noise_idx] * masking_noise[noise_idx]
+  input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
 
@@ -131,6 +124,80 @@ def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
   # Accepted trajectory < Threshold
   return evaluation_results
 
+def predict_for_all_latent(model, input_test_dict, gt_test_dict, h, c, latent):
+  input_test_dict['with_latent'][..., 3] += latent[0]
+  input_test_dict['with_latent'][..., 4] += latent[1]
+  pred_xyz_test, (_, _) = model(input_test_dict['with_latent'], h, c, lengths=input_test_dict['lengths'])
+
+  pred_xyz_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(xyz=pred_xyz_test, uv=input_test_dict['with_latent'][..., [0, 1]], xyz_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=input_test_dict['with_latent'][..., [2]], cam_params_dict=cam_params_dict, epoch=0, args=args)
+
+  pred_xyz_test = pred_xyz_cumsum_test
+  return pred_xyz_test
+
+def interactive_optimize(model, input_test_dict, gt_test_dict, h, c):
+  # Prediction with given degree
+  degree = np.linspace(start=0, stop=360, num=720)
+  f_sin = np.sin(degree)
+  f_cos = np.cos(degree)
+  output_xyz_all = [predict_for_all_latent(model=model, input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, h=h, c=c, latent=[f_sin[idx], f_cos[idx]]) for idx in range(degree.shape[0])]
+  gt = gt_test_dict['xyz'][..., [0, 1, 2]].cpu().detach().numpy()
+  for traj_idx in range(input_test_dict['with_latent'].shape[0]):
+    lengths=gt_test_dict['lengths']
+    trajectory_loss = [loss.TrajectoryLoss(pred=output_xyz_all[idx][traj_idx][..., [0, 1, 2]], gt=pt.tensor(gt[traj_idx]).to(device), mask=gt_test_dict['mask'][traj_idx][..., [0, 1, 2]], lengths=lengths) for idx in range(degree.shape[0])]
+    output_xyz = [output_xyz_all[idx][traj_idx][:gt_test_dict['lengths'][traj_idx], :].cpu().detach().numpy() for idx in range(degree.shape[0])]
+    # Build all traces with visible=False
+    data_pred = [go.Scatter3d(
+      visible = False,
+      marker=dict(color='rgba(255, 0, 0, 0.7)', size=5),
+      x = output_xyz[idx][:, 0].reshape(-1),
+      y = output_xyz[idx][:, 1].reshape(-1),
+      z = output_xyz[idx][:, 2].reshape(-1),)
+      for idx in range(degree.shape[0])]
+
+    data_pred.append(go.Scatter3d(
+      visible = True,
+      marker=dict(color='rgba(0, 0, 255, 0.7)', size=5),
+      x = gt[traj_idx][:lengths[traj_idx], 0].reshape(-1),
+      y = gt[traj_idx][:lengths[traj_idx], 1].reshape(-1),
+      z = gt[traj_idx][:lengths[traj_idx], 2].reshape(-1),))
+
+    # Make initial trace visible
+    start_index = 0
+    data_pred[start_index]['visible'] = True
+
+    # Build slider steps
+    steps = []
+    for idx, each_degree in enumerate(degree):
+      step = dict(
+          # Update method allows us to update both trace and layout properties
+          method = 'update',
+          args = [
+              # Make the ith trace visible
+              {'visible': [t == each_degree for t in degree]},
+              # Set the title for the ith trace
+              {'title.text': 'Degree {} with TrajectoryLoss {}'.format(each_degree, trajectory_loss[idx])}],
+      )
+      step['args'][0]['visible'].append(True) # The ground truth always visible
+      steps.append(step)
+
+    # Build sliders
+    sliders = [go.layout.Slider(
+        active = 10,
+        currentvalue = {"prefix": "Degree: "},
+        pad = {"t": 50},
+        steps = steps
+    )]
+
+    layout = go.Layout(
+      sliders=sliders,
+      title={'text': 'Step {}'.format(start_index)},
+      scene=go.layout.Scene(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    )
+
+    fig = go.Figure(data=data_pred, layout=layout)
+    fig.show()
+    input("Continue plotting...")
+
 def predict(input_test_dict, gt_test_dict, model_flag, model_xyz, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Run over each example
@@ -161,14 +228,18 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_xyz, threshold, cam
     pred_eot_test = add_flag_noise(flag=pred_eot_test, lengths=input_test_dict['input'])
 
   ####################################
-  ################ XYZ ###############
+  ############### xyz ##############
   ####################################
-  in_test = pt.cat((in_test, pred_eot_test, input_test_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_dxyz_test, (_, _) = model_xyz(in_test, hidden_xyz, cell_state_xyz, lengths=input_test_dict['lengths'])
+  latent = pt.zeros(in_test.shape[0], in_test.shape[1], len(features_cols)-1).to(device)
+  in_test = pt.cat((in_test, pred_eot_test, latent), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
 
-  pred_xyz_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(xyz=pred_dxyz_test, uv=input_test_dict['input'][..., [0, 1]], xyz_teacher=gt_test_dict['o_with_f'][..., [0, 1, 2]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_eot_test, cam_params_dict=cam_params_dict, epoch=0, args=args)
-
-  pred_xyz_test = pred_xyz_cumsum_test
+  ####################################
+  ############ Interactive ###########
+  ####################################
+  input_test_dict['with_latent'] = in_test
+  # Interactive Optimize
+  interactive_optimize(model=model_xyz, input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, h=hidden_xyz, c=cell_state_xyz)
+  exit()
 
   if args.save:
     np.save(file='./pred_xyz.npy', arr=output_test_xyz.detach().cpu().numpy())
@@ -178,14 +249,13 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_xyz, threshold, cam
 
   test_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
   test_gravity_loss = loss.GravityLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
+  test_xyz_loss = loss.xyzLoss(pred=pred_xyz_test, gt=gt_test_dict['o_with_f'][..., [0]], lengths=input_test_dict['lengths'], mask=input_test_dict['mask'])
   test_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
   if args.env == 'mocap':
     test_eot_loss = pt.tensor(0.).to(device)
   else:
-    test_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_test, gt=gt_test_dict['o_with_f'][..., [3]], mask=input_test_dict['mask'][..., [2]], lengths=input_test_dict['lengths'], startpos=input_test_dict['startpos'][..., [3]], flag='test')
-  test_reprojection_loss = loss.ReprojectionLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict, normalize=args.normalize)
-
-  test_loss = test_trajectory_loss + test_gravity_loss + test_eot_loss + test_reprojection_loss
+    test_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_test, gt=gt_test_dict['o_with_f'][..., [1]], mask=input_test_dict['mask'][..., [2]], lengths=input_test_dict['lengths'], startpos=input_test_dict['startpos'][..., [2]], flag='test')
+  test_loss = test_trajectory_loss + test_gravity_loss + test_eot_loss
 
   ####################################
   ############# Evaluation ###########
@@ -197,7 +267,6 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_xyz, threshold, cam
   print('Trajectory Loss : {:.3f}'.format(test_trajectory_loss.item()), end=', ')
   print('Gravity Loss : {:.3f}'.format(test_gravity_loss.item()), end=', ')
   print('EndOfTrajectory Loss : {:.3f}'.format(test_eot_loss.item()))
-  print('Reprojection Loss : {:.3f}'.format(test_reprojection_loss.item()))
 
   if vis_flag == True:
     pred_test_dict = {'input':in_test, 'flag':pred_eot_test, 'xyz':pred_xyz_test, 'xyz':pred_xyz_test}
@@ -241,16 +310,6 @@ def collate_fn_padd(batch):
 
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
-
-def get_model(input_size, output_size, model_arch):
-  if model_arch=='bigru_residual_add':
-    model_flag = BiGRUResidualAdd(input_size=2, output_size=1)
-    model_xyz = BiGRUResidualAdd(input_size=3, output_size=1)
-  else :
-    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
-    exit()
-
-  return model_flag, model_xyz
 
 def load_checkpoint(model_eot, model_xyz):
   if os.path.isfile(args.load_checkpoint):
