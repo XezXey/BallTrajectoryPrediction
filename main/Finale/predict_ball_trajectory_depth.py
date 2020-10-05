@@ -48,6 +48,7 @@ parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action=
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--save', dest='save', help='Save the prediction trajectory for doing optimization', action='store_true', default=False)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
+parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
@@ -75,7 +76,8 @@ def add_noise(input_trajectory, startpos, lengths):
     noise_sd = np.random.uniform(low=0.3, high=0.7)
   else:
     noise_sd = args.noise_sd
-  input_trajectory = pt.cat((startpos[..., [0, 1, -1]], input_trajectory), dim=1)
+
+  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
   noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]

@@ -94,7 +94,7 @@ For perspective projection
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-50, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):
@@ -116,9 +116,10 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2) + 2
-    if args.env == 'unity':
-      fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 0].shape[0]), y=uv[i][:lengths[i]+1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], U'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 1].shape[0]), y=uv[i][:lengths[i]+1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], V'.format(flag, i)), row=row_idx, col=col_idx)
+
+    if args.env == 'unity':
+      fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
   return fig

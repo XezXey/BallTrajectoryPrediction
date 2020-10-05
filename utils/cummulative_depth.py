@@ -1,5 +1,6 @@
 import torch as pt
 import numpy as np
+import matplotlib.pyplot as plt
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -46,23 +47,28 @@ def get_plane_normal():
 def raycasting(reset_idx, uv, lengths, depth, cam_params_dict, plane_normal):
   screen_width = cam_params_dict['width']
   screen_height = cam_params_dict['height']
+  I = cam_params_dict['I']
   I_inv = cam_params_dict['I_inv']
+  E = cam_params_dict['E']
   E_inv = cam_params_dict['E_inv']
   # print(reset_idx, uv, lengths, depth)
   camera_center = E_inv[:-1, -1]
   # Ray casting
-  transformation = pt.inverse(pt.inverse(I_inv) @ pt.inverse(E_inv))   # Inverse(Intrinsic @ Extrinsic)
+  transformation = I @ E   # Intrinsic @ Extrinsic
+  transformation_inv = pt.inverse(transformation)   # Inverse(Intrinsic @ Extrinsic)
   uv = pt.cat((uv[reset_idx[0], :], pt.ones(uv[reset_idx[0], :].shape).to(device)), dim=-1) # reset_idx[0] is 
   uv[:, 0] = ((uv[:, 0]/screen_width) * 2) - 1
   uv[:, 1] = ((uv[:, 1]/screen_height) * 2) - 1
-  ndc = (uv @ transformation.t()).to(device)
+  ndc = (uv @ transformation_inv.t()).to(device)
   ray_direction = ndc[:, :-1] - camera_center
   # Depth that intersect the pitch
-  plane_point = pt.tensor([32, 0, 19]).to(device)
+  plane_point = pt.tensor([32., 0., 19.]).to(device)
   distance = camera_center - plane_point
   normalize = pt.tensor([(pt.dot(distance, plane_normal)/pt.dot(ray_direction[i], plane_normal)) for i in range(ray_direction.shape[0])]).view(-1, 1).to(device)
   intersect_pos = pt.cat(((camera_center - ray_direction * normalize), pt.ones(ray_direction.shape[0], 1).to(device)), dim=-1)
-  reset_depth = intersect_pos @ pt.inverse(E_inv).t()
+  # Make all position on intersected to zero
+  intersect_pos[:, 1] = 0.
+  reset_depth = intersect_pos @ E.t()
   return -reset_depth[..., 2].view(-1, 1)
 
 def split_cumsum(reset_idx, length, start_pos, reset_depth, depth, eot):
@@ -71,16 +77,23 @@ def split_cumsum(reset_idx, length, start_pos, reset_depth, depth, eot):
   2. Perform cumsum seperately of each chunk.
   3. Concatenate all u, v, depth together and replace with the current one. (Need to replace with padding for masking later on.)
   '''
+  # print("B4", reset_idx)
   reset_idx -= 1
+  # print("AF", reset_idx)
   reset_depth = pt.cat((start_pos[0][2].view(-1, 1), reset_depth))
   max_len = pt.tensor(depth.shape[0]).view(-1, 1).to(device)
-  reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
-  if reset_idx[-1] != depth.shape[0] and reset_idx.shape[0] > 1:
-    reset_idx = pt.cat((reset_idx, max_len))
+  if reset_idx[0] != 0:
+    reset_idx = pt.cat((pt.zeros(1).type(pt.cuda.LongTensor).view(-1, 1).to(device), reset_idx.view(-1, 1)))
+  if (reset_idx[-1] != depth.shape[0] and reset_idx.shape[0] > 1) or (len(reset_idx) == 1):
+    reset_idx = pt.cat((reset_idx.view(-1, 1), max_len.view(-1, 1)))
   depth_chunk = [depth[start:end] if start == 0 else depth[start+1:end] for start, end in zip(reset_idx, reset_idx[1:])]
   depth_chunk = [pt.cat((reset_depth[i].view(-1, 1), depth_chunk[i])) for i in range(len(depth_chunk))]
+  # depth_chunk_cumsum = [each_depth_chunk[0].view(-1, 1) if (idx!=len(depth_chunk)-1) else pt.cumsum(each_depth_chunk, dim=0) for idx, each_depth_chunk in enumerate(depth_chunk)]
   depth_chunk_cumsum = [pt.cumsum(each_depth_chunk, dim=0) for each_depth_chunk in depth_chunk]
   depth_chunk = pt.cat(depth_chunk_cumsum)
+  # plt.plot(depth_chunk.cpu().detach().numpy())
+  # plt.show()
+  # print(reset_idx)
   return depth_chunk
 
 def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, cam_params_dict):
@@ -103,7 +116,8 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, c
   # Reset the depth when eot == 1
   plane_normal = get_plane_normal()
 
-  eot_all = pt.stack([pt.cat([trajectory_startpos[i][:, [2]].view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
+  eot_all = pt.stack([pt.cat([trajectory_startpos[i][:, [3]].view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
+  eot_all = (eot_all > 0.5).type(pt.cuda.FloatTensor)
   reset_idx = [pt.where((eot_all[i][:lengths[i]+1]) == 1.) for i in range(eot_all.shape[0])]
   check_reset_idx = pt.sum(pt.tensor([(reset_idx[i][0].nelement() == 0) for i in range(eot_all.shape[0])])) == len(reset_idx)
   if check_reset_idx == True:
