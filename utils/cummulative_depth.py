@@ -1,6 +1,11 @@
 import torch as pt
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import os
+sys.path.append(os.path.realpath('../..'))
+import utils.transformation as transformation
+import utils.utils_func as utils_func
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -8,7 +13,7 @@ if pt.cuda.is_available():
 else:
   device = pt.device('cpu')
 
-def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_dict, epoch, args):
+def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_dict, epoch, args, gt=None):
   '''Cummulative modules with 4 diiferent ways
   1. Decumulate
   2. Teacher forcing all samples
@@ -19,7 +24,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
   if args.decumulate and epoch > args.start_decumulate:
-    depth_cumsum, uv_cumsum, fail = cumsum_decumulate_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos, lengths=lengths, eot=eot, cam_params_dict=cam_params_dict)
+    depth_cumsum, uv_cumsum, fail = cumsum_decumulate_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos, lengths=lengths, eot=eot, cam_params_dict=cam_params_dict, args=args)
     if fail:
       depth_cumsum, uv_cumsum = cumsum_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
 
@@ -32,6 +37,20 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
     teacher_idx = np.random.choice(a=args.batch_size, size=(n_teacherforcing,), replace=False)
     depth_cumsum, uv_cumsum = cumsum_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
     depth_cumsum[teacher_idx, ...], _ = cumsum_teacherforcing_trajectory(depth=depth[teacher_idx, ...], depth_teacher=depth_teacher[teacher_idx, ...], uv=uv[teacher_idx][..., [0, 1]], trajectory_startpos=startpos[teacher_idx][..., [0, 1, 2]])
+
+  elif args.bi_pred:
+    # Function that take xyz
+    _, _, d = transformation.projectToScreenSpace(gt, cam_params_dict, False)   # Without normalize to NDC space
+    # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
+    last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
+    # forward depth
+    depth_fw_cumsum, uv_cumsum = cumsum_trajectory(depth=depth[..., [0]], uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
+    # backward depth
+    depth_bw = utils_func.reverse_masked_seq(seq=depth[..., [1]], lengths=lengths)
+    depth_bw_cumsum, _ = cumsum_trajectory(depth=depth_bw[..., [0]], uv=uv[..., [0, 1]], trajectory_startpos=pt.cat((startpos[..., [0, 1]], last_d), dim=2))
+    depth_bw_cumsum = utils_func.reverse_masked_seq(seq=depth_bw_cumsum[..., [0]], lengths=lengths+1)
+    depth_cumsum = pt.unsqueeze(pt.mean(pt.cat((depth_fw_cumsum, depth_bw_cumsum), dim=2), dim=2), dim=2)
+
   else:
     depth_cumsum, uv_cumsum = cumsum_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
 
@@ -96,7 +115,7 @@ def split_cumsum(reset_idx, length, start_pos, reset_depth, depth, eot):
   # print(reset_idx)
   return depth_chunk
 
-def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, cam_params_dict):
+def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, cam_params_dict, args):
   # print(depth.shape, uv.shape, trajectory_startpos.shape, eot.shape)
   '''
   Perform a cummulative summation to the output
@@ -116,7 +135,10 @@ def cumsum_decumulate_trajectory(depth, uv, trajectory_startpos, lengths, eot, c
   # Reset the depth when eot == 1
   plane_normal = get_plane_normal()
 
-  eot_all = pt.stack([pt.cat([trajectory_startpos[i][:, [3]].view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
+  if args.env == 'mocap':
+    eot_all = pt.stack([pt.cat([pt.tensor([0.]).to(device).view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
+  elif args.env == 'unity':
+    eot_all = pt.stack([pt.cat([trajectory_startpos[i][:, [3]].view(-1, 1), eot[i]]) for i in range(trajectory_startpos.shape[0])])
   eot_all = (eot_all > 0.5).type(pt.cuda.FloatTensor)
   reset_idx = [pt.where((eot_all[i][:lengths[i]+1]) == 1.) for i in range(eot_all.shape[0])]
   check_reset_idx = pt.sum(pt.tensor([(reset_idx[i][0].nelement() == 0) for i in range(eot_all.shape[0])])) == len(reset_idx)

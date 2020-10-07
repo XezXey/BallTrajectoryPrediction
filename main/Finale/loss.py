@@ -15,8 +15,8 @@ else:
   device = pt.device('cpu')
 
 def ReprojectionLoss(pred, gt, mask, lengths, cam_params_dict, normalize):
-  u_pred, v_pred = transformation.projectToScreenSpace(pred, cam_params_dict, normalize)
-  u_gt, v_gt = transformation.projectToScreenSpace(gt, cam_params_dict, normalize)
+  u_pred, v_pred, _ = transformation.projectToScreenSpace(pred, cam_params_dict, normalize)
+  u_gt, v_gt, _ = transformation.projectToScreenSpace(gt, cam_params_dict, normalize)
   u_reprojection_loss = (pt.sum((((u_gt[..., 0] - u_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
   v_reprojection_loss = (pt.sum((((v_gt[..., 0] - v_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
   return (u_reprojection_loss + v_reprojection_loss)/2

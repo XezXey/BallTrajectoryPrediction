@@ -56,5 +56,6 @@ def projectToScreenSpace(world, cam_params_dict, normalize=True):
   else:
     u = (((ndc[..., [0]]/ndc[..., [2]] + 1) * .5) * width)
     v = (((ndc[..., [1]]/ndc[..., [2]] + 1) * .5) * height)
-  return u, v
+  d = ndc[..., [2]]
+  return u, v, d
 

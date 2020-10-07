@@ -38,6 +38,7 @@ else:
   device = pt.device('cpu')
   print('[%]GPU Disabled, CPU Enabled')
 
+args = None
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
@@ -46,6 +47,10 @@ marker_dict_u = dict(color='rgba(255, 0, 0, 0.7)', size=4)
 marker_dict_v = dict(color='rgba(0, 255, 0, 0.7)', size=4)
 marker_dict_depth = dict(color='rgba(0, 0, 255, 0.5)', size=4)
 marker_dict_eot = dict(color='rgba(0, 255, 0, 1)', size=5)
+
+def share_args(a):
+  global args
+  args = a
 
 def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_dict, evaluation_results, animation_visualize_flag, args):
   # Visualize by make a subplots of trajectory
@@ -63,11 +68,16 @@ def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_
   fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{'colspan':2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   # Visualize a trajectory
   if args.env == 'unity':
-    gt_eot = input_test_dict['input'][..., [2]]
+    latent_gt = input_test_dict['input'][..., [2]].cpu().detach().numpy()
   else:
-    gt_eot = None
+    latent_gt = None
 
-  fig = visualize_trajectory(uv=input_test_dict['input'], pred_xyz=pt.mul(pred_test_dict['xyz'], gt_test_dict['mask'][..., [0, 1, 2]]), gt_xyz=gt_test_dict['xyz'][..., [0, 1, 2]], startpos=gt_test_dict['startpos'], lengths=input_test_dict['lengths'], mask=gt_test_dict['mask'], fig=fig, flag='Test', n_vis=n_vis, evaluation_results=evaluation_results, vis_idx=vis_idx, pred_eot=pred_test_dict['flag'], gt_eot=gt_eot, args=args)
+  if args.latent:
+    latent_in = pred_test_dict['input'][..., 2:].cpu().detach().numpy()
+  else:
+    latent_in = None
+
+  fig = visualize_trajectory(uv=input_test_dict['input'], pred_xyz=pt.mul(pred_test_dict['xyz'], gt_test_dict['mask'][..., [0, 1, 2]]), gt_xyz=gt_test_dict['xyz'][..., [0, 1, 2]], startpos=gt_test_dict['startpos'], lengths=input_test_dict['lengths'], mask=gt_test_dict['mask'], fig=fig, flag='Test', n_vis=n_vis, evaluation_results=evaluation_results, vis_idx=vis_idx, latent_in=latent_in, latent_gt=latent_gt, args=args)
   # Adjust the layout/axis
   # AUTO SCALED/PITCH SCALED
   fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(args.trajectory_type))
@@ -94,17 +104,14 @@ For perspective projection
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-10, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-9, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
-def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):
+def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, latent_gt, latent_in, args, fig=None, flag='test', n_vis=5):
   # detach() for visualization
   uv = uv.cpu().detach().numpy()
-  pred_eot = pred_eot.cpu().detach().numpy()
   pred_xyz = pred_xyz.cpu().detach().numpy()
   gt_xyz = gt_xyz.cpu().detach().numpy()
-  if args.env == 'unity':
-    gt_eot = gt_eot.cpu().detach().numpy()
   # Iterate to plot each trajectory
   count = 1
   for idx, i in enumerate(vis_idx):
@@ -116,10 +123,11 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2) + 2
-    fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 0].shape[0]), y=uv[i][:lengths[i]+1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], U'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 1].shape[0]), y=uv[i][:lengths[i]+1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], V'.format(flag, i)), row=row_idx, col=col_idx)
+    if args.latent:
+      fig.add_trace(go.Scatter(x=np.arange(latent_in[i][:lengths[i]].shape[0]), y=latent_in[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], Latent(Input)'.format(flag, i)), row=row_idx, col=col_idx)
 
-    if args.env == 'unity':
-      fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
+    # if args.env == 'unity':
+      # fig.add_trace(go.Scatter(x=np.arange(latent_gt[i][:lengths[i]].shape[0]), y=latent_gt[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
   return fig
