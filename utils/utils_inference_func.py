@@ -94,7 +94,7 @@ For perspective projection
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-10, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):
