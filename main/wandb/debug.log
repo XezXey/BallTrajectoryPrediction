@@ -1,34 +1,16 @@
-2020-09-26 23:39:56,313 DEBUG   MainThread:6152 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
-2020-09-26 23:39:56,317 DEBUG   MainThread:6152 [meta.py:setup():97] code probe starting
-2020-09-26 23:39:56,317 DEBUG   MainThread:6152 [meta.py:_setup_code_git():49] probe for git information
-2020-09-26 23:39:56,327 DEBUG   MainThread:6152 [meta.py:_setup_code_program():58] save program starting
-2020-09-26 23:39:56,327 DEBUG   MainThread:6152 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale/train_ball_trajectory_depth.py
-2020-09-26 23:39:56,327 DEBUG   MainThread:6152 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/code/main/Finale/train_ball_trajectory_depth.py
-2020-09-26 23:39:56,327 DEBUG   MainThread:6152 [meta.py:_setup_code_program():67] save program
-2020-09-26 23:39:56,328 DEBUG   MainThread:6152 [meta.py:setup():119] code probe done
-2020-09-26 23:39:56,335 DEBUG   MainThread:6152 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/30uipnh4
-2020-09-26 23:39:56,338 INFO    MainThread:6152 [run_manager.py:wrap_existing_process():1144] wrapping existing process 6118
-2020-09-26 23:39:56,338 WARNING MainThread:6152 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
-2020-09-26 23:39:56,780 INFO    MainThread:6152 [run_manager.py:init_run():924] system metrics and metadata threads started
-2020-09-26 23:39:56,780 INFO    MainThread:6152 [run_manager.py:init_run():963] upserting run before process can begin, waiting at most 10 seconds
-2020-09-26 23:39:57,148 INFO    Thread-14 :6152 [run_manager.py:_upsert_run():1048] saving patches
-2020-09-26 23:39:57,245 INFO    Thread-14 :6152 [run_manager.py:_upsert_run():1052] saving pip packages
-2020-09-26 23:39:57,246 INFO    Thread-14 :6152 [run_manager.py:_upsert_run():1054] initializing streaming files api
-2020-09-26 23:39:57,246 INFO    Thread-14 :6152 [run_manager.py:_upsert_run():1061] unblocking file change observer, beginning sync with W&B servers
-2020-09-26 23:39:57,247 INFO    MainThread:6152 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
-2020-09-26 23:39:57,250 INFO    MainThread:6152 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
-2020-09-26 23:39:57,318 INFO    Thread-3  :6152 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/config.yaml
-2020-09-26 23:39:57,642 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/wandb-metadata.json
-2020-09-26 23:39:57,643 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/code/main/Finale/train_ball_trajectory_depth.py
-2020-09-26 23:39:57,643 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/output.log
-2020-09-26 23:39:57,643 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/diff.patch
-2020-09-26 23:39:57,643 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/requirements.txt
-2020-09-26 23:39:57,644 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/code/main/Finale
-2020-09-26 23:39:57,644 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/code/main
-2020-09-26 23:39:57,644 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/code
-2020-09-26 23:39:57,858 INFO    MainThread:6152 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
-2020-09-26 23:39:57,858 INFO    MainThread:6152 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
-2020-09-26 23:39:57,859 INFO    MainThread:6152 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
-2020-09-26 23:39:58,317 INFO    Thread-3  :6152 [run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/wandb-events.jsonl
-,859 INFO    MainThread:6152 [30uipnh4:run_manager.py:shutdown():1068] shutting down system stats and metadata service
-2020-09-26 23:39:58,317 INFO    Thread-3  :6152 [30uipnh4:run_manager.py:_on_file_created():677] file/dir created: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20200926_163955-30uipnh4/wandb-events.jsonl
+2020-10-09 18:49:32,407 DEBUG   MainThread:126542 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2020-10-09 18:49:32,421 DEBUG   MainThread:126542 [meta.py:setup():97] code probe starting
+2020-10-09 18:49:32,437 DEBUG   MainThread:126542 [meta.py:_setup_code_git():49] probe for git information
+2020-10-09 18:49:32,478 DEBUG   MainThread:126542 [meta.py:_setup_code_program():58] save program starting
+2020-10-09 18:49:32,478 DEBUG   MainThread:126542 [meta.py:_setup_code_program():60] save program starting: /home/mint/mnt_tl_puntawat-ms-7c37/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale/Debugging/train_ball_trajectory_depth_testlatent.py
+2020-10-09 18:49:32,486 DEBUG   MainThread:126542 [meta.py:_setup_code_program():65] save program saved: /home/mint/mnt_tl_puntawat-ms-7c37/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20201009_184931-1fbf7f0f/code/main/Finale/Debugging/train_ball_trajectory_depth_testlatent.py
+2020-10-09 18:49:32,487 DEBUG   MainThread:126542 [meta.py:_setup_code_program():67] save program
+2020-10-09 18:49:32,491 DEBUG   MainThread:126542 [meta.py:setup():119] code probe done
+2020-10-09 18:49:32,505 DEBUG   MainThread:126542 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/1fbf7f0f
+2020-10-09 18:49:32,510 INFO    MainThread:126542 [run_manager.py:wrap_existing_process():1144] wrapping existing process 126501
+2020-10-09 18:49:32,510 WARNING MainThread:126542 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2020-10-09 18:49:32,683 INFO    MainThread:126542 [run_manager.py:init_run():924] system metrics and metadata threads started
+2020-10-09 18:49:32,683 INFO    MainThread:126542 [run_manager.py:init_run():963] upserting run before process can begin, waiting at most 10 seconds
+2020-10-09 18:49:33,274 INFO    Thread-14 :126542 [run_manager.py:_upsert_run():1048] saving patches
+2020-10-09 18:49:33,431 INFO    Thread-3  :126542 [run_manager.py:_on_file_modified():688] file/dir modified: /home/mint/mnt_tl_puntawat-ms-7c37/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20201009_184931-1fbf7f0f/config.yaml
+2020-10-09 18:49:33,431 INFO    Thread-3  :126542 [1fbf7f0f:run_manager.py:_on_file_modified():688] file/dir modified: /home/mint/mnt_tl_puntawat-ms-7c37/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/wandb/run-20201009_184931-1fbf7f0f/config.yaml

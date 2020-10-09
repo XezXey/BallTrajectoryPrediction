@@ -44,6 +44,9 @@ def get_model_depth(model_arch, features_cols, args):
   if args.bi_pred:
     # Predict depth in 2 direction
     output_size = 2
+  elif args.bi_pred_weight:
+    # Predict depth in 2 direction
+    output_size = 3
   else:
     # Predict only depth
     output_size = 1

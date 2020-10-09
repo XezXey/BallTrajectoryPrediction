@@ -80,11 +80,12 @@ def add_noise(input_trajectory, startpos, lengths):
 
   input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
   input_trajectory = pt.cumsum(input_trajectory, dim=1)
-  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., :-1].shape).to(device)
-  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
-  n_noise = int(args.batch_size * factor)
-  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
-  input_trajectory[noise_idx, :, :-1] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
+  # print(input_trajectory.shape)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., [0, 1]].shape).to(device)
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., [0, 1]].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(input_trajectory.shape[0] * factor)
+  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
+  input_trajectory[noise_idx, :, :] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
 
