@@ -225,7 +225,7 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
 
-def load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler):
+def load_checkpoint(model_depth, optimizer, lr_scheduler):
   if args.load_checkpoint == 'best':
     load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
   elif args.load_checkpoint == 'lastest':
@@ -243,7 +243,7 @@ def load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler):
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return model_flag, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss
+    return model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss
 
   else:
     print("[#] Checkpoint not found...")
@@ -305,7 +305,7 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    _, model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_flag, model_depth, optimizer, lr_scheduler)
+    model_depth, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_depth, optimizer, lr_scheduler)
 
   print('[#]Model Architecture')
   print('####### Model - Depth #######')

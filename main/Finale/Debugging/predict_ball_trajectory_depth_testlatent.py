@@ -147,17 +147,19 @@ def predict(input_test_dict, gt_test_dict, model_depth, threshold, cam_params_di
   ####################################
   ############### Depth ##############
   ####################################
+  offset = 0.02
   if args.noise:
     latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
   else:
     # latent_in = pt.flip(input_test_dict['input'][..., [2]], dims=[1])
-    latent_in = input_test_dict['input'][..., [2]] + 0.2
+    latent_in = input_test_dict['input'][..., [2]] + offset
   if args.latent:
-    in_test = pt.cat((in_test, latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    in_test = pt.cat((in_test*0., latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
   pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
-  print(latent_in[0][:10])
-  print(latent_in[0][:10]-0.2)
-  print(pred_depth_test[0][:10])
+  print("Original Input : ", latent_in[0][:10] - offset)
+  print("Input : ", latent_in[0][:10])
+  print("Prediction : ", pred_depth_test[0][:10])
+  exit()
 
   pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=latent_in, cam_params_dict=cam_params_dict, epoch=0, args=args)
 

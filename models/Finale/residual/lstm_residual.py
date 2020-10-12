@@ -21,7 +21,7 @@ class LSTMResidual(pt.nn.Module):
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim, 16, 8, 4, self.output_size]
+    self.fc_size = [self.hidden_dim, 32, 16, 8, 4, self.output_size]
     # Define the layers
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([self.create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size

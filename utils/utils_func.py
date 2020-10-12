@@ -9,11 +9,10 @@ import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import wandb
 # Models
-from models.Finale.rnn import RNN
-from models.Finale.lstm import LSTM
-from models.Finale.bilstm import BiLSTM
-from models.Finale.gru import GRU
-from models.Finale.bigru import BiGRU
+from models.Finale.vanilla_nostack.lstm import LSTM
+from models.Finale.vanilla_nostack.bilstm import BiLSTM
+from models.Finale.vanilla_nostack.gru import GRU
+from models.Finale.vanilla_nostack.bigru import BiGRU
 from models.Finale.residual.bilstm_residual import BiLSTMResidual
 from models.Finale.residual.lstm_residual import LSTMResidual
 from models.Finale.residual.bigru_residual import BiGRUResidual

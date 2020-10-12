@@ -9,11 +9,17 @@ import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import wandb
 # Models
-from models.Finale.rnn import RNN
-from models.Finale.lstm import LSTM
-from models.Finale.bilstm import BiLSTM
-from models.Finale.gru import GRU
-from models.Finale.bigru import BiGRU
+# No stack
+from models.Finale.vanilla_nostack.lstm import LSTM
+# from models.Finale.vanilla_nostack.bilstm import BiLSTM
+from models.Finale.vanilla_nostack.gru import GRU
+# from models.Finale.vanilla_nostack.bigru import BiGRU
+# Stack
+# from models.Finale.vanilla_stack.lstm import LSTM
+from models.Finale.vanilla_stack.bilstm import BiLSTM
+# from models.Finale.vanilla_stack.gru import GRU
+from models.Finale.vanilla_stack.bigru import BiGRU
+# Residual
 from models.Finale.residual.bilstm_residual import BiLSTMResidual
 from models.Finale.residual.lstm_residual import LSTMResidual
 from models.Finale.residual.bigru_residual import BiGRUResidual
@@ -49,12 +55,25 @@ def get_model_depth(model_arch, features_cols):
     input_size = 3
   else:
     input_size = 2
+
   if model_arch=='bilstm_residual':
     model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = BiLSTMResidual(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
   elif model_arch=='bigru_residual':
     model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = BiGRUResidual(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bilstm':
+    model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiLSTM(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bigru':
+    model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiGRU(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
+  elif model_arch=='lstm':
+    model_flag = LSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = LSTM(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
+  elif model_arch=='gru':
+    model_flag = GRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = GRU(input_size=input_size, output_size=1, batch_size=args.batch_size, model='depth')
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
