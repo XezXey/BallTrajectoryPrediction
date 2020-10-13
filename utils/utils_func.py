@@ -3,16 +3,24 @@ import sys
 sys.path.append(os.path.realpath('../'))
 import numpy as np
 import torch as pt
+import json
 import plotly
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
 import wandb
 # Models
-from models.Finale.vanilla_nostack.lstm import LSTM
-from models.Finale.vanilla_nostack.bilstm import BiLSTM
-from models.Finale.vanilla_nostack.gru import GRU
-from models.Finale.vanilla_nostack.bigru import BiGRU
+# No Stack
+# from models.Finale.vanilla_nostack.lstm import LSTM
+# from models.Finale.vanilla_nostack.bilstm import BiLSTM
+# from models.Finale.vanilla_nostack.gru import GRU
+# from models.Finale.vanilla_nostack.bigru import BiGRU
+# Stack
+from models.Finale.vanilla_stack.lstm import LSTM
+from models.Finale.vanilla_stack.bilstm import BiLSTM
+from models.Finale.vanilla_stack.gru import GRU
+from models.Finale.vanilla_stack.bigru import BiGRU
+# Residual
 from models.Finale.residual.bilstm_residual import BiLSTMResidual
 from models.Finale.residual.lstm_residual import LSTMResidual
 from models.Finale.residual.bigru_residual import BiGRUResidual
@@ -26,8 +34,13 @@ if pt.cuda.is_available():
 else:
   device = pt.device('cpu')
 
+args=None
 features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
 x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
+
+def share_args(a):
+  global args
+  args = a
 
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.4)', size=4)
@@ -47,7 +60,7 @@ def get_model_depth(model_arch, features_cols, args):
     # Predict depth in 2 direction
     output_size = 3
   else:
-    # Predict only depth
+    # Predict only bw or fw depth direction
     output_size = 1
 
   # Model selection
@@ -63,6 +76,12 @@ def get_model_depth(model_arch, features_cols, args):
   elif model_arch=='bigru_residual':
     model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = BiGRUResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bigru':
+    model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiGRU(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bilstm':
+    model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiLSTM(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -259,3 +278,47 @@ def reverse_masked_seq(seq, lengths):
   for i in range(seq.shape[0]):
     seq[i][:lengths[i]] = pt.flip(seq[i][:lengths[i], [0]], dims=[0])
   return seq
+
+def construct_bipred_weight(weight, lengths):
+  weight_scaler = pt.nn.Sigmoid()
+  weight = weight_scaler(weight)
+  fw_weight = pt.cat((pt.ones(weight.shape[0], 1, 1).cuda(), weight), dim=1)
+  bw_weight = pt.cat((pt.zeros(weight.shape[0], 1, 1).cuda(), 1-weight), dim=1)
+  for i in range(weight.shape[0]):
+    # Forward prediction weight
+    fw_weight[i][lengths[i]] = 0.
+    # Bachward prediction weight
+    bw_weight[i][lengths[i]] = 1.
+    # print(pt.cat((fw_weight, bw_weight), dim=2)[i][:lengths[i]+20])
+    # exit()
+  # print(weight.shape, lengths.shape)
+
+  return pt.cat((fw_weight, bw_weight), dim=2)
+
+def save_reconstructed(eval_metrics, trajectory):
+  # Take the evaluation metrics and reconstructed trajectory to create the save file for ranking visualization
+  lengths = []
+  trajectory_all = []
+  for i in range(len(trajectory)):
+    # Iterate over each batch
+    gt_xyz = trajectory[i][0]
+    pred_xyz = trajectory[i][1]
+    uv = trajectory[i][2]
+    d = trajectory[i][3]
+    seq_len = trajectory[i][4]
+    for j in range(seq_len.shape[0]):
+      # Iterate over each trajectory
+      each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]]), axis=1)
+      lengths.append(seq_len)
+      trajectory_all.append(each_trajectory)
+
+  # Save to file
+  save_file_suffix = args.load_checkpoint.split('/')[-2]
+  save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
+  initialize_folder(save_path)
+  np.save(file='{}/{}_trajectory'.format(save_path, save_file_suffix), arr=np.array(trajectory_all))
+  np.save(file='{}/{}_metrices'.format(save_path, save_file_suffix), arr=eval_metrics)
+  # with open('{}/{}.json'.format(args.savetofile, save_file_suffix), 'w') as f:
+    # json.dump(eval_metrics, f)
+  print("[#] Saving reconstruction to /{}/{}".format(args.savetofile, save_file_suffix))
+

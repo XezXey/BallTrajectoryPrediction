@@ -48,8 +48,8 @@ parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='st
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--lr', help='Learning rate', type=float, default=0.001)
-parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.9)
-parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=70)
+parser.add_argument('--decay_gamma', help='Gamma (Decay rate)', type=float, default=0.7)
+parser.add_argument('--decay_cycle', help='Decay cycle', type=int, default=50)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, default='./')
@@ -361,7 +361,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 20 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

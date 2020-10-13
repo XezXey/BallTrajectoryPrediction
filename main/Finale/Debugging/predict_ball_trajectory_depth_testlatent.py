@@ -53,7 +53,9 @@ parser.add_argument('--start_decumulate', help='Epoch to start training with dec
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
+parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
 
@@ -147,18 +149,19 @@ def predict(input_test_dict, gt_test_dict, model_depth, threshold, cam_params_di
   ####################################
   ############### Depth ##############
   ####################################
-  offset = 0.02
-  if args.noise:
-    latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
-  else:
+  offset = 0.002
+  idx = 10
+  # if args.noise:
+    # latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
     # latent_in = pt.flip(input_test_dict['input'][..., [2]], dims=[1])
-    latent_in = input_test_dict['input'][..., [2]] + offset
   if args.latent:
+    latent_in = input_test_dict['input'][..., [2]] + offset
     in_test = pt.cat((in_test*0., latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+  print("Input : ", in_test[idx][:10])
   pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
-  print("Original Input : ", latent_in[0][:10] - offset)
-  print("Input : ", latent_in[0][:10])
-  print("Prediction : ", pred_depth_test[0][:10])
+  print("Original Input : ", latent_in[idx][:10] - offset)
+  print("Latent Input : ", latent_in[idx][:10])
+  print("Prediction : ", pred_depth_test[idx][:10])
   exit()
 
   pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=latent_in, cam_params_dict=cam_params_dict, epoch=0, args=args)

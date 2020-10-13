@@ -46,16 +46,19 @@ parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='st
 parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
-parser.add_argument('--save', dest='save', help='Save the prediction trajectory for doing optimization', action='store_true', default=False)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
 parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
+parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
+parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
 
 args = parser.parse_args()
+utils_func.share_args(a=args)
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -112,10 +115,10 @@ def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
 
     evaluation_results[distance]['maxdist_3axis'] = maxdist_3axis.cpu().detach().numpy()
     evaluation_results[distance]['loss_3axis'] = loss_3axis.cpu().detach().numpy()
-    evaluation_results[distance]['mean_loss_3axis'] = pt.mean(loss_3axis, axis=0)
-    evaluation_results[distance]['sd_loss_3axis'] = pt.std(loss_3axis, axis=0)
-    evaluation_results[distance]['accepted_3axis_loss'] = pt.sum((pt.sum(loss_3axis < threshold, axis=1) == 3))
-    evaluation_results[distance]['accepted_3axis_maxdist']= pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3))
+    evaluation_results[distance]['mean_loss_3axis'] = pt.mean(loss_3axis, axis=0).cpu().detach().numpy()
+    evaluation_results[distance]['sd_loss_3axis'] = pt.std(loss_3axis, axis=0).cpu().detach().numpy()
+    evaluation_results[distance]['accepted_3axis_loss'] = pt.sum((pt.sum(loss_3axis < threshold, axis=1) == 3)).cpu().detach().numpy()
+    evaluation_results[distance]['accepted_3axis_maxdist']= pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3)).cpu().detach().numpy()
 
     print("Distance : ", distance)
     print("Accepted 3-Axis(X, Y, Z) Maxdist < {} : {}".format(threshold, evaluation_results[distance]['accepted_3axis_maxdist']))
@@ -158,17 +161,15 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   ####################################
   in_test = pt.cat((in_test, pred_eot_test, input_test_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
   pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
+  if args.bi_pred_weight:
+    bi_pred_weight_test = pred_depth_test[..., [2]]
+  else:
+    bi_pred_weight_test = None
 
-  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_eot_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]])
+  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_eot_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
   # Project the (u, v, depth) to world space
   pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
-
-  if args.save:
-    np.save(file='./pred_xyz.npy', arr=output_test_xyz.detach().cpu().numpy())
-    np.save(file='./gt_xyz.npy', arr=output_trajectory_test_xyz.detach().cpu().numpy())
-    np.save(file='./seq_lengths.npy', arr=output_trajectory_test_lengths.detach().cpu().numpy())
-    exit()
 
   test_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
   test_gravity_loss = loss.GravityLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
@@ -185,6 +186,7 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   ####################################
   # Calculate loss per trajectory
   evaluation_results = evaluateModel(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold)
+  reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
 
   print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
   print('Trajectory Loss : {:.3f}'.format(test_trajectory_loss.item()), end=', ')
@@ -195,11 +197,7 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
     pred_test_dict = {'input':in_test, 'flag':pred_eot_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
     utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation_visualize_flag, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
 
-  return evaluation_results
-
-def initialize_folder(path):
-  if not os.path.exists(path):
-      os.makedirs(path)
+  return evaluation_results, reconstructed_trajectory
 
 def collate_fn_padd(batch):
     # Padding batch of variable length
@@ -275,13 +273,17 @@ def summary(evaluation_results_all):
     print("SD 3-Axis(X, Y, Z) loss : {}".format(np.std(summary_evaluation[distance]['loss_3axis'], axis=0)))
     print("Accepted trajectory by 3axis Loss : {} from {}".format(summary_evaluation[distance]['accepted_3axis_loss'], n_trajectory))
     print("Accepted trajectory by 3axis MaxDist : {} from {}".format(summary_evaluation[distance]['accepted_3axis_maxdist'], n_trajectory))
+
     print("="*100)
+
+  return summary_evaluation
 
 if __name__ == '__main__':
   print('[#]Testing : Trajectory Estimation')
 
   # Initialize folder
   utils_func.initialize_folder(args.visualization_path)
+  utils_func.initialize_folder(args.savetofile)
   # Load camera parameters : ProjectionMatrix and WorldToCameraMatrix
   cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
 
@@ -329,6 +331,7 @@ if __name__ == '__main__':
 
   # Test a model iterate over dataloader to get each batch and pass to predict function
   evaluation_results_all = []
+  reconstructed_trajectory_all = []
   n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
@@ -337,12 +340,18 @@ if __name__ == '__main__':
     gt_test_dict = {'o_with_f':batch_test['gt'][0].to(device), 'lengths':batch_test['gt'][1].to(device), 'mask':batch_test['gt'][2].to(device), 'startpos':batch_test['gt'][3].to(device), 'xyz':batch_test['gt'][4].to(device)}
 
       # Call function to test
-    evaluation_results = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
+    evaluation_results, reconstructed_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
                                  model_flag=model_flag, model_depth=model_depth, vis_flag=args.vis_flag,
                                  threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
+
+    reconstructed_trajectory_all.append(reconstructed_trajectory)
     evaluation_results_all.append(evaluation_results)
     n_trajectory += input_test_dict['input'].shape[0]
 
-  summary(evaluation_results_all)
+  summary_evaluation = summary(evaluation_results_all)
+
+  # Save prediction file
+  if args.savetofile is not None:
+    utils_func.save_reconstructed(eval_metrics=summary_evaluation, trajectory=reconstructed_trajectory_all)
   print("[#] Done")

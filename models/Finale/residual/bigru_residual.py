@@ -59,21 +59,13 @@ class BiGRUResidual(pt.nn.Module):
     out = self.fc_blocks(residual)
     return out, (hidden, cell_state)
 
-  def initHidden(self, batch_size):
-    hidden = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
-    return hidden
-
-  def initCellState(self, batch_size):
-    cell_state = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
-    return cell_state
-
   def get_residual(self, out_packed, lengths, residual, apply_skip):
     # Unpacked sequence for residual connection then packed it back for next input
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
 
     if apply_skip:
       residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
-      residual += out_unpacked
+      residual = residual + out_unpacked
     else:
       residual = out_unpacked
     # Pack the sequence for next input
@@ -103,3 +95,11 @@ class BiGRUResidual(pt.nn.Module):
     else :
       # this need for stacked bidirectional LSTM/GRU/RNN
       return pt.nn.GRU(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+
+  def initHidden(self, batch_size):
+    hidden = Variable(pt.zeros(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    return hidden
+
+  def initCellState(self, batch_size):
+    cell_state = Variable(pt.zeros(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    return cell_state
