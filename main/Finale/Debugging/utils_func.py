@@ -10,15 +10,15 @@ from mpl_toolkits import mplot3d
 import wandb
 # Models
 # No stack
-from models.Finale.vanilla_nostack.lstm import LSTM
-from models.Finale.vanilla_nostack.bilstm import BiLSTM
-from models.Finale.vanilla_nostack.gru import GRU
-from models.Finale.vanilla_nostack.bigru import BiGRU
+# from models.Finale.vanilla_nostack.lstm import LSTM
+# from models.Finale.vanilla_nostack.bilstm import BiLSTM
+# from models.Finale.vanilla_nostack.gru import GRU
+# from models.Finale.vanilla_nostack.bigru import BiGRU
 # Stack
-# from models.Finale.vanilla_stack.lstm import LSTM
-# from models.Finale.vanilla_stack.bilstm import BiLSTM
-# from models.Finale.vanilla_stack.gru import GRU
-# from models.Finale.vanilla_stack.bigru import BiGRU
+from models.Finale.vanilla_stack.lstm import LSTM
+from models.Finale.vanilla_stack.bilstm import BiLSTM
+from models.Finale.vanilla_stack.gru import GRU
+from models.Finale.vanilla_stack.bigru import BiGRU
 # Residual
 from models.Finale.residual.bilstm_residual import BiLSTMResidual
 from models.Finale.residual.lstm_residual import LSTMResidual

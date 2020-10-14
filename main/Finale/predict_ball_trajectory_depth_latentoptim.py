@@ -50,14 +50,19 @@ parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='st
 parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
-parser.add_argument('--save', dest='save', help='Save the prediction trajectory for doing optimization', action='store_true', default=False)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
+parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
+parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
+parser.add_argument('--savetofile', dest='savetofile', help='Path to save visualization', type=str, default=None)
 
 args = parser.parse_args()
+utils_func.share_args(a=args)
+postfix = 0
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -128,8 +133,12 @@ def predict_for_all_latent(model, input_test_dict, gt_test_dict, h, c, latent):
   input_test_dict['with_latent'][..., 3] += latent[0]
   input_test_dict['with_latent'][..., 4] += latent[1]
   pred_depth_test, (_, _) = model(input_test_dict['with_latent'], h, c, lengths=input_test_dict['lengths'])
+  if args.bi_pred_weight:
+    bi_pred_weight_test = pred_depth_test[..., [2]]
+  else:
+    bi_pred_weight_test = None
 
-  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['with_latent'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=input_test_dict['with_latent'][..., [2]], cam_params_dict=cam_params_dict, epoch=0, args=args)
+  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['with_latent'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=input_test_dict['with_latent'][..., [2]], cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
   # Project the (u, v, depth) to world space
   pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
@@ -197,8 +206,11 @@ def interactive_optimize(model, input_test_dict, gt_test_dict, h, c):
     )
 
     fig = go.Figure(data=data_pred, layout=layout)
-    fig.show()
-    input("Continue plotting...")
+    global postfix
+    utils_func.save_visualize(fig=fig, postfix=postfix)
+    postfix += 1
+    print("[#] Saving...{}/{}".format(postfix, gt_test_dict['lengths'].shape[0]))
+    # input("Continue plotting...")
 
 def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
@@ -241,6 +253,7 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   input_test_dict['with_latent'] = in_test
   # Interactive Optimize
   interactive_optimize(model=model_depth, input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, h=hidden_depth, c=cell_state_depth)
+  return 0
   exit()
 
   if args.save:
@@ -423,5 +436,5 @@ if __name__ == '__main__':
     evaluation_results_all.append(evaluation_results)
     n_trajectory += input_test_dict['input'].shape[0]
 
-  summary(evaluation_results_all)
+  # summary(evaluation_results_all)
   print("[#] Done")

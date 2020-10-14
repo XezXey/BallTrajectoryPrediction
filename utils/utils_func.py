@@ -318,7 +318,16 @@ def save_reconstructed(eval_metrics, trajectory):
   initialize_folder(save_path)
   np.save(file='{}/{}_trajectory'.format(save_path, save_file_suffix), arr=np.array(trajectory_all))
   np.save(file='{}/{}_metrices'.format(save_path, save_file_suffix), arr=eval_metrics)
-  # with open('{}/{}.json'.format(args.savetofile, save_file_suffix), 'w') as f:
-    # json.dump(eval_metrics, f)
   print("[#] Saving reconstruction to /{}/{}".format(args.savetofile, save_file_suffix))
+
+def save_visualize(fig, postfix=None):
+  if postfix is None:
+    postfix = 0
+  save_file_suffix = args.load_checkpoint.split('/')[-2]
+  save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
+  initialize_folder(save_path)
+  plotly.offline.plot(fig, filename='./{}/interactive_optimize_{}.html'.format(save_path, postfix), auto_open=False)
+
+
+
 

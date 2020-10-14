@@ -283,7 +283,6 @@ if __name__ == '__main__':
 
   # Initialize folder
   utils_func.initialize_folder(args.visualization_path)
-  utils_func.initialize_folder(args.savetofile)
   # Load camera parameters : ProjectionMatrix and WorldToCameraMatrix
   cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
 
@@ -353,5 +352,6 @@ if __name__ == '__main__':
 
   # Save prediction file
   if args.savetofile is not None:
+    utils_func.initialize_folder(args.savetofile)
     utils_func.save_reconstructed(eval_metrics=summary_evaluation, trajectory=reconstructed_trajectory_all)
   print("[#] Done")

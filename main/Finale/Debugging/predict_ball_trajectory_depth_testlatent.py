@@ -138,30 +138,35 @@ def predict(input_test_dict, gt_test_dict, model_depth, threshold, cam_params_di
   ####################################
   ############# Testing ##############
   ####################################
-  # Training mode
-  model_depth.eval()
+  while True:
+    hidden_depth = model_depth.initHidden(batch_size=args.batch_size)
+    cell_state_depth = model_depth.initCellState(batch_size=args.batch_size)
+    # Training mode
+    model_depth.eval()
 
-  # Add noise on the fly
-  in_test = input_test_dict['input'][..., [0, 1]].clone()
-  if args.noise:
-    in_test = add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
+    # Add noise on the fly
+    in_test = input_test_dict['input'][..., [0, 1]].clone()
+    if args.noise:
+      in_test = add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
   ####################################
   ############### Depth ##############
   ####################################
-  offset = 0.002
-  idx = 10
-  # if args.noise:
-    # latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
-    # latent_in = pt.flip(input_test_dict['input'][..., [2]], dims=[1])
-  if args.latent:
-    latent_in = input_test_dict['input'][..., [2]] + offset
-    in_test = pt.cat((in_test*0., latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  print("Input : ", in_test[idx][:10])
-  pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
-  print("Original Input : ", latent_in[idx][:10] - offset)
-  print("Latent Input : ", latent_in[idx][:10])
-  print("Prediction : ", pred_depth_test[idx][:10])
+    offset = float(input("Offset : "))
+    idx = 20
+    # if args.noise:
+      # latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
+      # latent_in = pt.flip(input_test_dict['input'][..., [2]], dims=[1])
+    if args.latent:
+      latent_in = input_test_dict['input'][..., [2]] + offset
+      in_test = pt.cat((in_test*0., latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    print("Input : ", in_test[idx][:10])
+    pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
+    print("Original Input : ", latent_in[idx][:10] - offset)
+    print("Latent Input : ", pt.cat((latent_in[idx][:10], latent_in[idx][input_test_dict['lengths'][idx]-10:input_test_dict['lengths'][idx]]), dim=1))
+    print("Prediction : ", pred_depth_test[idx][:10])
+    print("Difference : ", pred_depth_test[idx][:10] - latent_in[idx][:10])
+    print("="*100)
   exit()
 
   pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=latent_in, cam_params_dict=cam_params_dict, epoch=0, args=args)
