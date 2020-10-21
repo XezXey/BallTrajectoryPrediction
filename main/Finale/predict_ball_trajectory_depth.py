@@ -51,10 +51,14 @@ parser.add_argument('--start_decumulate', help='Epoch to start training with dec
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', action='store_true')
+parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
+parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
 
 args = parser.parse_args()
@@ -164,7 +168,7 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   if args.bi_pred_weight:
     bi_pred_weight_test = pred_depth_test[..., [2]]
   else:
-    bi_pred_weight_test = None
+    bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
   pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_eot_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
@@ -232,23 +236,19 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
 
-def get_model(input_size, output_size, model_arch):
-  if model_arch=='bigru_residual_add':
-    model_flag = BiGRUResidualAdd(input_size=2, output_size=1)
-    model_depth = BiGRUResidualAdd(input_size=3, output_size=1)
-  else :
-    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
-    exit()
-
-  return model_flag, model_depth
-
 def load_checkpoint(model_eot, model_depth):
+  print("="*100)
+  print("[#] Model Parameters")
+  for k, v in model_eot.named_parameters():
+    print("===> ", k, v.shape)
+  print("="*100)
   if os.path.isfile(args.load_checkpoint):
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
     model_eot.load_state_dict(checkpoint['model_flag'])
     model_depth.load_state_dict(checkpoint['model_depth'])
+    # exit()
     return model_eot, model_depth
 
   else:

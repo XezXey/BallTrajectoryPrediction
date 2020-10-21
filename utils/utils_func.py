@@ -25,6 +25,8 @@ from models.Finale.residual.bilstm_residual import BiLSTMResidual
 from models.Finale.residual.lstm_residual import LSTMResidual
 from models.Finale.residual.bigru_residual import BiGRUResidual
 from models.Finale.residual.gru_residual import GRUResidual
+# Trainable Initial State
+from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
 # Loss
 import main.Finale.loss as loss
 
@@ -53,7 +55,7 @@ def initialize_folder(path):
 
 def get_model_depth(model_arch, features_cols, args):
   # Prediction selection
-  if args.bi_pred:
+  if args.bi_pred_avg or args.bi_pred_ramp:
     # Predict depth in 2 direction
     output_size = 2
   elif args.bi_pred_weight:
@@ -70,6 +72,9 @@ def get_model_depth(model_arch, features_cols, args):
   elif model_arch=='bilstm_residual':
     model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = BiLSTMResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bilstm_residual_trainable_init':
+    model_flag = BiLSTMResidualTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
+    model_depth = BiLSTMResidualTrainableInit(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
   elif model_arch=='gru_residual':
     model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = GRUResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
@@ -295,6 +300,19 @@ def construct_bipred_weight(weight, lengths):
 
   return pt.cat((fw_weight, bw_weight), dim=2)
 
+
+def construct_bipred_ramp(weight_template, lengths):
+  fw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
+  bw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
+  # print(fw_weight.shape, bw_weight.shape)
+  for i in range(weight_template.shape[0]):
+    # Forward prediction weight
+    fw_weight[i][:lengths[i]+1] = 1 - pt.linspace(start=0, end=1, steps=lengths[i]+1).view(-1, 1).to(device)
+    # Backward prediction weight
+    bw_weight[i][:lengths[i]+1] = pt.linspace(start=0, end=1, steps=lengths[i]+1).view(-1, 1).to(device)
+
+  return pt.cat((fw_weight, bw_weight), dim=2)
+
 def save_reconstructed(eval_metrics, trajectory):
   # Take the evaluation metrics and reconstructed trajectory to create the save file for ranking visualization
   lengths = []
@@ -308,7 +326,8 @@ def save_reconstructed(eval_metrics, trajectory):
     seq_len = trajectory[i][4]
     for j in range(seq_len.shape[0]):
       # Iterate over each trajectory
-      each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]]), axis=1)
+      # print(gt_xyz[j].shape, pred_xyz[j].shape, uv[j].shape, d[j].shape)
+      each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]].reshape(-1, 1)), axis=1)
       lengths.append(seq_len)
       trajectory_all.append(each_trajectory)
 

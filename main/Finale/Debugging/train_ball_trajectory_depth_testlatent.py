@@ -127,6 +127,10 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_de
   ####################################
   ############### Depth ##############
   ####################################
+  print(input_train_dict['input'][:, [0], 2:].shape)
+  print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1))
+  print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1).shape)
+  exit()
   if args.latent:
     in_train = pt.cat((in_train*0., input_train_dict['input'][..., 2:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
 

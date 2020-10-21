@@ -56,10 +56,14 @@ parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, def
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
+parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', default='unity')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of bidirectional', action='store_true')
+parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
 args = parser.parse_args()
 
 # GPU initialization
@@ -138,7 +142,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   if args.bi_pred_weight:
     bi_pred_weight_train = pred_depth_train[..., [2]]
   else:
-    bi_pred_weight_train = None
+    bi_pred_weight_train = pt.zeros(pred_depth_train[..., [0]].shape)
 
   pred_depth_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(depth=pred_depth_train, uv=input_train_dict['input'][..., [0, 1]], depth_teacher=gt_train_dict['o_with_f'][..., [0]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_train_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args, gt=gt_train_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_train)
 
@@ -154,10 +158,29 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
 
   # Sum up all train loss 
   train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss# + train_depth_loss*1000
-  train_loss.backward()
+  train_loss.backward(retain_graph=True)
+
+  # print("BEFORE UPDATE")
+  # for name, param in model_depth.named_parameters():
+      # if param.requires_grad:
+        # if name == 'h' or name == 'c':
+          # print(name, param.data, param.data.shape)
+  # exit()
+
   pt.nn.utils.clip_grad_norm_(model_flag.parameters(), args.clip)
   pt.nn.utils.clip_grad_norm_(model_depth.parameters(), args.clip)
   optimizer.step()
+
+  # for name, param in model_flag.named_parameters():
+      # if param.requires_grad:
+          # print(name, param.data)
+
+  # print("After UPDATE")
+  # for name, param in model_depth.named_parameters():
+      # if param.requires_grad:
+        # if name == 'h' or name == 'c':
+          # print(name, param.data, param.data.shape)
+  # exit()
 
   ####################################
   ############# Evaluate #############
@@ -179,7 +202,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   if args.bi_pred_weight:
     bi_pred_weight_val = pred_depth_val[..., [2]]
   else:
-    bi_pred_weight_val = None
+    bi_pred_weight_val = pt.zeros(pred_depth_val[..., [0]].shape)
 
   pred_depth_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(depth=pred_depth_val, uv=input_val_dict['input'][..., [0, 1]], depth_teacher=gt_val_dict['o_with_f'][..., [0]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_val_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args, gt=gt_val_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_val)
 
@@ -361,7 +384,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 20 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
@@ -409,7 +432,7 @@ if __name__ == '__main__':
       print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
 
 
-    if epoch % 20 == 0:
+    if epoch % 1 == 0:
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_name)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)

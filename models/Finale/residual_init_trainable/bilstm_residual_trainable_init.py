@@ -7,9 +7,9 @@ from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import matplotlib.pyplot as plt
 
-class BiLSTMResidual(pt.nn.Module):
-  def __init__(self, input_size, output_size, batch_size, model):
-    super(BiLSTMResidual, self).__init__()
+class BiLSTMResidualTrainableInit(pt.nn.Module):
+  def __init__(self, input_size, output_size, batch_size, bidirectional, trainable_init, model):
+    super(BiLSTMResidualTrainableInit, self).__init__()
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
@@ -18,10 +18,25 @@ class BiLSTMResidual(pt.nn.Module):
     self.n_layers = 1
     self.n_stack = 4
     self.model = model
+    self.bidirectional_flag = bidirectional
+    if bidirectional:
+      self.bidirectional = 2
+    else:
+      self.bidirectional = 1
+
+    # For a  initial state
+    self.trainable_init = trainable_init
+    if not self.trainable_init:
+      self.h, self.c = self.initial_state()
+    else:
+      self.h, self.c = self.initial_learnable_state()
+      self.register_parameter('h', self.h)
+      self.register_parameter('c', self.c)
+
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim*2, 32, 16, 8, 4, self.output_size]
+    self.fc_size = [self.hidden_dim*self.bidirectional, 32, 16, 8, 4, self.output_size]
     # Define the layers
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([self.create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size
@@ -41,17 +56,21 @@ class BiLSTMResidual(pt.nn.Module):
     x_packed = pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
     out_packed = x_packed
     residual = pt.Tensor([0.]).cuda()
-
     for idx, recurrent_block in enumerate(self.recurrent_blocks):
+      # print("IDX = {}".format(idx), self.h[idx], self.c[idx])
       # Pass the packed sequence to the recurrent blocks with the skip connection
+      if self.trainable_init:
+        init_h = self.h.repeat(1, 1, self.batch_size, 1)[idx]
+        init_c = self.c.repeat(1, 1, self.batch_size, 1)[idx]
+      else:
+        init_h, init_c = self.initial_state()
       if idx == 0:
         # Only first time that no skip connection from input to other networks
-        out_packed, (hidden, cell_state) = recurrent_block(out_packed, (self.initHidden(self.batch_size), self.initCellState(self.batch_size)))
+        out_packed, (hidden, cell_state) = recurrent_block(out_packed, (init_h, init_c))
         residual = self.get_residual(out_packed=out_packed, lengths=lengths, residual=residual, apply_skip=False)
       else:
-        out_packed, (hidden, cell_state) = recurrent_block(residual, (self.initHidden(self.batch_size), self.initCellState(self.batch_size)))
+        out_packed, (hidden, cell_state) = recurrent_block(residual, (init_h, init_c))
         residual = self.get_residual(out_packed=out_packed, lengths=lengths, residual=residual, apply_skip=True)
-
 
     # Residual from recurrent block to FC
     residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
@@ -91,16 +110,28 @@ class BiLSTMResidual(pt.nn.Module):
 
   def create_recurrent_block(self, in_f, hidden_f, num_layers, is_first_layer=False):
     if is_first_layer:
-      return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
+      return pt.nn.LSTM(input_size=in_f, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=self.bidirectional_flag, dropout=0.)
     else :
       # this need for stacked bidirectional LSTM/LSTM/RNN
-      return pt.nn.LSTM(input_size=in_f*2, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=True, dropout=0.)
-
+      return pt.nn.LSTM(input_size=in_f*self.bidirectional, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=self.bidirectional_flag, dropout=0.)
 
   def initHidden(self, batch_size):
-    hidden = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    hidden = Variable(pt.randn(self.n_layers*self.bidirectional, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
     return hidden
 
   def initCellState(self, batch_size):
-    cell_state = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    cell_state = Variable(pt.randn(self.n_layers*self.bidirectional, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
     return cell_state
+
+  def initial_state(self):
+    h = Variable(pt.zeros(self.n_layers*self.bidirectional, self.batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    c = Variable(pt.zeros(self.n_layers*self.bidirectional, self.batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    return h, c
+
+  def initial_learnable_state(self):
+    # Initial the hidden/cell state as model parameters
+    # 1 refer the batch size which is we need to copy the initial state to every sequence in a batch
+    h = pt.nn.Parameter(pt.randn(self.n_stack, self.n_layers*self.bidirectional, 1, self.hidden_dim, dtype=pt.float32).cuda(), requires_grad=self.trainable_init).cuda()
+    c = pt.nn.Parameter(pt.randn(self.n_stack, self.n_layers*self.bidirectional, 1, self.hidden_dim, dtype=pt.float32).cuda(), requires_grad=self.trainable_init).cuda()
+    return h, c
+

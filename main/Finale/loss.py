@@ -64,11 +64,23 @@ def BelowGroundPenalize(pred, gt, mask, lengths):
 
 def TrajectoryLoss(pred, gt, mask, lengths=None, delmask=True):
   # L2 loss of reconstructed trajectory
+  weight_loss = create_weight_loss(mask)
   x_trajectory_loss = (pt.sum((((gt[..., 0] - pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
   y_trajectory_loss = (pt.sum((((gt[..., 1] - pred[..., 1]))**2) * mask[..., 1]) / pt.sum(mask[..., 1]))
   z_trajectory_loss = (pt.sum((((gt[..., 2] - pred[..., 2]))**2) * mask[..., 2]) / pt.sum(mask[..., 2]))
   return x_trajectory_loss + y_trajectory_loss + z_trajectory_loss
 
+def create_weight_loss(mask):
+  if len(mask.shape)==2:
+    # Handle the visualization that have shape (seq_len, 3) but this function accept (batch_size, seq_len, 3)
+    mask = pt.unsqueeze(mask, dim=0)
+
+  weight_loss = pt.zeros(mask.shape).to(device)
+  for idx, length in enumerate(pt.sum(mask, dim=1)[..., [0]]):
+    weight_loss[idx][:length[0], [0, 1, 2]] = pt.linspace(10, 1, length[0]).view(-1, 1).to(device)
+  # print(weight_loss[0][:pt.sum(mask, dim=1)[..., [0]][0]+2, [0]])
+  # print(mask[0][:pt.sum(mask, dim=1)[..., [0]][0]+2, [0]])
+  return weight_loss
 
 def DepthLoss(pred, gt, mask, lengths):
   depth_loss = (pt.sum((((gt - pred))**2) * mask) / pt.sum(mask))
