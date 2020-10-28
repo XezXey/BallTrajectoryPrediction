@@ -121,7 +121,7 @@ def get_model_xyz(model_arch, features_cols, args):
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-2, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-10, 10],), yaxis = dict(nticks=5, range=[-2, 3],), zaxis = dict(nticks=10, range=[-10, 10],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, pred_train_dict, pred_val_dict, visualization_path, pred):
@@ -140,7 +140,7 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   visualize_trajectory(pred=pt.mul(pred_train_dict['xyz'], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
   visualize_trajectory(pred=pt.mul(pred_val_dict['xyz'], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
   fig_traj.update_layout(height=1920, width=1500, autosize=True) # Adjust the layout/axis for pitch scale
-  fig_traj = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
+  # fig_traj = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
 
   ####################################
   ########### Displacement ###########
@@ -346,7 +346,4 @@ def save_visualize(fig, postfix=None):
   save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
   initialize_folder(save_path)
   plotly.offline.plot(fig, filename='./{}/interactive_optimize_{}.html'.format(save_path, postfix), auto_open=False)
-
-
-
 

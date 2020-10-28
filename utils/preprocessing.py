@@ -35,7 +35,7 @@ def get_selected_cols():
   return features_cols, position_cols
 
 
-def computeDisplacement(trajectory_split, trajectory_type):
+def computeDisplacement(trajectory_split, trajectory_type, camera_config):
   # Compute the displacement
   features_cols, position_cols = get_selected_cols()
   drop_cols = ["outside_flag", "trajectory_type", "t"] + features_cols
@@ -63,22 +63,56 @@ def computeDisplacement(trajectory_split, trajectory_type):
     plt.show()
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
     # Remove some dataset that goes below the ground (Error from unity)
-    trajectory_npy[traj_type] = remove_below_ground_trajectory(trajectory=trajectory_npy[traj_type], traj_type=traj_type)
+    trajectory_npy[traj_type] = remove_bad_trajectory(trajectory=trajectory_npy[traj_type], traj_type=traj_type, camera_config=camera_config)
   return trajectory_npy
 
-def remove_below_ground_trajectory(trajectory, traj_type):
+def remove_bad_trajectory(trajectory, traj_type, camera_config):
   # Loop over the trajectory to remove any trajectory that goes below the ground
   # Also remove the trajectory that is outside the field and droping to the ground
+  width = camera_config['width']
+  height = camera_config['height']
   count=0
   eps = np.finfo(float).eps
   remove_idx = []
   for idx in range(trajectory.shape[0]):
     traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
-    if (np.any(traj_cumsum_temp[:, 1] <= -0.1)):
+    is_bad = (np.any(traj_cumsum_temp[:, 1] <= -1) or np.any(traj_cumsum_temp[:, 3] < 0) or np.any(traj_cumsum_temp[:, 3] > width)
+        or np.any(traj_cumsum_temp[:, 4] < 0) or np.any(traj_cumsum_temp[:, 4] > height)
+        or np.any(trajectory[idx][1:, 3] > 50) or np.any(trajectory[idx][1:, 4] > 50)
+        or np.any(trajectory[idx][1:, 3] < -50) or np.any(trajectory[idx][1:, 4] < -50))
+    # plt.plot(traj_cumsum_temp[:, 3], traj_cumsum_temp[:, 4])
+    # plt.axhline(y=0)
+    # plt.axhline(y=height)
+    # plt.axvline(x=0)
+    # plt.axvline(x=width)
+    # plt.title("Is bad : " + str(is_bad))
+    # plt.savefig('./Test/fig_test/{}.png'.format(idx))
+    # plt.clf()
+    # print(np.where(trajectory[idx][1:, 3] < 0))
+    # print(np.where(trajectory[idx][1:, 4] < 0))
+    # continue
+    if is_bad:
       remove_idx.append(idx)
       count+=1
-  print("\n{}===>Remove the below ground trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
+  # exit
+  print("\n{}===>Remove the below ground trajectory or off-screen trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
+  print(trajectory.shape)
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
+  # for idx in range(trajectory.shape[0]):
+    # traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
+    # is_bad = (np.any(traj_cumsum_temp[:, 1] <= -1) or np.any(traj_cumsum_temp[:, 3] < 0) or np.any(traj_cumsum_temp[:, 3] > width)
+        # or np.any(traj_cumsum_temp[:, 4] < 0) or np.any(traj_cumsum_temp[:, 4] > height)
+        # or np.any(trajectory[idx][1:, 3] > 50) or np.any(trajectory[idx][1:, 4] > 50)
+        # or np.any(trajectory[idx][1:, 3] < -50) or np.any(trajectory[idx][1:, 4] < -50))
+    # plt.plot(traj_cumsum_temp[:, 3], traj_cumsum_temp[:, 4])
+    # plt.axhline(y=0)
+    # plt.axhline(y=height)
+    # plt.axvline(x=0)
+    # plt.axvline(x=width)
+    # plt.title("Is bad : " + str(is_bad))
+    # plt.savefig('./Test/fig_test/After filter {}.png'.format(idx))
+    # plt.clf()
+  print(trajectory.shape)
   return trajectory
 
 def visualize_noise(trajectory):
@@ -349,7 +383,7 @@ if __name__ == '__main__':
       # Add gaussian noise to the trajectory
       trajectory_split = add_noise(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys(), camera_config=camera_config)
     # Cast to npy format
-    trajectory_npy = computeDisplacement(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys())
+    trajectory_npy = computeDisplacement(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys(), camera_config=camera_config)
     # Save to npy format
     for traj_type in trajectory_df.keys():
       # Adding Gravity columns

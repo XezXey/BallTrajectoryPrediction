@@ -38,6 +38,11 @@ else:
   device = pt.device('cpu')
   print('[%]GPU Disabled, CPU Enabled')
 
+args = None
+def share_args(a):
+  global args
+  args = a
+
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
@@ -94,7 +99,10 @@ For perspective projection
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
-    fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+    if i%2==0:
+      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-4, 4],), yaxis = dict(nticks=5, range=[-3, 8],), zaxis = dict(nticks=10, range=[-4, 4],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-20, 20],), yaxis = dict(nticks=5, range=[-2, 4],), zaxis = dict(nticks=10, range=[-20, 20],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):

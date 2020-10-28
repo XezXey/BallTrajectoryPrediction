@@ -64,7 +64,13 @@ parser.add_argument('--trainable_init', help='Trainable initial state', action='
 parser.add_argument('--env', dest='env', help='Environment', default='unity')
 parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of bidirectional', action='store_true')
 parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
+parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use Multiview loss', nargs='+', default=[])
 args = parser.parse_args()
+# Share args to every modules
+utils_func.share_args(args)
+utils_transform.share_args(args)
+utils_cummulative.share_args(args)
+loss.share_args(args)
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -85,7 +91,7 @@ input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_col
 def add_noise(input_trajectory, startpos, lengths):
   factor = np.random.uniform(low=0.6, high=0.95)
   if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=0.7)
+    noise_sd = np.random.uniform(low=0.3, high=1)
   else:
     noise_sd = args.noise_sd
 
@@ -154,10 +160,13 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   train_gravity_loss = loss.GravityLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
   train_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_train, gt=gt_train_dict['o_with_f'][..., [1]], mask=input_train_dict['mask'][..., [2]], lengths=input_train_dict['lengths'], startpos=input_train_dict['startpos'][..., [2]], flag='Train')
   train_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
-  # train_depth_loss = loss.DepthLoss(pred=pred_depth_train, gt=gt_train_dict['o_with_f'][..., [0]], lengths=input_train_dict['lengths'], mask=input_train_dict['mask'])
+  if len(args.multiview_loss) == 0:
+    train_multiview_loss = 0
+  else:
+    train_multiview_loss = loss.MultiviewReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict)
 
   # Sum up all train loss 
-  train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss# + train_depth_loss*1000
+  train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss + train_multiview_loss
   train_loss.backward(retain_graph=True)
 
   # print("BEFORE UPDATE")
@@ -214,10 +223,14 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   val_gravity_loss = loss.GravityLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
   val_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_val, gt=gt_val_dict['o_with_f'][..., [1]], mask=input_val_dict['mask'][..., [2]], lengths=input_val_dict['lengths'], startpos=input_val_dict['startpos'][..., [2]], flag='val')
   val_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
-  # val_depth_loss = loss.DepthLoss(pred=pred_depth_val, gt=gt_val_dict['o_with_f'][..., [0]], lengths=input_val_dict['lengths'], mask=input_val_dict['mask'])
+  if len(args.multiview_loss) == 0:
+    val_multiview_loss = 0
+  else:
+    val_multiview_loss = loss.MultiviewReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict)
 
   # Sum up all val loss 
-  val_loss = val_trajectory_loss + val_eot_loss*100 + val_gravity_loss + val_below_ground_loss# + val_depth_loss*1000 
+  val_loss = val_trajectory_loss + val_eot_loss*100 + val_gravity_loss + val_below_ground_loss + val_multiview_loss
+
 
   print('Train Loss : {:.3f}'.format(train_loss.item()), end=', ')
   print('Val Loss : {:.3f}'.format(val_loss.item()))
@@ -225,6 +238,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   print('Gravity Loss : {:.3f}'.format(train_gravity_loss.item()), end=', ')
   print('EndOfTrajectory Loss : {:.3f}'.format(train_eot_loss.item()), end=', ')
   print('BelowGroundPenalize Loss : {:.3f}'.format(train_below_ground_loss.item()))
+  print('MultiviewReprojection Loss : {:.3f}'.format(train_multiview_loss.item()))
   # print('Depth Loss : {:.3f}'.format(train_depth_loss.item()))
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
@@ -384,7 +398,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 10 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
@@ -432,7 +446,7 @@ if __name__ == '__main__':
       print('[#]Not saving the best model checkpoint : Val loss {:.3f} not improved from {:.3f}'.format(val_loss_per_epoch, min_val_loss))
 
 
-    if epoch % 1 == 0:
+    if epoch % 20 == 0:
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_name)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)

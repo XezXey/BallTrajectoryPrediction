@@ -158,7 +158,7 @@ def predict(input_test_dict, gt_test_dict, model_depth, threshold, cam_params_di
       # latent_in = pt.ones(size=input_test_dict['input'][..., [0]].shape).to(device)
       # latent_in = pt.flip(input_test_dict['input'][..., [2]], dims=[1])
     if args.latent:
-      latent_in = input_test_dict['input'][..., [2]] + offset
+      latent_in = input_test_dict['input'][..., [2]].repeat(1, input_test_dict['input'].shape[1], 1) + offset
       in_test = pt.cat((in_test*0., latent_in), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
     print("Input : ", in_test[idx][:10])
     pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
@@ -243,7 +243,7 @@ def collate_fn_padd(batch):
 def load_checkpoint(model_depth):
   if os.path.isfile(args.load_checkpoint):
     print("[#] Found the checkpoint...")
-    checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
+    checkpoint = pt.load(args.load_checkpoint, map_location='cpu')
     # Load optimizer, learning rate, decay and scheduler parameters
     model_depth.load_state_dict(checkpoint['model_depth'])
     return model_depth

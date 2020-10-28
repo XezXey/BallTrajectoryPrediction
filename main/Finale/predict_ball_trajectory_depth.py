@@ -60,9 +60,14 @@ parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional
 parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
+parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multiview loss', nargs='+', default=[])
 
 args = parser.parse_args()
+# Share args to every modules
 utils_func.share_args(a=args)
+utils_inference_func.share_args(a=args)
+utils_cummulative.share_args(a=args)
+utils_transform.share_args(a=args)
 
 # GPU initialization
 if pt.cuda.is_available():

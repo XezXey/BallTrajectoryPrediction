@@ -6,12 +6,17 @@ import os
 sys.path.append(os.path.realpath('../..'))
 import utils.transformation as transformation
 import utils.utils_func as utils_func
+args = None
 
 # GPU initialization
 if pt.cuda.is_available():
   device = pt.device('cuda')
 else:
   device = pt.device('cpu')
+
+def share_args(a):
+  global args
+  args = a
 
 def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_dict, epoch, args, gt=None, bi_pred_weight=None):
   '''Cummulative modules with 4 diiferent ways
@@ -23,6 +28,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
   # De-accumulate module
   # (This step we get the displacement of depth by input the displacement of u and v)
   # Apply cummulative summation to output using cumsum_trajectory function
+  cam_params_dict = cam_params_dict['main']
   if args.decumulate and epoch > args.start_decumulate:
     depth_cumsum, uv_cumsum, fail = cumsum_decumulate_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos, lengths=lengths, eot=eot, cam_params_dict=cam_params_dict, args=args)
     if fail:
@@ -41,7 +47,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
   elif args.bi_pred_avg:
     # Function for bidirectional prediction
     # Function that take xyz to project to get u, v, d
-    _, _, d = transformation.projectToScreenSpace(gt, cam_params_dict, False)   # Without normalize to NDC space
+    _, _, d = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict, normalize=False)   # Without normalize to NDC space
     # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
     last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
     # forward depth
@@ -56,7 +62,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
     # Function for bidirectional prediction
     bi_pred_weight = utils_func.construct_bipred_weight(weight=bi_pred_weight, lengths=lengths)
     # Function that take xyz to project to get u, v, d
-    _, _, d = transformation.projectToScreenSpace(gt, cam_params_dict, False)   # Without normalize to NDC space
+    _, _, d = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict, normalize=False)   # Without normalize to NDC space
     # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
     last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
     # forward depth
@@ -73,7 +79,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
   elif args.bw_pred:
     # Function for backward prediction
     # Function that take xyz to project to get u, v, d
-    _, _, d = transformation.projectToScreenSpace(gt, cam_params_dict, False)   # Without normalize to NDC space
+    _, _, d = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict, normalize=False)   # Without normalize to NDC space
     # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
     last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
     # backward depth
@@ -86,7 +92,7 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
     # Function for bidirectional prediction
     bi_pred_ramp = utils_func.construct_bipred_ramp(weight_template=bi_pred_weight, lengths=lengths)
     # Function that take xyz to project to get u, v, d
-    _, _, d = transformation.projectToScreenSpace(gt, cam_params_dict, False)   # Without normalize to NDC space
+    _, _, d = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict, normalize=False)   # Without normalize to NDC space
     # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
     last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
     # forward depth

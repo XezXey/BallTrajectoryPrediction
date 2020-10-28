@@ -40,7 +40,7 @@ class BiLSTMResidual(pt.nn.Module):
     # pack_padded_sequence => RNN => pad_packed_sequence[0] to get the data in batch
     x_packed = pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
     out_packed = x_packed
-    residual = pt.Tensor([0.]).cuda()
+    residual = pt.Tensor([0.])
 
     for idx, recurrent_block in enumerate(self.recurrent_blocks):
       # Pass the packed sequence to the recurrent blocks with the skip connection
@@ -98,9 +98,9 @@ class BiLSTMResidual(pt.nn.Module):
 
 
   def initHidden(self, batch_size):
-    hidden = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    hidden = Variable(pt.zeros(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32))
     return hidden
 
   def initCellState(self, batch_size):
-    cell_state = Variable(pt.randn(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
+    cell_state = Variable(pt.zeros(self.n_layers*2, batch_size, self.hidden_dim, dtype=pt.float32))
     return cell_state

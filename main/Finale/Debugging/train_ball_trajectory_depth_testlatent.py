@@ -57,10 +57,14 @@ parser.add_argument('--wandb_dir', help='Path to WanDB directory', type=str, def
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
-parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
+parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
+parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', default='unity')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of bidirectional', action='store_true')
+parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
 args = parser.parse_args()
 
 # GPU initialization
@@ -127,12 +131,15 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_de
   ####################################
   ############### Depth ##############
   ####################################
-  print(input_train_dict['input'][:, [0], 2:].shape)
-  print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1))
-  print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1).shape)
-  exit()
+  # print(input_train_dict['input'][:, [0], 2:].shape)
+  # print(input_train_dict['input'][0, [0], 2:])
+  # print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1)[0])
+  # print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1).shape)
+  # print(input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1) * input_train_dict['mask'][..., [0]])
+  # exit()
   if args.latent:
-    in_train = pt.cat((in_train*0., input_train_dict['input'][..., 2:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    # in_train = pt.cat((in_train*0., input_train_dict['input'][..., 2:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    in_train = pt.cat((in_train*0., input_train_dict['input'][:, [0], 2:].repeat(1, input_train_dict['input'].shape[1], 1) * input_train_dict['mask'][..., [0]]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
 
   pred_depth_train, (_, _) = model_depth(in_train, hidden_depth, cell_state_depth, lengths=input_train_dict['lengths'])
 
@@ -164,7 +171,9 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_de
   ############### Depth ##############
   ####################################
   if args.latent:
-    in_val = pt.cat((in_val*0., input_val_dict['input'][..., 2:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    # in_val = pt.cat((in_val*0., input_val_dict['input'][..., 2:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+    in_val = pt.cat((in_val*0., input_val_dict['input'][:, [0], 2:].repeat(1, input_val_dict['input'].shape[1], 1) * input_val_dict['mask'][..., [0]]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
+
   pred_depth_val, (_, _) = model_depth(in_val, hidden_depth, cell_state_depth, lengths=input_val_dict['lengths'])
 
   pred_depth_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(depth=pred_depth_val, uv=input_val_dict['input'][..., [0, 1]], depth_teacher=gt_val_dict['o_with_f'][..., [0]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_val_dict['input'][..., [2]], cam_params_dict=cam_params_dict, epoch=epoch, args=args)
