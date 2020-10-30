@@ -119,7 +119,7 @@ def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
       loss_3axis = pt.sum(((pt.abs(gt - pred)) * mask), axis=1) / pt.sum(mask, axis=1)
       maxdist_3axis = pt.max(pt.abs(gt - pred) * mask, dim=1)[0]
     elif distance == 'MSE':
-      loss_3axis = pt.sum((((gt - pred)**2) * mask), axis=1) / pt.sum(mask, axis=1)
+      loss_3axis = pt.sqrt(pt.sum((((gt - pred)**2) * mask), axis=1) / pt.sum(mask, axis=1))
       maxdist_3axis = pt.max(((gt - pred)**2) * mask, dim=1)[0]
 
     evaluation_results[distance]['maxdist_3axis'] = maxdist_3axis.cpu().detach().numpy()

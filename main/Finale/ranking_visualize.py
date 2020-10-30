@@ -76,6 +76,8 @@ def visualize(trajectory, eval_metrices, lengths, n_plot, plot_idx):
     seq_len = lengths[i]
     fig.add_trace(go.Scatter3d(x=gt_xyz[:, 0], y=gt_xyz[:, 1], z=gt_xyz[:, 2], mode='markers', marker=marker_dict_gt, name="Ground Truth Trajectory".format()), row=row_idx+1, col=1)
     fig.add_trace(go.Scatter3d(x=pred_xyz[:, 0], y=pred_xyz[:, 1], z=pred_xyz[:, 2], mode='markers', marker=marker_dict_pred, name="Prediction Trajectory {}={:3f} (Each axis={})".format(args.rank, np.mean(eval_metrices[i]), eval_metrices[i])), row=row_idx+1, col=1)
+    # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-3, 4]), yaxis = dict(nticks=10, range=[-2, 2]), zaxis = dict(nticks=10, range=[-2, 2]), aspectmode='cube',)# aspectratio=dict(x=4, y=4, z=4))
+    # fig['layout']['scene{}'.format(i+1)].update(aspectmode='cube', camera=dict(eye=dict(x=-0.2, y=-3.8, z=3.8)))# aspectratio=dict(x=4, y=4, z=4))
     ####################################
     ########### Displacement ###########
     ####################################

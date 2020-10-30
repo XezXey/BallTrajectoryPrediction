@@ -98,7 +98,9 @@ def remove_bad_trajectory(trajectory, traj_type, camera_config):
   print("\n{}===>Remove the below ground trajectory or off-screen trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
   print(trajectory.shape)
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
-  # for idx in range(trajectory.shape[0]):
+  len_traj = []
+  for idx in range(trajectory.shape[0]):
+    len_traj.append(trajectory[idx].shape[0])
     # traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
     # is_bad = (np.any(traj_cumsum_temp[:, 1] <= -1) or np.any(traj_cumsum_temp[:, 3] < 0) or np.any(traj_cumsum_temp[:, 3] > width)
         # or np.any(traj_cumsum_temp[:, 4] < 0) or np.any(traj_cumsum_temp[:, 4] > height)
@@ -112,7 +114,7 @@ def remove_bad_trajectory(trajectory, traj_type, camera_config):
     # plt.title("Is bad : " + str(is_bad))
     # plt.savefig('./Test/fig_test/After filter {}.png'.format(idx))
     # plt.clf()
-  print(trajectory.shape)
+  # print(min(len_traj), max(len_traj))
   return trajectory
 
 def visualize_noise(trajectory):
@@ -311,6 +313,50 @@ def get_savepath(output_path, dataset_folder):
       os.makedirs(output_path)
   return output_path
 
+def generate_eot_range():
+  h = 1
+  mean = 0
+  sigma = 1
+  seq_len = args.eot_range
+  if seq_len % 2 != 0:
+    seq_len += 1
+  step = 10/seq_len
+  flag = np.arange(-5, 5+step, step)
+  gaussian = h * np.exp(-((flag-mean)**2)/(2*(sigma**2)))
+  mask = np.invert(np.isclose(gaussian, np.finfo(float).eps))
+  gaussian *= mask
+  # plt.plot(gaussian)
+  # plt.plot(mask)
+  # plt.axvline(x=np.where(gaussian==1.0)[0], c='r')
+  # plt.show()
+  return gaussian
+
+def eot_range(trajectory_npy):
+  # For an eot columns is at 6th columns
+  print("EOT RANGE")
+  gaussian_range = generate_eot_range()
+  for traj_type in trajectory_npy.keys():
+    for idx in range(trajectory_npy[traj_type].shape[0]):
+      eot = np.where(trajectory_npy[traj_type][idx][:, 6] == 1.0)[0]
+      for i, each_eot in enumerate(eot):
+        if i == len(eot)-1:
+          trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+1, 6] = gaussian_range[:int(len(gaussian_range)/2)+1]
+        else:
+          trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+int(len(gaussian_range)/2)+1, 6] = gaussian_range
+        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [3]], '-or')
+        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [4]], '-og')
+        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [6]], '-ob')
+        plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0][i], c='r')
+        plt.show()
+      print(eot)
+      print(trajectory_npy[traj_type][idx][1:, [6]])
+      print(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0))
+      plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0], c='r')
+      plt.show()
+      # print(trajectory_npy[traj_type][idx][0])
+      exit()
+  pass
+
 if __name__ == '__main__':
   # Argument for preprocessing
   parser = argparse.ArgumentParser(description="Ball trajectory-preprocessing script")
@@ -334,6 +380,7 @@ if __name__ == '__main__':
   parser.add_argument('--selected_cams', dest='selected_cams', help='Specify the selected cams(main, along, top)', type=str, required=True)
   parser.add_argument('--selected_space', dest='selected_space', help='Specify the selected spaces(ndc, screen)', type=str, required=True)
   parser.add_argument('--shift_eot', dest='shift_eot', help='Shift eot flag by 1 position', default=False, action='store_true')
+  parser.add_argument('--eot_range', dest='eot_range', help='Make an eot flag become a range', default=0, type=int)
 
   args = parser.parse_args()
   # List trial in directory
@@ -384,6 +431,8 @@ if __name__ == '__main__':
       trajectory_split = add_noise(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys(), camera_config=camera_config)
     # Cast to npy format
     trajectory_npy = computeDisplacement(trajectory_split=trajectory_split, trajectory_type=trajectory_df.keys(), camera_config=camera_config)
+    if args.eot_range != 0:
+      trajectory_npy = eot_range(trajectory_npy=trajectory_npy)
     # Save to npy format
     for traj_type in trajectory_df.keys():
       # Adding Gravity columns

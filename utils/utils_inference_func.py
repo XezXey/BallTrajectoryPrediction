@@ -102,7 +102,7 @@ def visualize_layout_update(fig=None, n_vis=3):
     if i%2==0:
       # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
       # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-4, 4],), yaxis = dict(nticks=5, range=[-3, 8],), zaxis = dict(nticks=10, range=[-4, 4],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-20, 20],), yaxis = dict(nticks=5, range=[-2, 4],), zaxis = dict(nticks=10, range=[-20, 20],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-3, 4],), yaxis = dict(nticks=5, range=[-2, 2],), zaxis = dict(nticks=10, range=[-2, 2],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):
