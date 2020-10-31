@@ -161,7 +161,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   train_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_train, gt=gt_train_dict['o_with_f'][..., [1]], mask=input_train_dict['mask'][..., [2]], lengths=input_train_dict['lengths'], startpos=input_train_dict['startpos'][..., [2]], flag='Train')
   train_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'])
   if len(args.multiview_loss) == 0:
-    train_multiview_loss = 0
+    train_multiview_loss = pt.tensor(0.)
   else:
     train_multiview_loss = loss.MultiviewReprojectionLoss(pred=pred_xyz_train, gt=gt_train_dict['xyz'][..., [0, 1, 2]], mask=gt_train_dict['mask'][..., [0, 1]], lengths=gt_train_dict['lengths'], cam_params_dict=cam_params_dict)
 
@@ -224,7 +224,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   val_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_val, gt=gt_val_dict['o_with_f'][..., [1]], mask=input_val_dict['mask'][..., [2]], lengths=input_val_dict['lengths'], startpos=input_val_dict['startpos'][..., [2]], flag='val')
   val_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'])
   if len(args.multiview_loss) == 0:
-    val_multiview_loss = 0
+    val_multiview_loss = pt.tensor(0.)
   else:
     val_multiview_loss = loss.MultiviewReprojectionLoss(pred=pred_xyz_val, gt=gt_val_dict['xyz'][..., [0, 1, 2]], mask=gt_val_dict['mask'][..., [0, 1]], lengths=gt_val_dict['lengths'], cam_params_dict=cam_params_dict)
 

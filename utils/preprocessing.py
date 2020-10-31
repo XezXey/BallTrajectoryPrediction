@@ -325,37 +325,48 @@ def generate_eot_range():
   gaussian = h * np.exp(-((flag-mean)**2)/(2*(sigma**2)))
   mask = np.invert(np.isclose(gaussian, np.finfo(float).eps))
   gaussian *= mask
-  # plt.plot(gaussian)
-  # plt.plot(mask)
-  # plt.axvline(x=np.where(gaussian==1.0)[0], c='r')
-  # plt.show()
+  plt.plot(gaussian)
+  plt.plot(mask)
+  plt.axvline(x=np.where(gaussian==1.0)[0], c='r')
+  plt.show()
   return gaussian
 
 def eot_range(trajectory_npy):
   # For an eot columns is at 6th columns
-  print("EOT RANGE")
+  print("[#] Making EOT to be an interval")
   gaussian_range = generate_eot_range()
+  count=0
+  exception_index = []
   for traj_type in trajectory_npy.keys():
     for idx in range(trajectory_npy[traj_type].shape[0]):
       eot = np.where(trajectory_npy[traj_type][idx][:, 6] == 1.0)[0]
       for i, each_eot in enumerate(eot):
-        if i == len(eot)-1:
-          trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+1, 6] = gaussian_range[:int(len(gaussian_range)/2)+1]
-        else:
-          trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+int(len(gaussian_range)/2)+1, 6] = gaussian_range
-        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [3]], '-or')
-        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [4]], '-og')
-        plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [6]], '-ob')
-        plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0][i], c='r')
-        plt.show()
-      print(eot)
-      print(trajectory_npy[traj_type][idx][1:, [6]])
-      print(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0))
-      plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0], c='r')
-      plt.show()
+        try:
+          if i == len(eot)-1:
+            # print(each_eot-int(len(gaussian_range)/2), each_eot+1)
+            trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+1, 6] = gaussian_range[:int(len(gaussian_range)/2)+1]
+          else:
+            # print(each_eot-int(len(gaussian_range)/2), each_eot+int(len(gaussian_range)/2)+1)
+            trajectory_npy[traj_type][idx][each_eot-int(len(gaussian_range)/2):each_eot+int(len(gaussian_range)/2)+1, 6] = gaussian_range
+        except ValueError:
+          exception_index.append(idx)
+          continue
+        # plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [3]], '-or')
+        # plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [4]], '-og')
+        # plt.plot(np.arange(trajectory_npy[traj_type][idx].shape[0]-1), trajectory_npy[traj_type][idx][1:, [6]], '-ob')
+        # plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0][i], c='r')
+        # plt.show()
+      # print(eot)
+      # print(trajectory_npy[traj_type][idx][1:, [6]])
+      # print(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0))
+      # plt.axvline(np.where(trajectory_npy[traj_type][idx][1:, [6]] == 1.0)[0], c='r')
+      # plt.show()
       # print(trajectory_npy[traj_type][idx][0])
-      exit()
-  pass
+      # exit()
+    print("===> Cannot make Eot to be an interval for {} trajectory".format(len(exception_index)))
+    trajectory_npy[traj_type] = np.delete(trajectory_npy[traj_type], exception_index)
+  return trajectory_npy
+  # pass
 
 if __name__ == '__main__':
   # Argument for preprocessing
@@ -439,4 +450,5 @@ if __name__ == '__main__':
       trajectory_npy[traj_type] = addGravityColumns(trajectory_npy[traj_type])
       # Write each trajectory
       np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, trial_index[i]), arr=trajectory_npy[traj_type])
+    print("="*150)
 
