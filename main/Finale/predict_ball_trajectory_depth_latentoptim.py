@@ -51,17 +51,27 @@ parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the f
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
 parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', action='store_true', default=False)
+parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
 parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
-parser.add_argument('--bi_pred', help='Bidirectional prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
-parser.add_argument('--savetofile', dest='savetofile', help='Path to save visualization', type=str, default=None)
+parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', action='store_true')
+parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
+parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
+parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
+parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multiview loss', nargs='+', default=[])
+parser.add_argument('--round', dest='round', help='Rounding pixel', action='store_true', default=False)
 
 args = parser.parse_args()
 utils_func.share_args(a=args)
+utils_inference_func.share_args(a=args)
+utils_cummulative.share_args(a=args)
+utils_transform.share_args(a=args)
 postfix = 0
 
 # GPU initialization
@@ -136,7 +146,7 @@ def predict_for_all_latent(model, input_test_dict, gt_test_dict, h, c, latent):
   if args.bi_pred_weight:
     bi_pred_weight_test = pred_depth_test[..., [2]]
   else:
-    bi_pred_weight_test = None
+    bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
   pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['with_latent'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=input_test_dict['with_latent'][..., [2]], cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
@@ -230,6 +240,9 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   model_depth.eval()
 
   # Add noise on the fly
+  if args.round:
+    input_test_dict['input'][..., [0, 1]] = pt.round(input_test_dict['input'][..., [0, 1]])
+    input_test_dict['startpos'][..., [0, 1]] = pt.round(input_test_dict['startpos'][..., [0, 1]])
   in_test = input_test_dict['input'][..., [0, 1]].clone()
   if args.noise:
     in_test = add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])

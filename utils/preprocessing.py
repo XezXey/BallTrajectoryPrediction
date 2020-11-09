@@ -99,8 +99,8 @@ def remove_bad_trajectory(trajectory, traj_type, camera_config):
   print(trajectory.shape)
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   len_traj = []
-  for idx in range(trajectory.shape[0]):
-    len_traj.append(trajectory[idx].shape[0])
+  # for idx in range(trajectory.shape[0]):
+    # len_traj.append(trajectory[idx].shape[0])
     # traj_cumsum_temp = np.cumsum(trajectory[idx][:, :], axis=0)
     # is_bad = (np.any(traj_cumsum_temp[:, 1] <= -1) or np.any(traj_cumsum_temp[:, 3] < 0) or np.any(traj_cumsum_temp[:, 3] > width)
         # or np.any(traj_cumsum_temp[:, 4] < 0) or np.any(traj_cumsum_temp[:, 4] > height)
@@ -294,13 +294,14 @@ def addGravityColumns(trajectory_npy):
   return stacked_gravity
 
 def get_col_names(dataset_folder, i):
+  selected_cams = '{}PitchCameraParams'.format(args.selected_cams)
   with open(dataset_folder + '/configFile_camParams_Trial{}.json'.format(i)) as json_file:
     loaded_config = json.load(json_file)
     col_names = loaded_config["col_names"]
-    projectionMatrix = np.array(loaded_config["mainCameraParams"]["projectionMatrix"]).reshape(4, 4)
-    worldToCameraMatrix = np.array(loaded_config["mainCameraParams"]["worldToCameraMatrix"]).reshape(4, 4)
-    width = loaded_config["mainCameraParams"]["width"]
-    height = loaded_config["mainCameraParams"]["height"]
+    projectionMatrix = np.array(loaded_config[selected_cams]["projectionMatrix"]).reshape(4, 4)
+    worldToCameraMatrix = np.array(loaded_config[selected_cams]["worldToCameraMatrix"]).reshape(4, 4)
+    width = loaded_config[selected_cams]["width"]
+    height = loaded_config[selected_cams]["height"]
 
     return col_names, {'projectionMatrix':projectionMatrix, 'worldToCameraMatrix':worldToCameraMatrix, 'width':width, 'height':height}
 

@@ -279,7 +279,6 @@ def get_selected_cols(args, pred):
   return input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols
 
 def reverse_masked_seq(seq, lengths):
-  # print(seq, lengths)
   for i in range(seq.shape[0]):
     seq[i][:lengths[i]] = pt.flip(seq[i][:lengths[i], [0]], dims=[0])
   return seq

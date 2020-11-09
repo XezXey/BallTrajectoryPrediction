@@ -61,6 +61,7 @@ parser.add_argument('--directional', dest='bidirectional', help='Directional', a
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multiview loss', nargs='+', default=[])
+parser.add_argument('--round', dest='round', help='Rounding pixel', action='store_true', default=False)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -109,23 +110,66 @@ def add_flag_noise(flag, lengths):
     # exit()
   return flag
 
-def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
+def get_each_batch_trajectory(pred, gt, mask, lengths, cam_params_dict):
+  gt_xyz = []
+  pred_xyz = []
+  gt_d = []
+  pred_d = []
+
+  _, _, pred_d_tmp = utils_transform.projectToScreenSpace(world=pred, cam_params_dict=cam_params_dict['main'], normalize=False)
+  _, _, gt_d_tmp = utils_transform.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict['main'], normalize=False)
+  mask_d = mask[..., [0]]
+
+  for i in range(lengths.shape[0]):
+    if i == 0:
+      gt_xyz = ((gt[i] * mask[i])[:lengths[i], :])
+      pred_xyz = ((pred[i] * mask[i])[:lengths[i], :])
+      gt_d = ((gt_d_tmp[i] * mask_d[i])[:lengths[i], :])
+      pred_d = ((pred_d_tmp[i] * mask_d[i])[:lengths[i], :])
+    else:
+      gt_xyz = pt.cat((gt_xyz, (gt[i] * mask[i])[:lengths[i], :]), dim=0)
+      pred_xyz = pt.cat((pred_xyz, (pred[i] * mask[i])[:lengths[i], :]), dim=0)
+      gt_d = pt.cat((gt_d, (gt_d_tmp[i] * mask_d[i])[:lengths[i], :]), dim=0)
+      pred_d = pt.cat((pred_d, (pred_d_tmp[i] * mask_d[i])[:lengths[i], :]), dim=0)
+
+  return {'pred_xyz':pred_xyz, 'gt_xyz':gt_xyz, 'pred_d':pred_d, 'gt_d':gt_d}
+
+def evaluateModel(pred, gt, mask, lengths, cam_params_dict, threshold=1, delmask=True):
   # accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis, mse_loss_3axis
-  evaluation_results = {'MAE':{}, 'MSE':{}}
+  evaluation_results = {'MAE':{}, 'MSE':{}, 'RMSE':{}}
   # metrics = ['3axis_maxdist', '3axis_loss', 'trajectory_loss', 'accepted_3axis_loss', 'accepted_3axis_maxdist', 'accepted_trajectory_loss']
+
+  _, _, pred_d = utils_transform.projectToScreenSpace(world=pred, cam_params_dict=cam_params_dict['main'], normalize=False)
+  _, _, gt_d = utils_transform.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict['main'], normalize=False)
+  mask_d = mask[..., [0]]
 
   for distance in evaluation_results:
     if distance == 'MAE':
       loss_3axis = pt.sum(((pt.abs(gt - pred)) * mask), axis=1) / pt.sum(mask, axis=1)
       maxdist_3axis = pt.max(pt.abs(gt - pred) * mask, dim=1)[0]
+      loss_depth = pt.sum(((pt.abs(gt_d - pred_d)) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
+      maxdist_depth = pt.sum(((pt.abs(gt_d - pred_d)) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
     elif distance == 'MSE':
+      loss_3axis = pt.sum((((gt - pred)**2) * mask), axis=1) / pt.sum(mask, axis=1)
+      maxdist_3axis = pt.max(((gt - pred)**2) * mask, dim=1)[0]
+      loss_depth = pt.sum((((gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
+      maxdist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
+    elif distance == 'RMSE':
       loss_3axis = pt.sqrt(pt.sum((((gt - pred)**2) * mask), axis=1) / pt.sum(mask, axis=1))
       maxdist_3axis = pt.max(((gt - pred)**2) * mask, dim=1)[0]
+      loss_depth = pt.sqrt(pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1))
+      maxdist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
 
+    # Trajectory 3 axis loss
     evaluation_results[distance]['maxdist_3axis'] = maxdist_3axis.cpu().detach().numpy()
     evaluation_results[distance]['loss_3axis'] = loss_3axis.cpu().detach().numpy()
     evaluation_results[distance]['mean_loss_3axis'] = pt.mean(loss_3axis, axis=0).cpu().detach().numpy()
     evaluation_results[distance]['sd_loss_3axis'] = pt.std(loss_3axis, axis=0).cpu().detach().numpy()
+    # Depth loss
+    evaluation_results[distance]['loss_depth'] = loss_depth.cpu().detach().numpy()
+    evaluation_results[distance]['mean_loss_depth'] = pt.mean(loss_depth, axis=0).cpu().detach().numpy()
+    evaluation_results[distance]['sd_loss_depth'] = pt.std(loss_depth, axis=0).cpu().detach().numpy()
+    # Accepted Trajectory below threshold
     evaluation_results[distance]['accepted_3axis_loss'] = pt.sum((pt.sum(loss_3axis < threshold, axis=1) == 3)).cpu().detach().numpy()
     evaluation_results[distance]['accepted_3axis_maxdist']= pt.sum((pt.sum(maxdist_3axis < threshold, axis=1) == 3)).cpu().detach().numpy()
 
@@ -135,6 +179,44 @@ def evaluateModel(pred, gt, mask, lengths, threshold=1, delmask=True):
 
   # Accepted trajectory < Threshold
   return evaluation_results
+
+def evaluate(all_batch_trajectory):
+  print("[#]Summary All Trajectory")
+  distance = ['MAE', 'MSE', 'RMSE']
+  space = ['xyz', 'd']
+  trajectory = {}
+  for key in all_batch_trajectory.keys():
+    if len(all_batch_trajectory[key]) == 0:
+      print("Skipping key=[{}]".format(key))
+      trajectory[key] = []
+      continue
+    trajectory[key] = pt.cat((all_batch_trajectory[key]), dim=0)
+
+  gt_xyz = trajectory['gt_xyz']
+  pred_xyz = trajectory['pred_xyz']
+  gt_d = trajectory['gt_d']
+  pred_d = trajectory['pred_d']
+
+  for each_space in space:
+    print("Space : ", each_space)
+    gt = trajectory['gt_{}'.format(each_space)]
+    pred = trajectory['pred_{}'.format(each_space)]
+    for each_distance in distance:
+      print("===>Distance : ", each_distance)
+      if each_distance == 'MAE':
+        mean = pt.mean((pt.abs(gt - pred)), dim=0)
+        std = pt.std((pt.abs(gt - pred)), dim=0)
+        print("MEAN : ", mean.cpu().detach().numpy())
+        print("SD : ", std.cpu().detach().numpy())
+      elif each_distance == 'MSE':
+        mean = pt.mean(((gt - pred)**2), dim=0)
+        std = pt.std(((gt - pred)**2), dim=0)
+        print("MEAN : ", mean.cpu().detach().numpy())
+        print("SD : ", std.cpu().detach().numpy())
+      elif each_distance == 'RMSE':
+        rmse = pt.sqrt(pt.mean(((gt - pred)**2), dim=0))
+        print("RMSE : ", rmse.cpu().detach().numpy())
+    print("*"*100)
 
 def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
@@ -154,6 +236,10 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   model_depth.eval()
 
   # Add noise on the fly
+  # in_test = pt.round(input_test_dict['input'][..., [0, 1]].clone())
+  if args.round:
+    input_test_dict['input'][..., [0, 1]] = pt.round(input_test_dict['input'][..., [0, 1]])
+    input_test_dict['startpos'][..., [0, 1]] = pt.round(input_test_dict['startpos'][..., [0, 1]])
   in_test = input_test_dict['input'][..., [0, 1]].clone()
   if args.noise:
     in_test = add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
@@ -194,8 +280,9 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   ############# Evaluation ###########
   ####################################
   # Calculate loss per trajectory
-  evaluation_results = evaluateModel(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold)
+  evaluation_results = evaluateModel(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold, cam_params_dict=cam_params_dict)
   reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
+  each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
 
   print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
   print('Trajectory Loss : {:.3f}'.format(test_trajectory_loss.item()), end=', ')
@@ -206,7 +293,7 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
     pred_test_dict = {'input':in_test, 'flag':pred_eot_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
     utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation_visualize_flag, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
 
-  return evaluation_results, reconstructed_trajectory
+  return evaluation_results, reconstructed_trajectory, each_batch_trajectory
 
 def collate_fn_padd(batch):
     # Padding batch of variable length
@@ -270,12 +357,15 @@ def summary(evaluation_results_all):
         continue
       summary_evaluation[distance]['maxdist_3axis'] = np.concatenate((summary_evaluation[distance]['maxdist_3axis'], each_batch_eval[distance]['maxdist_3axis']), axis=0)
       summary_evaluation[distance]['loss_3axis'] = np.concatenate((summary_evaluation[distance]['loss_3axis'], each_batch_eval[distance]['loss_3axis']), axis=0)
+      summary_evaluation[distance]['loss_depth'] = np.concatenate((summary_evaluation[distance]['loss_depth'], each_batch_eval[distance]['loss_depth']), axis=0)
       summary_evaluation[distance]['accepted_3axis_loss'] += each_batch_eval[distance]['accepted_3axis_loss']
       summary_evaluation[distance]['accepted_3axis_maxdist'] += each_batch_eval[distance]['accepted_3axis_maxdist']
 
     print("Distance : ", distance)
     print("Mean 3-Axis(X, Y, Z) loss : {}".format(np.mean(summary_evaluation[distance]['loss_3axis'], axis=0)))
     print("SD 3-Axis(X, Y, Z) loss : {}".format(np.std(summary_evaluation[distance]['loss_3axis'], axis=0)))
+    print("Mean Depth loss : {}".format(np.mean(summary_evaluation[distance]['loss_depth'], axis=0)))
+    print("SD Depth loss : {}".format(np.std(summary_evaluation[distance]['loss_depth'], axis=0)))
     print("Accepted trajectory by 3axis Loss : {} from {}".format(summary_evaluation[distance]['accepted_3axis_loss'], n_trajectory))
     print("Accepted trajectory by 3axis MaxDist : {} from {}".format(summary_evaluation[distance]['accepted_3axis_maxdist'], n_trajectory))
 
@@ -336,6 +426,7 @@ if __name__ == '__main__':
   # Test a model iterate over dataloader to get each batch and pass to predict function
   evaluation_results_all = []
   reconstructed_trajectory_all = []
+  all_batch_trajectory = {'gt_xyz':[], 'pred_xyz':[], 'gt_d':[], 'pred_d':[]}
   n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
@@ -344,17 +435,19 @@ if __name__ == '__main__':
     gt_test_dict = {'o_with_f':batch_test['gt'][0].to(device), 'lengths':batch_test['gt'][1].to(device), 'mask':batch_test['gt'][2].to(device), 'startpos':batch_test['gt'][3].to(device), 'xyz':batch_test['gt'][4].to(device)}
 
       # Call function to test
-    evaluation_results, reconstructed_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
-                                 model_flag=model_flag, model_depth=model_depth, vis_flag=args.vis_flag,
-                                 threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
+    evaluation_results, reconstructed_trajectory, each_batch_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
+                                                                                  model_flag=model_flag, model_depth=model_depth, vis_flag=args.vis_flag,
+                                                                                  threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
 
     reconstructed_trajectory_all.append(reconstructed_trajectory)
     evaluation_results_all.append(evaluation_results)
     n_trajectory += input_test_dict['input'].shape[0]
+    for key in each_batch_trajectory.keys():
+      all_batch_trajectory[key].append(each_batch_trajectory[key])
 
   summary_evaluation = summary(evaluation_results_all)
-
+  evaluate(all_batch_trajectory)
   # Save prediction file
   if args.savetofile is not None:
     utils_func.initialize_folder(args.savetofile)

@@ -75,7 +75,7 @@ def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_
   fig = visualize_trajectory(uv=input_test_dict['input'], pred_xyz=pt.mul(pred_test_dict['xyz'], gt_test_dict['mask'][..., [0, 1, 2]]), gt_xyz=gt_test_dict['xyz'][..., [0, 1, 2]], startpos=gt_test_dict['startpos'], lengths=input_test_dict['lengths'], mask=gt_test_dict['mask'], fig=fig, flag='Test', n_vis=n_vis, evaluation_results=evaluation_results, vis_idx=vis_idx, pred_eot=pred_test_dict['flag'], gt_eot=gt_eot, args=args)
   # Adjust the layout/axis
   # AUTO SCALED/PITCH SCALED
-  fig.update_layout(height=2048, width=1500, autosize=True, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(args.trajectory_type))
+  fig.update_layout(height=2048, width=2048, autosize=False, title="Testing on {} trajectory: Trajectory Visualization with EOT flag(Col1=PITCH SCALED, Col2=AUTO SCALED)".format(args.trajectory_type))
   fig = visualize_layout_update(fig=fig, n_vis=n_vis)
   plotly.offline.plot(fig, filename='./{}/trajectory_visualization_depth.html'.format(args.visualization_path), auto_open=True)
   if animation_visualize_flag:
@@ -102,7 +102,9 @@ def visualize_layout_update(fig=None, n_vis=3):
     if i%2==0:
       # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
       # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-4, 4],), yaxis = dict(nticks=5, range=[-3, 8],), zaxis = dict(nticks=10, range=[-4, 4],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-3, 4],), yaxis = dict(nticks=5, range=[-2, 2],), zaxis = dict(nticks=10, range=[-2, 2],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
+                                                  camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
+                                                              up=dict(x=0, y=1, z=0)))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):

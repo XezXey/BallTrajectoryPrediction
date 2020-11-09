@@ -71,6 +71,8 @@ def ndc(trajectory, feature_name):
 if __name__ == '__main__':
   data_folder = sorted(glob.glob(args.data_folder + '/*.npy'))
   feature_col, feature_name = get_feature_columns()
+  # print(feature_name)
+  # exit()
   for idx in range(len(feature_col)):
     if args.cmp_folder is not None:
       compare_to(feature_col=feature_col[idx], feature_name=feature_name[idx])
