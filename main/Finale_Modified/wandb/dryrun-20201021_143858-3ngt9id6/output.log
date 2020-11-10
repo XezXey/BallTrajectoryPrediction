@@ -1,0 +1,237 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 47.96it/s]
+===============================Dataset shape===============================
+Mixed : (724,)
+===========================================================================
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed : (1841,)
+===========================================================================
+Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 24.76it/s]
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1810, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1810, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 1810, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1811, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 1699, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1699, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 1699, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1700, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 1806, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1806, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 1806, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1807, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 1713, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1713, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 1713, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1714, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1997, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1997, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 1997, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1998, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 2, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 2]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(2, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+      (1): Sigmoid()
+    )
+  )
+)
+####### Model - Depth #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........torch.Size([128, 1600, 3])
+tensor([[ 644,  644,  644],
+        [ 948,  948,  948],
+        [ 456,  456,  456],
+        [ 297,  297,  297],
+        [1323, 1323, 1323],
+        [ 326,  326,  326],
+        [ 976,  976,  976],
+        [ 461,  461,  461],
+        [ 674,  674,  674],
+        [ 599,  599,  599],
+        [ 804,  804,  804],
+        [ 419,  419,  419],
+        [ 468,  468,  468],
+        [ 372,  372,  372],
+        [ 166,  166,  166],
+        [ 498,  498,  498],
+        [1123, 1123, 1123],
+        [ 675,  675,  675],
+        [1049, 1049, 1049],
+        [ 804,  804,  804],
+        [ 228,  228,  228],
+        [ 147,  147,  147],
+        [ 908,  908,  908],
+        [ 525,  525,  525],
+        [ 703,  703,  703],
+        [ 853,  853,  853],
+        [ 367,  367,  367],
+        [1318, 1318, 1318],
+        [ 450,  450,  450],
+        [ 405,  405,  405],
+        [ 412,  412,  412],
+        [ 948,  948,  948],
+        [1514, 1514, 1514],
+        [ 378,  378,  378],
+        [ 849,  849,  849],
+        [ 749,  749,  749],
+        [ 834,  834,  834],
+        [ 510,  510,  510],
+        [1414, 1414, 1414],
+        [ 766,  766,  766],
+        [ 457,  457,  457],
+        [ 945,  945,  945],
+        [ 806,  806,  806],
+        [ 315,  315,  315],
+        [  93,   93,   93],
+        [ 514,  514,  514],
+        [ 119,  119,  119],
+        [ 103,  103,  103],
+        [1600, 1600, 1600],
+        [ 541,  541,  541],
+        [ 762,  762,  762],
+        [1498, 1498, 1498],
+        [ 512,  512,  512],
+        [ 388,  388,  388],
+        [ 502,  502,  502],
+        [ 639,  639,  639],
+        [ 849,  849,  849],
+        [1279, 1279, 1279],
+        [ 718,  718,  718],
+        [1148, 1148, 1148],
+        [ 720,  720,  720],
+        [1386, 1386, 1386],
+        [ 985,  985,  985],
+        [ 688,  688,  688],
+        [ 150,  150,  150],
+        [1544, 1544, 1544],
+        [1311, 1311, 1311],
+        [ 631,  631,  631],
+        [1198, 1198, 1198],
+        [ 963,  963,  963],
+        [ 674,  674,  674],
+        [1405, 1405, 1405],
+        [ 711,  711,  711],
+        [1356, 1356, 1356],
+        [ 962,  962,  962],
+        [1313, 1313, 1313],
+        [1344, 1344, 1344],
+        [ 617,  617,  617],
+        [ 316,  316,  316],
+        [ 427,  427,  427],
+        [ 742,  742,  742],
+        [ 464,  464,  464],
+        [ 304,  304,  304],
+        [ 115,  115,  115],
+        [ 318,  318,  318],
+        [ 808,  808,  808],
+        [ 726,  726,  726],
+        [ 222,  222,  222],
+        [ 994,  994,  994],
+        [1324, 1324, 1324],
+        [ 773,  773,  773],
+        [1377, 1377, 1377],
+        [ 957,  957,  957],
+        [ 121,  121,  121],
+        [1319, 1319, 1319],
+        [1260, 1260, 1260],
+        [ 933,  933,  933],
+        [ 994,  994,  994],
+        [  98,   98,   98],
+        [ 315,  315,  315],
+        [1243, 1243, 1243],
+        [ 605,  605,  605],
+        [ 269,  269,  269],
+        [ 163,  163,  163],
+        [1120, 1120, 1120],
+        [1063, 1063, 1063],
+        [ 467,  467,  467],
+        [1211, 1211, 1211],
+        [ 408,  408,  408],
+        [1504, 1504, 1504],
+        [ 709,  709,  709],
+        [ 438,  438,  438],
+        [ 502,  502,  502],
+        [ 952,  952,  952],
+        [1185, 1185, 1185],
+        [1067, 1067, 1067],
+        [1247, 1247, 1247],
+        [ 463,  463,  463],
+        [ 685,  685,  685],
+        [ 556,  556,  556],
+        [ 580,  580,  580],
+        [ 745,  745,  745],
+        [ 399,  399,  399],
+        [ 760,  760,  760],
+        [ 738,  738,  738],
+        [ 462,  462,  462],
+        [ 930,  930,  930],
+        [ 570,  570,  570]], device='cuda:0')
+tensor([ 10.,  20.,  30.,  40.,  50.,  60.,  70.,  80.,  90., 100.])

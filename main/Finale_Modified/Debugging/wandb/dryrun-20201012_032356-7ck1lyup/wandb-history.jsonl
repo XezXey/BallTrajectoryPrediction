@@ -1,0 +1,7 @@
+{"Learning Rate": 0.003, "_runtime": 4.0446858406066895, "_timestamp": 1602473039.8746178, "_step": 0}
+{"Train Loss": 376.5380554199219, "Validation Loss": 1030.8721923828125, "_runtime": 4.813859462738037, "_timestamp": 1602473040.6437914, "_step": 1}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_2_c0292732.html", "sha256": "c02927320cd40433ddaf835c1efff1ace3596199c9b8badaa9436f91d11b80f4", "size": 4019411}, "_runtime": 6.344491243362427, "_timestamp": 1602473042.1744232, "_step": 2}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_3_2ef091ef.plotly.json", "sha256": "2ef091ef3dee9f4baf2b781a386446fc40a044c0b15ead68d69838d603316cd6", "size": 589910}, "_runtime": 6.348861217498779, "_timestamp": 1602473042.1787932, "_step": 3}
+{"Train Loss": 286.813720703125, "Validation Loss": 573.7816772460938, "_runtime": 7.018538475036621, "_timestamp": 1602473042.8484704, "_step": 4}
+{"Train Loss": 131.83486938476562, "Validation Loss": 234.76919555664062, "_runtime": 7.549174547195435, "_timestamp": 1602473043.3791065, "_step": 5}
+{"Train Loss": 62.464351654052734, "Validation Loss": 63.85802459716797, "_runtime": 8.093962907791138, "_timestamp": 1602473043.923895, "_step": 6}

@@ -1,0 +1,1 @@
+{"_runtime": 5.264474391937256, "_timestamp": 1605018692.7368362, "Learning Rate": 0.01, "_step": 1, "graph_0": {"_type": "graph-file", "path": "media/graph/graph_0_summary_53bab00d.graph.json", "sha256": "53bab00d632017c7250c5ba31fca23925a42c28d4b69a98f2c4f4c04ab1ad42b", "size": 3986}, "Train Loss": 1.4761178493499756, "Validation Loss": 47.333919525146484}

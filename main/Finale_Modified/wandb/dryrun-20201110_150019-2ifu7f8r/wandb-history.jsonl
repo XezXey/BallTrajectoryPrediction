@@ -1,0 +1,84 @@
+{"Learning Rate": 0.01, "_runtime": 3.7079696655273438, "_timestamp": 1605020422.8519776, "_step": 0}
+{"Train Loss": 788.8775634765625, "Validation Loss": 2235.22265625, "_runtime": 5.246783256530762, "_timestamp": 1605020424.3907912, "_step": 1}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_2_65004aa2.html", "sha256": "65004aa2905a8f6cbb033f9bd1b787864ca6f95ec9f696bf52ffe00db0af6a77", "size": 4193769}, "_runtime": 6.663386583328247, "_timestamp": 1605020425.8073945, "_step": 2}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_3_987ff97e.plotly.json", "sha256": "987ff97ec57b379002c9ed2b69a03c872da257308a41327690bf8c01af156fd6", "size": 520661}, "_runtime": 6.66797399520874, "_timestamp": 1605020425.811982, "_step": 3}
+{"Train Loss": 350.2391662597656, "Validation Loss": 218.80099487304688, "_runtime": 7.910129070281982, "_timestamp": 1605020427.054137, "_step": 4}
+{"Train Loss": 34.0833625793457, "Validation Loss": 8822.6328125, "_runtime": 9.016627788543701, "_timestamp": 1605020428.1606357, "_step": 5}
+{"Train Loss": 1352.151611328125, "Validation Loss": 5143.38720703125, "_runtime": 10.126212120056152, "_timestamp": 1605020429.27022, "_step": 6}
+{"Train Loss": 796.9568481445312, "Validation Loss": 1090.1474609375, "_runtime": 11.231448411941528, "_timestamp": 1605020430.3754563, "_step": 7}
+{"Train Loss": 165.65835571289062, "Validation Loss": 21.539566040039062, "_runtime": 12.282286167144775, "_timestamp": 1605020431.426294, "_step": 8}
+{"Train Loss": 3.5754706859588623, "Validation Loss": 130.01673889160156, "_runtime": 13.341517925262451, "_timestamp": 1605020432.4855258, "_step": 9}
+{"Train Loss": 20.159433364868164, "Validation Loss": 249.29458618164062, "_runtime": 14.452733278274536, "_timestamp": 1605020433.5967412, "_step": 10}
+{"Train Loss": 39.457454681396484, "Validation Loss": 201.3397674560547, "_runtime": 15.575767755508423, "_timestamp": 1605020434.7197757, "_step": 11}
+{"Train Loss": 32.34767532348633, "Validation Loss": 96.14602661132812, "_runtime": 16.665811777114868, "_timestamp": 1605020435.8098197, "_step": 12}
+{"Train Loss": 15.604681968688965, "Validation Loss": 16.3360652923584, "_runtime": 17.702852249145508, "_timestamp": 1605020436.8468602, "_step": 13}
+{"Train Loss": 2.788297176361084, "Validation Loss": 27.39708137512207, "_runtime": 18.745720148086548, "_timestamp": 1605020437.889728, "_step": 14}
+{"Train Loss": 4.670264720916748, "Validation Loss": 88.26661682128906, "_runtime": 19.77582287788391, "_timestamp": 1605020438.9198308, "_step": 15}
+{"Train Loss": 15.923182487487793, "Validation Loss": 92.00757598876953, "_runtime": 20.815659284591675, "_timestamp": 1605020439.9596672, "_step": 16}
+{"Train Loss": 14.844423294067383, "Validation Loss": 46.88820266723633, "_runtime": 21.834997415542603, "_timestamp": 1605020440.9790053, "_step": 17}
+{"Train Loss": 8.763036727905273, "Validation Loss": 5.22446346282959, "_runtime": 22.921632766723633, "_timestamp": 1605020442.0656407, "_step": 18}
+{"Train Loss": 1.224928379058838, "Validation Loss": 16.427047729492188, "_runtime": 23.995054721832275, "_timestamp": 1605020443.1390626, "_step": 19}
+{"Train Loss": 2.094337224960327, "Validation Loss": 45.04479217529297, "_runtime": 25.026984453201294, "_timestamp": 1605020444.1709924, "_step": 20}
+{"Train Loss": 7.353304862976074, "Validation Loss": 47.809837341308594, "_runtime": 26.066386699676514, "_timestamp": 1605020445.2103946, "_step": 21}
+{"Train Loss": 7.529478549957275, "Validation Loss": 28.191987991333008, "_runtime": 27.1275315284729, "_timestamp": 1605020446.2715394, "_step": 22}
+{"Train Loss": 3.8423519134521484, "Validation Loss": 6.725320816040039, "_runtime": 28.153167009353638, "_timestamp": 1605020447.297175, "_step": 23}
+{"Train Loss": 1.4732211828231812, "Validation Loss": 5.419699192047119, "_runtime": 29.231701612472534, "_timestamp": 1605020448.3757095, "_step": 24}
+{"Train Loss": 1.2682695388793945, "Validation Loss": 16.27873992919922, "_runtime": 30.276522397994995, "_timestamp": 1605020449.4205303, "_step": 25}
+{"Train Loss": 2.767571210861206, "Validation Loss": 12.076498031616211, "_runtime": 31.303202629089355, "_timestamp": 1605020450.4472106, "_step": 26}
+{"Train Loss": 2.828963041305542, "Validation Loss": 1.7966068983078003, "_runtime": 32.340309381484985, "_timestamp": 1605020451.4843173, "_step": 27}
+{"Train Loss": 0.6189647912979126, "Validation Loss": 8.934507369995117, "_runtime": 33.37637662887573, "_timestamp": 1605020452.5203846, "_step": 28}
+{"Train Loss": 1.3633713722229004, "Validation Loss": 17.305923461914062, "_runtime": 34.43177771568298, "_timestamp": 1605020453.5757856, "_step": 29}
+{"Train Loss": 2.451545000076294, "Validation Loss": 12.475425720214844, "_runtime": 35.46498894691467, "_timestamp": 1605020454.6089969, "_step": 30}
+{"Train Loss": 1.689411997795105, "Validation Loss": 2.2895259857177734, "_runtime": 36.53295302391052, "_timestamp": 1605020455.676961, "_step": 31}
+{"Train Loss": 0.550319254398346, "Validation Loss": 8.914308547973633, "_runtime": 37.59891891479492, "_timestamp": 1605020456.7429268, "_step": 32}
+{"Train Loss": 1.8594715595245361, "Validation Loss": 19.80011749267578, "_runtime": 38.62623167037964, "_timestamp": 1605020457.7702396, "_step": 33}
+{"Train Loss": 3.9562652111053467, "Validation Loss": 16.360034942626953, "_runtime": 39.66521072387695, "_timestamp": 1605020458.8092186, "_step": 34}
+{"Train Loss": 3.1386075019836426, "Validation Loss": 4.271336555480957, "_runtime": 40.72178387641907, "_timestamp": 1605020459.8657918, "_step": 35}
+{"Train Loss": 0.9706833362579346, "Validation Loss": 5.580621242523193, "_runtime": 41.74821376800537, "_timestamp": 1605020460.8922217, "_step": 36}
+{"Train Loss": 1.1762152910232544, "Validation Loss": 7.431118488311768, "_runtime": 42.81675696372986, "_timestamp": 1605020461.960765, "_step": 37}
+{"Train Loss": 1.2250111103057861, "Validation Loss": 3.6598563194274902, "_runtime": 43.844470739364624, "_timestamp": 1605020462.9884787, "_step": 38}
+{"Train Loss": 0.5478590726852417, "Validation Loss": 0.9932904243469238, "_runtime": 44.87624144554138, "_timestamp": 1605020464.0202494, "_step": 39}
+{"Train Loss": 0.354722797870636, "Validation Loss": 1.0372669696807861, "_runtime": 45.92549967765808, "_timestamp": 1605020465.0695076, "_step": 40}
+{"Train Loss": 0.41949084401130676, "Validation Loss": 4.654343605041504, "_runtime": 46.98272109031677, "_timestamp": 1605020466.126729, "_step": 41}
+{"Train Loss": 1.3401199579238892, "Validation Loss": 5.234601020812988, "_runtime": 48.027852058410645, "_timestamp": 1605020467.17186, "_step": 42}
+{"Train Loss": 1.320979118347168, "Validation Loss": 1.5065122842788696, "_runtime": 49.065476179122925, "_timestamp": 1605020468.209484, "_step": 43}
+{"Train Loss": 0.48485448956489563, "Validation Loss": 4.002018451690674, "_runtime": 50.111042737960815, "_timestamp": 1605020469.2550507, "_step": 44}
+{"Train Loss": 0.5229838490486145, "Validation Loss": 7.70206880569458, "_runtime": 51.17843294143677, "_timestamp": 1605020470.3224409, "_step": 45}
+{"Train Loss": 1.1918543577194214, "Validation Loss": 4.72774600982666, "_runtime": 52.24099636077881, "_timestamp": 1605020471.3850043, "_step": 46}
+{"Train Loss": 0.598243236541748, "Validation Loss": 0.9357786178588867, "_runtime": 53.312419176101685, "_timestamp": 1605020472.456427, "_step": 47}
+{"Train Loss": 0.42909005284309387, "Validation Loss": 1.1685205698013306, "_runtime": 54.374716997146606, "_timestamp": 1605020473.518725, "_step": 48}
+{"Train Loss": 0.4691876471042633, "Validation Loss": 1.2938835620880127, "_runtime": 55.458982944488525, "_timestamp": 1605020474.6029909, "_step": 49}
+{"Train Loss": 0.22951273620128632, "Validation Loss": 0.8925500512123108, "_runtime": 56.475857973098755, "_timestamp": 1605020475.619866, "_step": 50}
+{"Train Loss": 0.35107240080833435, "Validation Loss": 2.3449909687042236, "_runtime": 57.55303978919983, "_timestamp": 1605020476.6970477, "_step": 51}
+{"Train Loss": 0.5070590972900391, "Validation Loss": 1.3157553672790527, "_runtime": 58.61514592170715, "_timestamp": 1605020477.7591538, "_step": 52}
+{"Epoch Train Loss": 74.08500299841165, "Epoch Validation Loss": 376.1850091063976, "_runtime": 58.68961262702942, "_timestamp": 1605020477.8336205, "_step": 53}
+{"Learning Rate": 0.01, "_runtime": 58.70529055595398, "_timestamp": 1605020477.8492985, "_step": 54}
+{"Train Loss": 0.30208534002304077, "Validation Loss": 2.5575788021087646, "_runtime": 60.174988985061646, "_timestamp": 1605020479.318997, "_step": 55}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_56_30fd360e.html", "sha256": "30fd360e2b0bf28925be2520932184f4cfe7498c8dc528cc39f93a334cff1359", "size": 4001905}, "_runtime": 61.3523428440094, "_timestamp": 1605020480.4963508, "_step": 56}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_57_b0f1a885.plotly.json", "sha256": "b0f1a88552e901d18001cd4cca7405def87aed965c1288c628aaf4b54038137b", "size": 393900}, "_runtime": 61.356027364730835, "_timestamp": 1605020480.5000353, "_step": 57}
+{"Train Loss": 0.7190897464752197, "Validation Loss": 3.453815221786499, "_runtime": 62.60936617851257, "_timestamp": 1605020481.753374, "_step": 58}
+{"Train Loss": 0.8443657755851746, "Validation Loss": 1.0321451425552368, "_runtime": 63.74240970611572, "_timestamp": 1605020482.8864176, "_step": 59}
+{"Train Loss": 0.2879151403903961, "Validation Loss": 3.1307973861694336, "_runtime": 64.87674570083618, "_timestamp": 1605020484.0207536, "_step": 60}
+{"Train Loss": 0.7281109690666199, "Validation Loss": 5.487997531890869, "_runtime": 65.97797751426697, "_timestamp": 1605020485.1219854, "_step": 61}
+{"Train Loss": 0.7832038402557373, "Validation Loss": 3.0335888862609863, "_runtime": 67.00341987609863, "_timestamp": 1605020486.1474278, "_step": 62}
+{"Train Loss": 0.44975587725639343, "Validation Loss": 0.7630242705345154, "_runtime": 68.04355120658875, "_timestamp": 1605020487.1875591, "_step": 63}
+{"Train Loss": 0.295564204454422, "Validation Loss": 1.2541120052337646, "_runtime": 69.12792348861694, "_timestamp": 1605020488.2719314, "_step": 64}
+{"Train Loss": 0.3647790551185608, "Validation Loss": 0.6436121463775635, "_runtime": 70.20174980163574, "_timestamp": 1605020489.3457577, "_step": 65}
+{"Train Loss": 0.34067603945732117, "Validation Loss": 4.612106800079346, "_runtime": 71.28433632850647, "_timestamp": 1605020490.4283442, "_step": 66}
+{"Train Loss": 0.7830007076263428, "Validation Loss": 6.89885139465332, "_runtime": 72.28250026702881, "_timestamp": 1605020491.4265082, "_step": 67}
+{"Train Loss": 1.065894365310669, "Validation Loss": 3.664738178253174, "_runtime": 73.3326940536499, "_timestamp": 1605020492.476702, "_step": 68}
+{"Train Loss": 0.7332680821418762, "Validation Loss": 0.5380306243896484, "_runtime": 74.38037061691284, "_timestamp": 1605020493.5243785, "_step": 69}
+{"Train Loss": 0.2560678720474243, "Validation Loss": 0.9697669744491577, "_runtime": 75.44044280052185, "_timestamp": 1605020494.5844507, "_step": 70}
+{"Train Loss": 0.2650318443775177, "Validation Loss": 0.4911603033542633, "_runtime": 76.48106360435486, "_timestamp": 1605020495.6250715, "_step": 71}
+{"Train Loss": 0.16884852945804596, "Validation Loss": 0.5548327565193176, "_runtime": 77.54101014137268, "_timestamp": 1605020496.685018, "_step": 72}
+{"Train Loss": 0.18568891286849976, "Validation Loss": 0.7852733135223389, "_runtime": 78.58745789527893, "_timestamp": 1605020497.7314658, "_step": 73}
+{"Train Loss": 0.21374520659446716, "Validation Loss": 0.45589613914489746, "_runtime": 79.6433539390564, "_timestamp": 1605020498.7873619, "_step": 74}
+{"Train Loss": 0.16635827720165253, "Validation Loss": 3.401703357696533, "_runtime": 80.7676362991333, "_timestamp": 1605020499.9116442, "_step": 75}
+{"Train Loss": 0.9324814677238464, "Validation Loss": 4.559968948364258, "_runtime": 81.90379858016968, "_timestamp": 1605020501.0478065, "_step": 76}
+{"Train Loss": 0.912449300289154, "Validation Loss": 1.295069694519043, "_runtime": 83.03745746612549, "_timestamp": 1605020502.1814654, "_step": 77}
+{"Train Loss": 0.42853909730911255, "Validation Loss": 2.211273193359375, "_runtime": 84.18302035331726, "_timestamp": 1605020503.3270283, "_step": 78}
+{"Train Loss": 0.36458802223205566, "Validation Loss": 4.491027355194092, "_runtime": 85.26364970207214, "_timestamp": 1605020504.4076576, "_step": 79}
+{"Train Loss": 0.8363012671470642, "Validation Loss": 2.127857208251953, "_runtime": 86.38368248939514, "_timestamp": 1605020505.5276904, "_step": 80}
+{"Train Loss": 0.31441831588745117, "Validation Loss": 0.770798921585083, "_runtime": 87.45721912384033, "_timestamp": 1605020506.601227, "_step": 81}
+{"Train Loss": 0.23899412155151367, "Validation Loss": 1.5238171815872192, "_runtime": 88.52806425094604, "_timestamp": 1605020507.6720722, "_step": 82}
+{"Train Loss": 0.5397557020187378, "Validation Loss": 0.32521167397499084, "_runtime": 89.59549021720886, "_timestamp": 1605020508.7394981, "_step": 83}

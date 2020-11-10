@@ -1,0 +1,8 @@
+{"Learning Rate": 0.01, "_runtime": 3.1395864486694336, "_timestamp": 1603285262.023085, "_step": 0}
+{"Train Loss": 8704.3916015625, "Validation Loss": 7070.05908203125, "_runtime": 6.177379131317139, "_timestamp": 1603285265.0608778, "_step": 1}
+{"Train Loss": 5983.5361328125, "Validation Loss": 4313.73876953125, "_runtime": 8.907807111740112, "_timestamp": 1603285267.7913058, "_step": 2}
+{"Train Loss": 4636.93212890625, "Validation Loss": 757.2886962890625, "_runtime": 11.729045867919922, "_timestamp": 1603285270.6125445, "_step": 3}
+{"Train Loss": 727.0338745117188, "Validation Loss": 712.0730590820312, "_runtime": 14.43884801864624, "_timestamp": 1603285273.3223467, "_step": 4}
+{"Train Loss": 716.1614990234375, "Validation Loss": 610.0028076171875, "_runtime": 17.38788366317749, "_timestamp": 1603285276.2713823, "_step": 5}
+{"Epoch Train Loss": 4153.611047363282, "Epoch Validation Loss": 2692.6324829101563, "_runtime": 17.45454692840576, "_timestamp": 1603285276.3380456, "_step": 6}
+{"Learning Rate": 0.01, "_runtime": 17.492233753204346, "_timestamp": 1603285276.3757324, "_step": 7}

@@ -1,0 +1,93 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [5]
+1. input_col =  [3, 4, 5]
+2. input_startpos_col =  [3, 4, 5, 5]
+3. gt_col =  [5, 5]
+4. gt_startpos_col =  [0, 1, 2, 5]
+5. gt_xyz_col =  [0, 1, 2, 5]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                                  | 0/1 [00:00<?, ?it/s]Mixed: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 48.95it/s]
+===============================Dataset shape===============================
+Mixed : (724,)
+===========================================================================
+Mixed:   0%|                                                                                                                  | 0/1 [00:00<?, ?it/s]Mixed: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 25.52it/s]
+===============================Dataset shape===============================
+Mixed : (1841,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1814, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1814, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 1814, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1815, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 1820, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1820, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 1820, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1821, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 1644, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1644, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 1644, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1645, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 1997, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1997, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 1997, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1998, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1806, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1806, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 1806, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1807, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 0, 'recurrent_stacked': [2, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 0, 'recurrent_stacked': [3, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - Depth #######
+BiLSTM(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.003
+===> [Minibatch 1/5].........Traceback (most recent call last):
+  File "train_ball_trajectory_depth_testlatent.py", line 361, in <module>
+    cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
+  File "train_ball_trajectory_depth_testlatent.py", line 141, in train
+    pred_depth_train, (_, _) = model_depth(in_train, hidden_depth, cell_state_depth, lengths=input_train_dict['lengths'])
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/models/Finale/vanilla_stack/bilstm.py", line 45, in forward
+    out_packed, (hidden, cell_state) = recurrent_block(out_packed, (self.initHidden(batch_size=self.batch_size), self.initCellState(batch_size=self.batch_size)))
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/rnn.py", line 556, in forward
+    self.check_forward_args(input, hx, batch_sizes)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/rnn.py", line 508, in check_forward_args
+    self.check_input(input, batch_sizes)
+  File "/home/puntawat/Mint/Work/Vision/working_environment/ball_venv3/lib/python3.6/site-packages/torch/nn/modules/rnn.py", line 159, in check_input
+    self.input_size, input.size(-1)))
+RuntimeError: input.size(-1) must be equal to input_size. Expected 3, got 5

@@ -1,0 +1,21 @@
+2020-10-22 00:12:43,603 DEBUG   MainThread:30041 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2020-10-22 00:12:43,606 DEBUG   MainThread:30041 [meta.py:setup():97] code probe starting
+2020-10-22 00:12:43,606 DEBUG   MainThread:30041 [meta.py:_setup_code_git():49] probe for git information
+2020-10-22 00:12:43,614 DEBUG   MainThread:30041 [meta.py:_setup_code_program():58] save program starting
+2020-10-22 00:12:43,614 DEBUG   MainThread:30041 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale/Debugging/train_ball_trajectory_depth_testlatent.py
+2020-10-22 00:12:43,614 DEBUG   MainThread:30041 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale/Debugging/wandb/dryrun-20201021_171243-3rmo4n3w/code/main/Finale/Debugging/train_ball_trajectory_depth_testlatent.py
+2020-10-22 00:12:43,614 DEBUG   MainThread:30041 [meta.py:_setup_code_program():67] save program
+2020-10-22 00:12:43,615 DEBUG   MainThread:30041 [meta.py:setup():119] code probe done
+2020-10-22 00:12:43,622 DEBUG   MainThread:30041 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/3rmo4n3w
+2020-10-22 00:12:43,624 INFO    MainThread:30041 [run_manager.py:wrap_existing_process():1144] wrapping existing process 30007
+2020-10-22 00:12:43,624 WARNING MainThread:30041 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2020-10-22 00:12:43,808 INFO    MainThread:30041 [run_manager.py:init_run():924] system metrics and metadata threads started
+2020-10-22 00:12:43,809 INFO    MainThread:30041 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
+2020-10-22 00:12:43,809 INFO    MainThread:30041 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
+2020-10-22 00:12:44,607 INFO    Thread-3  :30041 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale/Debugging/wandb/dryrun-20201021_171243-3rmo4n3w/config.yaml
+2020-10-22 00:12:46,429 INFO    MainThread:30041 [run_manager.py:_sync_etc():1291] received message from user process: {"exitcode": 0}
+2020-10-22 00:12:46,429 INFO    MainThread:30041 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2020-10-22 00:12:46,430 INFO    MainThread:30041 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
+etc():1291] received message from user process: {"exitcode": 0}
+2020-10-22 00:12:46,429 INFO    MainThread:30041 [3rmo4n3w:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2020-10-22 00:12:46,430 INFO    MainThread:30041 [3rmo4n3w:run_manager.py:shutdown():1068] shutting down system stats and metadata service

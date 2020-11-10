@@ -1,0 +1,17 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Traceback (most recent call last):
+  File "train_ball_trajectory_depth.py", line 310, in <module>
+    cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
+  File "/home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/utils/transformation.py", line 44, in get_cam_params_dict
+    cam_params = dict({'projectionMatrix':cam_params_file[each_cam_use]['projectionMatrix'], 'worldToCameraMatrix':cam_params_file[each_cam_use]['worldToCameraMatrix'], 'width':cam_params_file[each_cam_use]['width'], 'height':cam_params_file['mainCameraParams']['height']})
+KeyError: 'alongCameraParams'

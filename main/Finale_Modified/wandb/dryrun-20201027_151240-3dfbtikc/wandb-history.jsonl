@@ -1,0 +1,18 @@
+{"Learning Rate": 0.01, "_runtime": 3.6472315788269043, "_timestamp": 1603811563.7427435, "_step": 0}
+{"Train Loss": 11858.8720703125, "Validation Loss": 50300.10546875, "_runtime": 5.4939610958099365, "_timestamp": 1603811565.589473, "_step": 1}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_2_d42a317c.html", "sha256": "d42a317ceb0f8f813dcf65312a845789f3939af84c997026abc600fdaca0fd03", "size": 4318730}, "_runtime": 7.530354261398315, "_timestamp": 1603811567.6258662, "_step": 2}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_3_598293eb.plotly.json", "sha256": "598293eb91fd35668ab429ec62a30e594fa4fffc48cb5d372278f0c7ad753db9", "size": 893088}, "_runtime": 7.534572124481201, "_timestamp": 1603811567.630084, "_step": 3}
+{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_4_073b7251.plotly.json", "sha256": "073b7251054e98dca4321592fe8fad73494b8d9e139ae39bfeb74e82ec2f2425", "size": 301652}, "_runtime": 7.73459792137146, "_timestamp": 1603811567.8301098, "_step": 4}
+{"Train Loss": 8340.1962890625, "Validation Loss": 36963.16796875, "_runtime": 9.453585863113403, "_timestamp": 1603811569.5490978, "_step": 5}
+{"Train Loss": 6477.52197265625, "Validation Loss": 31559.779296875, "_runtime": 11.07425570487976, "_timestamp": 1603811571.1697676, "_step": 6}
+{"Train Loss": 5269.59423828125, "Validation Loss": 29120.802734375, "_runtime": 12.535991668701172, "_timestamp": 1603811572.6315036, "_step": 7}
+{"Train Loss": 4963.55078125, "Validation Loss": 25008.74609375, "_runtime": 13.970587253570557, "_timestamp": 1603811574.0660992, "_step": 8}
+{"Train Loss": 4431.18798828125, "Validation Loss": 22719.12890625, "_runtime": 15.469702005386353, "_timestamp": 1603811575.565214, "_step": 9}
+{"Train Loss": 3987.583740234375, "Validation Loss": 20506.169921875, "_runtime": 16.98035192489624, "_timestamp": 1603811577.0758638, "_step": 10}
+{"Train Loss": 3560.077392578125, "Validation Loss": 18372.30078125, "_runtime": 18.508628368377686, "_timestamp": 1603811578.6041403, "_step": 11}
+{"Train Loss": 2956.012939453125, "Validation Loss": 16300.1328125, "_runtime": 19.95237374305725, "_timestamp": 1603811580.0478857, "_step": 12}
+{"Train Loss": 2909.453125, "Validation Loss": 14281.517578125, "_runtime": 21.462042093276978, "_timestamp": 1603811581.557554, "_step": 13}
+{"Train Loss": 2384.8974609375, "Validation Loss": 12331.5048828125, "_runtime": 22.924156665802002, "_timestamp": 1603811583.0196686, "_step": 14}
+{"Train Loss": 2297.3154296875, "Validation Loss": 10438.3681640625, "_runtime": 24.403757572174072, "_timestamp": 1603811584.4992695, "_step": 15}
+{"Train Loss": 1819.3729248046875, "Validation Loss": 8572.65234375, "_runtime": 25.89049220085144, "_timestamp": 1603811585.986004, "_step": 16}
+{"Train Loss": 1507.3570556640625, "Validation Loss": 6759.5634765625, "_runtime": 27.32119917869568, "_timestamp": 1603811587.416711, "_step": 17}

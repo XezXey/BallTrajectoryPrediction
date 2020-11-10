@@ -1,0 +1,250 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 48.14it/s]
+===============================Dataset shape===============================
+Mixed : (724,)
+===========================================================================
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 23.50it/s]
+Mixed : (1841,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1997, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1997, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 1997, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1998, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 1820, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1820, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 1820, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1821, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 1754, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1754, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 1754, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1755, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 1806, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1806, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 1806, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1807, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1684, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1684, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 1684, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1685, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 2, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 2]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(2, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+      (1): Sigmoid()
+    )
+  )
+)
+####### Model - Depth #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........torch.Size([506])
+torch.Size([246])
+torch.Size([665])
+torch.Size([1197])
+torch.Size([791])
+torch.Size([1049])
+torch.Size([1123])
+torch.Size([341])
+torch.Size([1122])
+torch.Size([213])
+torch.Size([688])
+torch.Size([69])
+torch.Size([555])
+torch.Size([1349])
+torch.Size([435])
+torch.Size([1381])
+torch.Size([875])
+torch.Size([1038])
+torch.Size([985])
+torch.Size([155])
+torch.Size([277])
+torch.Size([1045])
+torch.Size([686])
+torch.Size([310])
+torch.Size([1755])
+torch.Size([447])
+torch.Size([434])
+torch.Size([378])
+torch.Size([1032])
+torch.Size([661])
+torch.Size([955])
+torch.Size([1668])
+torch.Size([1607])
+torch.Size([1364])
+torch.Size([402])
+torch.Size([327])
+torch.Size([1185])
+torch.Size([1099])
+torch.Size([183])
+torch.Size([338])
+torch.Size([531])
+torch.Size([634])
+torch.Size([156])
+torch.Size([539])
+torch.Size([780])
+torch.Size([409])
+torch.Size([230])
+torch.Size([586])
+torch.Size([619])
+torch.Size([1028])
+torch.Size([148])
+torch.Size([835])
+torch.Size([367])
+torch.Size([115])
+torch.Size([202])
+torch.Size([1381])
+torch.Size([506])
+torch.Size([692])
+torch.Size([445])
+torch.Size([119])
+torch.Size([186])
+torch.Size([754])
+torch.Size([701])
+torch.Size([1192])
+torch.Size([868])
+torch.Size([931])
+torch.Size([815])
+torch.Size([1504])
+torch.Size([408])
+torch.Size([318])
+torch.Size([725])
+torch.Size([720])
+torch.Size([1344])
+torch.Size([726])
+torch.Size([171])
+torch.Size([1067])
+torch.Size([621])
+torch.Size([166])
+torch.Size([507])
+torch.Size([1249])
+torch.Size([644])
+torch.Size([1026])
+torch.Size([1296])
+torch.Size([1514])
+torch.Size([675])
+torch.Size([515])
+torch.Size([1811])
+torch.Size([1172])
+torch.Size([912])
+torch.Size([419])
+torch.Size([222])
+torch.Size([103])
+torch.Size([1165])
+torch.Size([685])
+torch.Size([237])
+torch.Size([1128])
+torch.Size([871])
+torch.Size([257])
+torch.Size([98])
+torch.Size([929])
+torch.Size([1210])
+torch.Size([1332])
+torch.Size([306])
+torch.Size([605])
+torch.Size([134])
+torch.Size([708])
+torch.Size([98])
+torch.Size([1333])
+torch.Size([623])
+torch.Size([151])
+torch.Size([316])
+torch.Size([265])
+torch.Size([1239])
+torch.Size([432])
+torch.Size([606])
+torch.Size([110])
+torch.Size([957])
+torch.Size([1219])
+torch.Size([457])
+torch.Size([660])
+torch.Size([1118])
+torch.Size([532])
+torch.Size([612])
+torch.Size([1370])
+torch.Size([664])
+torch.Size([781])
+torch.Size([905])
+torch.Size([990])
+torch.Size([128, 1811, 3])
+tensor([[10.0000, 10.0000, 10.0000],
+        [ 9.9822,  9.9822,  9.9822],
+        [ 9.9644,  9.9644,  9.9644],
+        ...,
+        [ 1.0356,  1.0356,  1.0356],
+        [ 1.0178,  1.0178,  1.0178],
+        [ 1.0000,  1.0000,  1.0000]], device='cuda:0')
+tensor([[True, True, True],
+        [True, True, True],
+        [True, True, True],
+        ...,
+        [True, True, True],
+        [True, True, True],
+        [True, True, True]], device='cuda:0')

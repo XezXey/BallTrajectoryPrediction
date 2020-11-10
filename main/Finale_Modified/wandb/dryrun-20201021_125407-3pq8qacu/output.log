@@ -1,0 +1,161 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 48.43it/s]
+===============================Dataset shape===============================
+Mixed : (724,)
+===========================================================================
+Mixed:   0%|                                                                   | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 25.72it/s]
+===============================Dataset shape===============================
+Mixed : (1841,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1814, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1814, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 1814, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1815, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 1820, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1820, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 1820, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1821, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 1516, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1516, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 1516, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1517, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 1997, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1997, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 1997, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1998, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1806, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1806, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 1806, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1807, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 2, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 2]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(2, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+      (1): Sigmoid()
+    )
+  )
+)
+####### Model - Depth #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........Train Loss : 2279.862, Val Loss : 1344.510
+======> Trajectory Loss : 2138.719, Gravity Loss : 0.001, EndOfTrajectory Loss : 1.411, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 2/5].........Train Loss : 1207.261, Val Loss : 556.429
+======> Trajectory Loss : 1066.941, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.403, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 3/5].........Train Loss : 523.518, Val Loss : 234.353
+======> Trajectory Loss : 384.165, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.393, BelowGroundPenalize Loss : 0.004
+===> [Minibatch 4/5].........Train Loss : 240.241, Val Loss : 170.249
+======> Trajectory Loss : 89.573, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.379, BelowGroundPenalize Loss : 12.743
+===> [Minibatch 5/5].........Train Loss : 170.315, Val Loss : 194.034
+======> Trajectory Loss : 31.027, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.353, BelowGroundPenalize Loss : 4.004
+[#]Finish Epoch : 1/100000.........Train loss : 884.239, Val loss : 499.915
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 499.915
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+[#]Saving the lastest checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_lastest.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........Train Loss : 194.057, Val Loss : 192.388
+======> Trajectory Loss : 61.975, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.318, BelowGroundPenalize Loss : 0.275
+===> [Minibatch 2/5].........Train Loss : 173.443, Val Loss : 155.680
+======> Trajectory Loss : 45.503, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.277, BelowGroundPenalize Loss : 0.237
+===> [Minibatch 3/5].........Train Loss : 150.494, Val Loss : 175.258
+======> Trajectory Loss : 25.501, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.240, BelowGroundPenalize Loss : 1.036
+===> [Minibatch 4/5].........Train Loss : 170.030, Val Loss : 200.609
+======> Trajectory Loss : 44.337, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.199, BelowGroundPenalize Loss : 5.795
+===> [Minibatch 5/5].........Train Loss : 188.216, Val Loss : 180.897
+======> Trajectory Loss : 61.242, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.175, BelowGroundPenalize Loss : 9.487
+[#]Finish Epoch : 2/100000.........Train loss : 175.248, Val loss : 180.966
+[+++]Saving the best model checkpoint : Prev loss 499.915 > Curr loss 180.966
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+[#]Saving the lastest checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_lastest.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........Train Loss : 173.848, Val Loss : 130.019
+======> Trajectory Loss : 53.752, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.120, BelowGroundPenalize Loss : 8.129
+===> [Minibatch 2/5].........Train Loss : 131.251, Val Loss : 124.935
+======> Trajectory Loss : 25.852, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.021, BelowGroundPenalize Loss : 3.263
+===> [Minibatch 3/5].........Train Loss : 129.811, Val Loss : 130.846
+======> Trajectory Loss : 24.677, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.041, BelowGroundPenalize Loss : 1.042
+===> [Minibatch 4/5].........Train Loss : 125.460, Val Loss : 124.831
+======> Trajectory Loss : 25.973, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.987, BelowGroundPenalize Loss : 0.810
+===> [Minibatch 5/5].........Train Loss : 131.762, Val Loss : 116.820
+======> Trajectory Loss : 33.001, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.980, BelowGroundPenalize Loss : 0.727
+[#]Finish Epoch : 3/100000.........Train loss : 138.426, Val loss : 125.490
+[+++]Saving the best model checkpoint : Prev loss 180.966 > Curr loss 125.490
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+[#]Saving the lastest checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_lastest.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 4/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/5].........Train Loss : 124.408, Val Loss : 118.614
+======> Trajectory Loss : 22.983, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.002, BelowGroundPenalize Loss : 1.209
+===> [Minibatch 2/5].........Train Loss : 123.422, Val Loss : 120.346
+======> Trajectory Loss : 26.572, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.935, BelowGroundPenalize Loss : 3.390
+===> [Minibatch 3/5].........Train Loss : 121.690, Val Loss : 116.590
+======> Trajectory Loss : 27.242, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.909, BelowGroundPenalize Loss : 3.502

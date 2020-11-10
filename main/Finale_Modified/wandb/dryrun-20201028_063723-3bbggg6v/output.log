@@ -1,0 +1,236 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                | 0/1 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 26.86it/s]
+===============================Dataset shape===============================
+Mixed : (1774,)
+===========================================================================
+Mixed:   0%|                                                                                                | 0/2 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 57.66it/s]
+===============================Dataset shape===============================
+Mixed : (1729,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 688, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 688, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 688, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 689, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 667, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 667, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 667, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 668, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 652, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 652, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 652, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 653, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 601, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 601, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 601, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 602, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 680, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 680, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 680, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 681, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([128, 696, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 696, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [5] : batch=torch.Size([128, 696, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 697, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([128, 595, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 595, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [6] : batch=torch.Size([128, 595, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 596, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([128, 645, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 645, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [7] : batch=torch.Size([128, 645, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 646, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([128, 652, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 652, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [8] : batch=torch.Size([128, 652, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 653, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([128, 657, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 657, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [9] : batch=torch.Size([128, 657, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 658, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [10] : batch=torch.Size([128, 680, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 680, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [10] : batch=torch.Size([128, 680, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 681, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [11] : batch=torch.Size([128, 667, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 667, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [11] : batch=torch.Size([128, 667, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 668, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [12] : batch=torch.Size([128, 629, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 629, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [12] : batch=torch.Size([128, 629, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 630, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 2, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 2]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(2, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+      (1): Sigmoid()
+    )
+  )
+)
+####### Model - Depth #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/13].........Train Loss : 1480.098, Val Loss : 3976.843
+======> Trajectory Loss : 1337.167, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.429, BelowGroundPenalize Loss : 0.000
+Opening in existing browser session.
+[1028/133731.210871:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/133731.496308:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/13].........Train Loss : 1285.676, Val Loss : 2699.390
+======> Trajectory Loss : 1143.201, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.425, BelowGroundPenalize Loss : 0.000
+[24492:24492:1028/133733.840221:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 3/13].........Train Loss : 949.307, Val Loss : 2319.711
+======> Trajectory Loss : 807.657, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.416, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 4/13].........Train Loss : 844.762, Val Loss : 1442.009
+======> Trajectory Loss : 703.628, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.411, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 5/13].........Train Loss : 536.394, Val Loss : 140.734
+======> Trajectory Loss : 396.473, Gravity Loss : 0.001, EndOfTrajectory Loss : 1.399, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 6/13].........Train Loss : 139.768, Val Loss : 6675.089
+======> Trajectory Loss : 0.242, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.395, BelowGroundPenalize Loss : 0.013
+===> [Minibatch 7/13].........Train Loss : 2342.825, Val Loss : 8368.361
+======> Trajectory Loss : 1727.092, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.381, BelowGroundPenalize Loss : 477.584
+===> [Minibatch 8/13].........Train Loss : 3019.085, Val Loss : 4019.874
+======> Trajectory Loss : 2301.885, Gravity Loss : 0.003, EndOfTrajectory Loss : 1.382, BelowGroundPenalize Loss : 579.001
+===> [Minibatch 9/13].........Train Loss : 1458.878, Val Loss : 643.970
+======> Trajectory Loss : 1060.409, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.385, BelowGroundPenalize Loss : 259.989
+===> [Minibatch 10/13].........Train Loss : 304.067, Val Loss : 141.979
+======> Trajectory Loss : 133.394, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.381, BelowGroundPenalize Loss : 32.587
+[1028/133746.751230:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 11/13].........Train Loss : 136.015, Val Loss : 143.446
+======> Trajectory Loss : 2.053, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.340, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 12/13].........Train Loss : 131.471, Val Loss : 122.808
+======> Trajectory Loss : 4.622, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.268, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 13/13].........Train Loss : 122.575, Val Loss : 114.769
+======> Trajectory Loss : 0.237, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.223, BelowGroundPenalize Loss : 0.032
+[#]Finish Epoch : 1/100000.........Train loss : 980.840, Val loss : 2369.922
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 2369.922
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/13].........Train Loss : 113.425, Val Loss : 114.267
+======> Trajectory Loss : 0.285, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.131, BelowGroundPenalize Loss : 0.003
+Opening in existing browser session.
+[1028/133755.249115:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/133755.504829:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/13].........Train Loss : 105.753, Val Loss : 95.286
+======> Trajectory Loss : 2.024, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.032, BelowGroundPenalize Loss : 0.526
+[25139:25139:1028/133757.899825:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 3/13].........Train Loss : 90.828, Val Loss : 87.112
+======> Trajectory Loss : 0.929, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.897, BelowGroundPenalize Loss : 0.192
+===> [Minibatch 4/13].........Train Loss : 80.786, Val Loss : 71.610
+======> Trajectory Loss : 2.064, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.787, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 5/13].........Train Loss : 59.709, Val Loss : 49.543
+======> Trajectory Loss : 2.591, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.571, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 6/13].........Train Loss : 42.898, Val Loss : 67.563
+======> Trajectory Loss : 0.196, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.427, BelowGroundPenalize Loss : 0.006
+===> [Minibatch 7/13].........Train Loss : 44.889, Val Loss : 86.898
+======> Trajectory Loss : 8.450, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.344, BelowGroundPenalize Loss : 2.007
+[1028/133805.997424:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 8/13].........Train Loss : 37.963, Val Loss : 94.504
+======> Trajectory Loss : 15.153, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.185, BelowGroundPenalize Loss : 4.339
+===> [Minibatch 9/13].........Train Loss : 55.654, Val Loss : 30.833
+======> Trajectory Loss : 10.203, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.431, BelowGroundPenalize Loss : 2.339
+===> [Minibatch 10/13].........Train Loss : 31.469, Val Loss : 51.748
+======> Trajectory Loss : 1.571, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.295, BelowGroundPenalize Loss : 0.350
+===> [Minibatch 11/13].........Train Loss : 33.515, Val Loss : 58.234
+======> Trajectory Loss : 2.784, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.307, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 12/13].........Train Loss : 40.495, Val Loss : 55.682
+======> Trajectory Loss : 6.222, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.343, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 13/13].........Train Loss : 33.656, Val Loss : 34.541
+======> Trajectory Loss : 5.384, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.283, BelowGroundPenalize Loss : 0.000
+[#]Finish Epoch : 2/100000.........Train loss : 59.311, Val loss : 69.063
+[+++]Saving the best model checkpoint : Prev loss 2369.922 > Curr loss 69.063
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/13].........Train Loss : 27.228, Val Loss : 29.212
+======> Trajectory Loss : 1.828, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.254, BelowGroundPenalize Loss : 0.000
+Opening in existing browser session.
+[1028/133819.307168:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/133819.649292:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/13].........Train Loss : 23.650, Val Loss : 26.563
+======> Trajectory Loss : 0.633, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.229, BelowGroundPenalize Loss : 0.130
+[25737:25737:1028/133821.886121:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 3/13].........Train Loss : 21.950, Val Loss : 20.243
+======> Trajectory Loss : 2.343, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.191, BelowGroundPenalize Loss : 0.529
+===> [Minibatch 4/13].........Train Loss : 19.598, Val Loss : 19.458
+======> Trajectory Loss : 1.284, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.180, BelowGroundPenalize Loss : 0.294
+===> [Minibatch 5/13].........Train Loss : 15.703, Val Loss : 16.354
+======> Trajectory Loss : 0.129, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.156, BelowGroundPenalize Loss : 0.002

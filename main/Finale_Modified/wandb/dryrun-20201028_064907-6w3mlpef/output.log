@@ -1,0 +1,320 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [6]
+1. input_col =  [3, 4, 6]
+2. input_startpos_col =  [3, 4, 5, 6]
+3. gt_col =  [5, 6]
+4. gt_startpos_col =  [0, 1, 2, 6]
+5. gt_xyz_col =  [0, 1, 2, 6]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                | 0/1 [00:00<?, ?it/s]Mixed: 100%|███████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 313.43it/s]
+===============================Dataset shape===============================
+Mixed : (106,)
+===========================================================================
+Mixed:   0%|                                                                                                | 0/2 [00:00<?, ?it/s]Mixed: 100%|████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:00<00:00, 59.05it/s]
+===============================Dataset shape===============================
+Mixed : (1729,)
+===========================================================================
+======================================================Summary Batch (batch_size = 10)=========================================================================
+Input batch [0] : batch=torch.Size([10, 684, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 684, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [0] : batch=torch.Size([10, 684, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 685, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([10, 619, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 619, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [1] : batch=torch.Size([10, 619, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 620, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([10, 600, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 600, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [2] : batch=torch.Size([10, 600, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 601, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([10, 688, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 688, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [3] : batch=torch.Size([10, 688, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 689, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([10, 637, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 637, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [4] : batch=torch.Size([10, 637, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 638, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [5] : batch=torch.Size([10, 552, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 552, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [5] : batch=torch.Size([10, 552, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 553, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [6] : batch=torch.Size([10, 714, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 714, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [6] : batch=torch.Size([10, 714, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 715, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [7] : batch=torch.Size([10, 586, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 586, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [7] : batch=torch.Size([10, 586, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 587, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [8] : batch=torch.Size([10, 628, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 628, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [8] : batch=torch.Size([10, 628, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 629, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [9] : batch=torch.Size([10, 625, 3]), lengths=torch.Size([10]), mask=torch.Size([10, 625, 3]), initial position=torch.Size([10, 1, 4])
+gt batch [9] : batch=torch.Size([10, 625, 2]), lengths=torch.Size([10]), mask=torch.Size([10, 626, 4]), initial position=torch.Size([10, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 2, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 2]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - EOT #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(2, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+      (1): Sigmoid()
+    )
+  )
+)
+####### Model - Depth #######
+BiLSTMResidualTrainableInit(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=2, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 12259.117, Val Loss : 18401.039
+======> Trajectory Loss : 10016.824, Gravity Loss : 0.024, EndOfTrajectory Loss : 1.394, BelowGroundPenalize Loss : 2102.865
+Opening in existing browser session.
+[1028/134913.182548:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134913.393600:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 9157.217, Val Loss : 16624.422
+======> Trajectory Loss : 7403.096, Gravity Loss : 0.013, EndOfTrajectory Loss : 1.390, BelowGroundPenalize Loss : 1615.152
+===> [Minibatch 3/10].........Train Loss : 7065.730, Val Loss : 13678.295
+======> Trajectory Loss : 5698.131, Gravity Loss : 0.009, EndOfTrajectory Loss : 1.385, BelowGroundPenalize Loss : 1229.049
+===> [Minibatch 4/10].........Train Loss : 6646.530, Val Loss : 8243.706
+======> Trajectory Loss : 5269.321, Gravity Loss : 0.014, EndOfTrajectory Loss : 1.384, BelowGroundPenalize Loss : 1238.792
+===> [Minibatch 5/10].........Train Loss : 4726.006, Val Loss : 2152.008
+======> Trajectory Loss : 3735.753, Gravity Loss : 0.005, EndOfTrajectory Loss : 1.378, BelowGroundPenalize Loss : 852.447
+===> [Minibatch 6/10].........Train Loss : 1231.921, Val Loss : 789.601
+======> Trajectory Loss : 894.060, Gravity Loss : 0.002, EndOfTrajectory Loss : 1.376, BelowGroundPenalize Loss : 200.270
+===> [Minibatch 7/10].........Train Loss : 420.040, Val Loss : 2544.227
+======> Trajectory Loss : 282.434, Gravity Loss : 0.001, EndOfTrajectory Loss : 1.376, BelowGroundPenalize Loss : 0.000
+[2177:2177:1028/134916.751696:ERROR:password_sync_bridge.cc(361)] Passwords datatype error was encountered: Failed to load entries from password store. Encryption service failure.
+===> [Minibatch 8/10].........Train Loss : 1277.560, Val Loss : 1961.826
+======> Trajectory Loss : 1141.252, Gravity Loss : 0.003, EndOfTrajectory Loss : 1.363, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 9/10].........Train Loss : 855.249, Val Loss : 572.580
+======> Trajectory Loss : 721.066, Gravity Loss : 0.001, EndOfTrajectory Loss : 1.342, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 10/10].........Train Loss : 383.504, Val Loss : 170.555
+======> Trajectory Loss : 252.896, Gravity Loss : 0.001, EndOfTrajectory Loss : 1.306, BelowGroundPenalize Loss : 0.000
+[#]Finish Epoch : 1/100000.........Train loss : 4402.287, Val loss : 6513.826
+[+++]Saving the best model checkpoint : Prev loss 20000000000.000 > Curr loss 6513.826
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 2/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 148.409, Val Loss : 214.684
+======> Trajectory Loss : 19.009, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.257, BelowGroundPenalize Loss : 3.696
+Opening in existing browser session.
+[1028/134920.441842:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134920.614867:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134920.899677:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 226.447, Val Loss : 166.084
+======> Trajectory Loss : 93.153, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.143, BelowGroundPenalize Loss : 19.020
+===> [Minibatch 3/10].........Train Loss : 175.270, Val Loss : 157.870
+======> Trajectory Loss : 55.185, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.082, BelowGroundPenalize Loss : 11.873
+===> [Minibatch 4/10].........Train Loss : 134.321, Val Loss : 149.232
+======> Trajectory Loss : 3.844, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.305, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 5/10].........Train Loss : 127.753, Val Loss : 120.755
+======> Trajectory Loss : 4.776, Gravity Loss : 0.000, EndOfTrajectory Loss : 1.230, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 6/10].........Train Loss : 97.722, Val Loss : 121.716
+======> Trajectory Loss : 4.821, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.917, BelowGroundPenalize Loss : 1.241
+===> [Minibatch 7/10].........Train Loss : 84.996, Val Loss : 165.087
+======> Trajectory Loss : 0.717, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.841, BelowGroundPenalize Loss : 0.175
+===> [Minibatch 8/10].........Train Loss : 118.714, Val Loss : 179.620
+======> Trajectory Loss : 49.300, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.694, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 9/10].........Train Loss : 115.833, Val Loss : 135.620
+======> Trajectory Loss : 48.381, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.675, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 10/10].........Train Loss : 57.019, Val Loss : 138.248
+======> Trajectory Loss : 12.309, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.447, BelowGroundPenalize Loss : 0.000
+[#]Finish Epoch : 2/100000.........Train loss : 128.648, Val loss : 154.892
+[+++]Saving the best model checkpoint : Prev loss 6513.826 > Curr loss 154.892
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 3/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 61.236, Val Loss : 161.492
+======> Trajectory Loss : 28.877, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.265, BelowGroundPenalize Loss : 5.818
+Opening in existing browser session.
+[1028/134927.401997:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134927.725860:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134928.011034:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 91.748, Val Loss : 103.108
+======> Trajectory Loss : 46.736, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.362, BelowGroundPenalize Loss : 8.854
+===> [Minibatch 3/10].........Train Loss : 66.041, Val Loss : 30.506
+======> Trajectory Loss : 29.891, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.283, BelowGroundPenalize Loss : 7.872
+===> [Minibatch 4/10].........Train Loss : 14.051, Val Loss : 37.126
+======> Trajectory Loss : 1.420, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.126, BelowGroundPenalize Loss : 0.067
+===> [Minibatch 5/10].........Train Loss : 34.434, Val Loss : 40.238
+======> Trajectory Loss : 2.528, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.319, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 6/10].........Train Loss : 38.562, Val Loss : 29.280
+======> Trajectory Loss : 6.248, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.311, BelowGroundPenalize Loss : 1.189
+===> [Minibatch 7/10].........Train Loss : 5.983, Val Loss : 73.258
+======> Trajectory Loss : 1.409, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.044, BelowGroundPenalize Loss : 0.178
+===> [Minibatch 8/10].........Train Loss : 17.423, Val Loss : 64.330
+======> Trajectory Loss : 10.985, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.064, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 9/10].........Train Loss : 29.427, Val Loss : 28.990
+======> Trajectory Loss : 24.318, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.051, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 10/10].........Train Loss : 80.909, Val Loss : 76.899
+======> Trajectory Loss : 0.967, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.799, BelowGroundPenalize Loss : 0.000
+[#]Finish Epoch : 3/100000.........Train loss : 43.981, Val loss : 64.523
+[+++]Saving the best model checkpoint : Prev loss 154.892 > Curr loss 64.523
+[+++]Saving the best model checkpoint to :  ../../model_checkpoints/test_trainable/Test//Test_best.pth
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 4/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 75.743, Val Loss : 144.867
+======> Trajectory Loss : 28.924, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.393, BelowGroundPenalize Loss : 7.486
+Opening in existing browser session.
+[1028/134934.943968:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134935.130588:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134935.450864:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 88.227, Val Loss : 89.718
+======> Trajectory Loss : 38.712, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.385, BelowGroundPenalize Loss : 11.020
+===> [Minibatch 3/10].........Train Loss : 51.067, Val Loss : 11.609
+======> Trajectory Loss : 30.398, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.137, BelowGroundPenalize Loss : 7.010
+===> [Minibatch 4/10].........Train Loss : 7.258, Val Loss : 89.619
+======> Trajectory Loss : 0.767, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.064, BelowGroundPenalize Loss : 0.115
+===> [Minibatch 5/10].........Train Loss : 75.880, Val Loss : 224.772
+======> Trajectory Loss : 57.167, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.187, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 6/10].........Train Loss : 151.058, Val Loss : 204.646
+======> Trajectory Loss : 106.999, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.441, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 7/10].........Train Loss : 166.333, Val Loss : 72.410
+======> Trajectory Loss : 133.363, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.330, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 8/10].........Train Loss : 61.724, Val Loss : 4.256
+======> Trajectory Loss : 40.977, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.207, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 9/10].........Train Loss : 25.066, Val Loss : 187.387
+======> Trajectory Loss : 0.950, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.240, BelowGroundPenalize Loss : 0.068
+===> [Minibatch 10/10].........Train Loss : 124.106, Val Loss : 392.893
+======> Trajectory Loss : 78.286, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.274, BelowGroundPenalize Loss : 18.384
+[#]Finish Epoch : 4/100000.........Train loss : 82.646, Val loss : 142.218
+[#]Not saving the best model checkpoint : Val loss 142.218 not improved from 64.523
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 5/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 192.202, Val Loss : 205.084
+======> Trajectory Loss : 159.499, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.089, BelowGroundPenalize Loss : 23.771
+Opening in existing browser session.
+[1028/134942.495268:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134942.678557:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134943.128314:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 193.683, Val Loss : 154.755
+======> Trajectory Loss : 147.451, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.126, BelowGroundPenalize Loss : 33.632
+===> [Minibatch 3/10].........Train Loss : 174.391, Val Loss : 64.426
+======> Trajectory Loss : 136.048, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.097, BelowGroundPenalize Loss : 28.639
+===> [Minibatch 4/10].........Train Loss : 94.864, Val Loss : 8.527
+======> Trajectory Loss : 67.652, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.067, BelowGroundPenalize Loss : 20.513
+===> [Minibatch 5/10].........Train Loss : 8.773, Val Loss : 106.063
+======> Trajectory Loss : 0.319, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.084, BelowGroundPenalize Loss : 0.048
+===> [Minibatch 6/10].........Train Loss : 119.184, Val Loss : 272.061
+======> Trajectory Loss : 115.210, Gravity Loss : 0.001, EndOfTrajectory Loss : 0.040, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 7/10].........Train Loss : 261.071, Val Loss : 349.895
+======> Trajectory Loss : 257.620, Gravity Loss : 0.001, EndOfTrajectory Loss : 0.035, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 8/10].........Train Loss : 355.329, Val Loss : 302.189
+======> Trajectory Loss : 352.665, Gravity Loss : 0.001, EndOfTrajectory Loss : 0.027, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 9/10].........Train Loss : 337.090, Val Loss : 168.595
+======> Trajectory Loss : 311.646, Gravity Loss : 0.001, EndOfTrajectory Loss : 0.254, BelowGroundPenalize Loss : 0.000
+===> [Minibatch 10/10].........Train Loss : 176.607, Val Loss : 38.496
+======> Trajectory Loss : 175.109, Gravity Loss : 0.001, EndOfTrajectory Loss : 0.015, BelowGroundPenalize Loss : 0.000
+[#]Finish Epoch : 5/100000.........Train loss : 191.319, Val loss : 167.009
+[#]Not saving the best model checkpoint : Val loss 167.009 not improved from 64.523
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 6/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.01
+===> [Minibatch 1/10].........Train Loss : 56.825, Val Loss : 40.623
+======> Trajectory Loss : 21.719, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.351, BelowGroundPenalize Loss : 0.000
+Opening in existing browser session.
+[1028/134949.282909:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134949.453526:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+Opening in existing browser session.
+[1028/134949.860261:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 2/10].........Train Loss : 31.695, Val Loss : 86.970
+======> Trajectory Loss : 25.158, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.015, BelowGroundPenalize Loss : 5.079
+===> [Minibatch 3/10].........Train Loss : 140.249, Val Loss : 113.486
+======> Trajectory Loss : 108.061, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.011, BelowGroundPenalize Loss : 31.132
+===> [Minibatch 4/10].........Train Loss : 140.895, Val Loss : 88.406
+======> Trajectory Loss : 82.378, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.387, BelowGroundPenalize Loss : 19.786
+===> [Minibatch 5/10].........Train Loss : 111.500, Val Loss : 32.640
+======> Trajectory Loss : 91.622, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.008, BelowGroundPenalize Loss : 19.088
+===> [Minibatch 6/10].........Train Loss : 37.543, Val Loss : 2.179
+======> Trajectory Loss : 30.831, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.007, BelowGroundPenalize Loss : 5.976
+===> [Minibatch 7/10].........Train Loss : 35.543, Val Loss : 18.123
+======> Trajectory Loss : 1.348, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.342, BelowGroundPenalize Loss : 0.015
+[1028/134952.622657:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
+===> [Minibatch 8/10].........Train Loss : 12.564, Val Loss : 11.349
+======> Trajectory Loss : 11.791, Gravity Loss : 0.000, EndOfTrajectory Loss : 0.008, BelowGroundPenalize Loss : 0.000

@@ -1,0 +1,24 @@
+{"Learning Rate": 0.01, "_runtime": 4.156910181045532, "_timestamp": 1603092487.415415, "_step": 0}
+{"Train Loss": 218.4757843017578, "Validation Loss": 172.1602783203125, "_runtime": 6.301321744918823, "_timestamp": 1603092489.5598266, "_step": 1}
+{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_2_2c2a0443.html", "sha256": "2c2a0443b15c6e582f4f8bc2fb7132ed54b95175e307fa58cfdd4d19e09ae196", "size": 3790702}, "_runtime": 8.314276933670044, "_timestamp": 1603092491.5727818, "_step": 2}
+{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_3_950c256d.plotly.json", "sha256": "950c256d6f80eb481f5c76c958d1b6a86a9f21d7ce135b17a73531573bd906da", "size": 438244}, "_runtime": 8.318559169769287, "_timestamp": 1603092491.577064, "_step": 3}
+{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_4_64f7d1f1.plotly.json", "sha256": "64f7d1f12297262c48ece853cf5f4c13adec714993f579fb14941c066b3008fd", "size": 144094}, "_runtime": 8.403951644897461, "_timestamp": 1603092491.6624565, "_step": 4}
+{"Train Loss": 149.3893585205078, "Validation Loss": 366.02935791015625, "_runtime": 10.487760782241821, "_timestamp": 1603092493.7462656, "_step": 5}
+{"Train Loss": 181.39268493652344, "Validation Loss": 281.048828125, "_runtime": 12.259577512741089, "_timestamp": 1603092495.5180824, "_step": 6}
+{"Train Loss": 168.1256103515625, "Validation Loss": 212.99151611328125, "_runtime": 14.032441139221191, "_timestamp": 1603092497.290946, "_step": 7}
+{"Train Loss": 157.43418884277344, "Validation Loss": 167.2823486328125, "_runtime": 15.899587154388428, "_timestamp": 1603092499.158092, "_step": 8}
+{"Train Loss": 149.64173889160156, "Validation Loss": 159.59912109375, "_runtime": 17.79505681991577, "_timestamp": 1603092501.0535617, "_step": 9}
+{"Train Loss": 145.9905242919922, "Validation Loss": 150.82269287109375, "_runtime": 19.631943941116333, "_timestamp": 1603092502.8904488, "_step": 10}
+{"Train Loss": 137.8354949951172, "Validation Loss": 143.04574584960938, "_runtime": 21.411866664886475, "_timestamp": 1603092504.6703715, "_step": 11}
+{"Train Loss": 130.45401000976562, "Validation Loss": 130.94216918945312, "_runtime": 23.19934105873108, "_timestamp": 1603092506.457846, "_step": 12}
+{"Train Loss": 117.59337615966797, "Validation Loss": 166.83544921875, "_runtime": 25.01652979850769, "_timestamp": 1603092508.2750347, "_step": 13}
+{"Train Loss": 119.2750015258789, "Validation Loss": 123.91283416748047, "_runtime": 26.812403917312622, "_timestamp": 1603092510.0709088, "_step": 14}
+{"Train Loss": 102.37210083007812, "Validation Loss": 105.35902404785156, "_runtime": 28.742222547531128, "_timestamp": 1603092512.0007274, "_step": 15}
+{"Train Loss": 87.37035369873047, "Validation Loss": 132.00889587402344, "_runtime": 30.633259773254395, "_timestamp": 1603092513.8917646, "_step": 16}
+{"Train Loss": 100.87097930908203, "Validation Loss": 112.57122802734375, "_runtime": 32.47675108909607, "_timestamp": 1603092515.735256, "_step": 17}
+{"Train Loss": 83.05803680419922, "Validation Loss": 82.79660034179688, "_runtime": 34.313705921173096, "_timestamp": 1603092517.5722108, "_step": 18}
+{"Train Loss": 69.29742431640625, "Validation Loss": 97.05519104003906, "_runtime": 36.186015367507935, "_timestamp": 1603092519.4445202, "_step": 19}
+{"Train Loss": 62.17045593261719, "Validation Loss": 100.78656005859375, "_runtime": 38.01943397521973, "_timestamp": 1603092521.2779388, "_step": 20}
+{"Train Loss": 59.48379135131836, "Validation Loss": 74.11894226074219, "_runtime": 39.86521768569946, "_timestamp": 1603092523.1237226, "_step": 21}
+{"Train Loss": 48.01909255981445, "Validation Loss": 54.94818115234375, "_runtime": 41.726489543914795, "_timestamp": 1603092524.9849944, "_step": 22}
+{"Train Loss": 40.13319778442383, "Validation Loss": 77.15641784667969, "_runtime": 43.576157569885254, "_timestamp": 1603092526.8346624, "_step": 23}

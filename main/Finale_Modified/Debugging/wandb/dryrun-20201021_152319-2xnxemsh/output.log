@@ -1,0 +1,176 @@
+==============================================Features==============================================
+Prediction = depth, Environment = unity
+Available features :  ['x-0', 'y-1', 'z-2', 'u-3', 'v-4', 'd-5', 'eot-6', 'og-7', 'rad-8', 'f_sin-9', 'f_cos-10', 'g-11']
+Selected features :  [5]
+1. input_col =  [3, 4, 5]
+2. input_startpos_col =  [3, 4, 5, 5]
+3. gt_col =  [5, 5]
+4. gt_startpos_col =  [0, 1, 2, 5]
+5. gt_xyz_col =  [0, 1, 2, 5]
+====================================================================================================
+[#]Training : Trajectory Estimation
+Mixed:   0%|                                                                                                                  | 0/1 [00:00<?, ?it/s]===============================Dataset shape===============================
+Mixed : (724,)
+===========================================================================
+Mixed: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 50.80it/s]
+Mixed:   0%|                                                                                                                  | 0/1 [00:00<?, ?it/s]Mixed: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 24.50it/s]
+===============================Dataset shape===============================
+Mixed : (1841,)
+===========================================================================
+======================================================Summary Batch (batch_size = 128)=========================================================================
+Input batch [0] : batch=torch.Size([128, 1806, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1806, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [0] : batch=torch.Size([128, 1806, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1807, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [1] : batch=torch.Size([128, 1820, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1820, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [1] : batch=torch.Size([128, 1820, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1821, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [2] : batch=torch.Size([128, 1810, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1810, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [2] : batch=torch.Size([128, 1810, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1811, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [3] : batch=torch.Size([128, 1754, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1754, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [3] : batch=torch.Size([128, 1754, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1755, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+Input batch [4] : batch=torch.Size([128, 1649, 3]), lengths=torch.Size([128]), mask=torch.Size([128, 1649, 3]), initial position=torch.Size([128, 1, 4])
+gt batch [4] : batch=torch.Size([128, 1649, 2]), lengths=torch.Size([128]), mask=torch.Size([128, 1650, 4]), initial position=torch.Size([128, 1, 4])
+Unpacked equality :  tensor(True)
+===============================================================================================================================================================
+{'flag': {'input_size': 2, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [2, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}, 'depth': {'input_size': 3, 'output_size': 1, 'hidden_dim': 32, 'n_layers': 1, 'n_stack': 4, 'recurrent_stacked': [3, 32, 32, 32, 32], 'fc_size': [64, 32, 16, 8, 4, 1]}}
+===>No model checkpoint
+[#] Define the Learning rate, Optimizer, Decay rate and Scheduler...
+[#]Model Architecture
+####### Model - Depth #######
+BiLSTMResidual(
+  (recurrent_blocks): ModuleList(
+    (0): LSTM(3, 32, batch_first=True, bidirectional=True)
+    (1): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (2): LSTM(64, 32, batch_first=True, bidirectional=True)
+    (3): LSTM(64, 32, batch_first=True, bidirectional=True)
+  )
+  (fc_blocks): Sequential(
+    (0): Sequential(
+      (0): Linear(in_features=64, out_features=32, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (1): Sequential(
+      (0): Linear(in_features=32, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (2): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (3): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01)
+    )
+    (4): Sequential(
+      (0): Linear(in_features=4, out_features=1, bias=True)
+    )
+  )
+)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[Epoch : 1/100000]<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+[#]Learning rate (Depth & EOT) :  0.003
+===> [Minibatch 1/5].........tensor([[[ 1.4842e+00,  6.2509e-01],
+         [ 1.6794e+00,  5.8594e-02],
+         [ 1.1725e+00,  1.1459e+00],
+         ...,
+         [-1.0515e+01, -9.4600e+00],
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01]],
+
+        [[ 4.3459e+00, -3.5193e-01],
+         [ 4.3072e+00, -3.5303e-01],
+         [ 4.2694e+00, -3.5107e-01],
+         ...,
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01]],
+
+        [[ 1.8399e+00,  2.3286e+00],
+         [ 1.4590e+00,  2.2065e+00],
+         [ 2.2330e+00,  2.3237e+00],
+         ...,
+         [-9.7583e+00, -9.8965e+00],
+         [-1.0242e+01, -1.0104e+01],
+         [-1.0000e+01, -1.0000e+01]],
+
+        ...,
+
+        [[ 1.2708e+00,  7.3099e-01],
+         [ 1.2320e+00,  7.0621e-01],
+         [ 1.1920e+00,  6.8271e-01],
+         ...,
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01]],
+
+        [[ 1.2753e+00, -3.0695e-01],
+         [ 3.3411e-01,  2.2688e+00],
+         [ 1.1508e+00,  1.2791e+00],
+         ...,
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01]],
+
+        [[ 4.0858e+00,  6.7139e-03],
+         [ 4.0428e+00,  2.1057e-03],
+         [ 3.9998e+00,  8.8501e-04],
+         ...,
+         [-1.0135e+01, -9.9727e+00],
+         [-1.0000e+01, -1.0000e+01],
+         [-1.0000e+01, -1.0000e+01]]], device='cuda:0')
+Train Loss : 2929.123, Val Loss : 2467.139
+======> Trajectory Loss : 2918.767, Gravity Loss : 0.001, BelowGroundPenalize Loss : 0.002, Depth Loss : 0.010
+===> [Minibatch 2/5].........tensor([[[ -2.1360,  -0.6630],
+         [ -2.1020,  -0.6551],
+         [ -2.0705,  -0.6455],
+         ...,
+         [ -9.9043, -10.4902],
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000]],
+
+        [[ -1.7480,   2.5304],
+         [ -1.7550,   2.4859],
+         [ -1.7640,   2.4411],
+         ...,
+         [-10.0000, -10.0000],
+         [ -9.8452, -10.8745],
+         [-10.3721,  -9.5991]],
+
+        [[ -3.9643,   0.6286],
+         [ -3.9198,   0.6178],
+         [ -3.8751,   0.6097],
+         ...,
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000],
+         [-10.2095,  -9.9932]],
+
+        ...,
+
+        [[  0.4438,  -2.3590],
+         [  0.8085,  -1.3515],
+         [  0.7947,  -1.3331],
+         ...,
+         [-10.3237,  -9.8896],
+         [ -9.6763, -10.1104],
+         [-10.0000, -10.0000]],
+
+        [[  0.6422,   0.2498],
+         [  0.6490,   0.2088],
+         [  0.6558,   0.1675],
+         ...,
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000]],
+
+        [[ -0.9844,   0.9787],
+         [ -0.9848,   0.9354],
+         [ -0.9850,   0.8918],
+         ...,
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000],
+         [-10.0000, -10.0000]]], device='cuda:0')

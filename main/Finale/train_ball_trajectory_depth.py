@@ -118,11 +118,6 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   # Training RNN/LSTM model
   # Run over each example
   # Train a model
-  # Initial the state for EOT and Depth
-  hidden_eot = model_flag.initHidden(batch_size=args.batch_size)
-  cell_state_eot = model_flag.initCellState(batch_size=args.batch_size)
-  hidden_depth = model_depth.initHidden(batch_size=args.batch_size)
-  cell_state_depth = model_depth.initCellState(batch_size=args.batch_size)
 
   ####################################
   ############# Training #############
@@ -139,12 +134,12 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ####################################
   ################ EOT ###############
   ####################################
-  pred_eot_train, (_, _) = model_flag(in_train, hidden_eot, cell_state_eot, lengths=input_train_dict['lengths'])
+  pred_eot_train, (_, _) = model_flag(in_f=in_train, lengths=input_train_dict['lengths'])
   ####################################
   ############### Depth ##############
   ####################################
   in_train = pt.cat((in_train, pred_eot_train, input_train_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_depth_train, (_, _) = model_depth(in_train, hidden_depth, cell_state_depth, lengths=input_train_dict['lengths'])
+  pred_depth_train, (_, _) = model_depth(in_f=in_train, lengths=input_train_dict['lengths'])
   if args.bi_pred_weight:
     bi_pred_weight_train = pred_depth_train[..., [2]]
   else:
@@ -169,27 +164,9 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   train_loss = train_trajectory_loss + train_eot_loss*100 + train_gravity_loss + train_below_ground_loss + train_multiview_loss
   train_loss.backward(retain_graph=True)
 
-  # print("BEFORE UPDATE")
-  # for name, param in model_depth.named_parameters():
-      # if param.requires_grad:
-        # if name == 'h' or name == 'c':
-          # print(name, param.data, param.data.shape)
-  # exit()
-
   pt.nn.utils.clip_grad_norm_(model_flag.parameters(), args.clip)
   pt.nn.utils.clip_grad_norm_(model_depth.parameters(), args.clip)
   optimizer.step()
-
-  # for name, param in model_flag.named_parameters():
-      # if param.requires_grad:
-          # print(name, param.data)
-
-  # print("After UPDATE")
-  # for name, param in model_depth.named_parameters():
-      # if param.requires_grad:
-        # if name == 'h' or name == 'c':
-          # print(name, param.data, param.data.shape)
-  # exit()
 
   ####################################
   ############# Evaluate #############
@@ -202,12 +179,12 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_fl
   ####################################
   ################ EOT ###############
   ####################################
-  pred_eot_val, (_, _) = model_flag(in_val, hidden_eot, cell_state_eot, lengths=input_val_dict['lengths'])
+  pred_eot_val, (_, _) = model_flag(in_f=in_val, lengths=input_val_dict['lengths'])
   ####################################
   ############### Depth ##############
   ####################################
   in_val = pt.cat((in_val, pred_eot_val, input_val_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_depth_val, (_, _) = model_depth(in_val, hidden_depth, cell_state_depth, lengths=input_val_dict['lengths'])
+  pred_depth_val, (_, _) = model_depth(in_f=in_val, lengths=input_val_dict['lengths'])
   if args.bi_pred_weight:
     bi_pred_weight_val = pred_depth_val[..., [2]]
   else:

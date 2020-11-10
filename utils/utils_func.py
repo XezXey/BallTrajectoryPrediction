@@ -54,7 +54,10 @@ def initialize_folder(path):
       os.makedirs(path)
 
 def get_model_depth(model_arch, features_cols, args):
-  # Prediction selection
+
+  #############################################
+  ############ Prediction Selection ###########
+  #############################################
   if args.bi_pred_avg or args.bi_pred_ramp:
     # Predict depth in 2 direction
     output_size = 2
@@ -65,7 +68,9 @@ def get_model_depth(model_arch, features_cols, args):
     # Predict only bw or fw depth direction
     output_size = 1
 
-  # Model selection
+  #############################################
+  ############## Model Selection ##############
+  #############################################
   if model_arch=='lstm_residual':
     model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = LSTMResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
@@ -91,10 +96,20 @@ def get_model_depth(model_arch, features_cols, args):
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
 
-  model_cfg = {'flag':{'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size},
-               'depth':{'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}}
+  #############################################
+  ############# Pipeline Selection ############
+  #############################################
 
-  return model_flag, model_depth, model_cfg
+  if args.pipeline == ['eot', 'depth']:
+    model_cfg = {'model_flag':{'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size},
+                 'model_depth':{'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}}
+    model_dict = {'model_flag':model_flag, 'model_depth':model_depth}
+
+  elif args.pipeline == ['depth']:
+    model_cfg = {'model_depth':{'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}}
+    model_dict = {'model_depth':model_depth}
+
+  return model_dict, model_cfg
 
 def get_model_xyz(model_arch, features_cols, args):
   if model_arch=='lstm_residual':
@@ -150,29 +165,39 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   elif pred == 'depth':
     eot_gt_col = 1
 
+  if 'eot' in args.pipeline:
+    gt_eot_train = gt_train_dict['o_with_f'][..., [eot_gt_col]]
+    pred_eot_train = pred_train_dict['flag']
+    gt_eot_val = gt_val_dict['o_with_f'][..., [eot_gt_col]]
+    pred_eot_val = pred_val_dict['flag']
+  else:
+    gt_eot_train  = None
+    pred_eot_train  = None
+    gt_eot_val  = None
+    pred_eot_val  = None
+
   fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_displacement(uv=pred_train_dict['input'][..., [0, 1]], depth=pred_train_dict[pred], pred_eot=pred_train_dict['flag'], gt_eot=gt_train_dict['o_with_f'][..., [eot_gt_col]], lengths=input_train_dict['lengths'], n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred)
-  visualize_displacement(uv=pred_val_dict['input'][..., [0, 1]], depth=pred_val_dict[pred], pred_eot=pred_val_dict['flag'], lengths=input_val_dict['lengths'], gt_eot=gt_val_dict['o_with_f'][..., [eot_gt_col]], n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred)
+  visualize_displacement(uv=pred_train_dict['input'][..., [0, 1]], depth=pred_train_dict[pred], pred_eot=pred_eot_train, gt_eot=gt_eot_train, lengths=input_train_dict['lengths'], n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred)
+  visualize_displacement(uv=pred_val_dict['input'][..., [0, 1]], depth=pred_val_dict[pred], pred_eot=pred_eot_val, lengths=input_val_dict['lengths'], gt_eot=gt_eot_val, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred)
 
   ####################################
   ############### EOT ################
   ####################################
 
-  fig_eot = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_eot(pred=pred_train_dict['flag'], gt=gt_train_dict['o_with_f'][..., [eot_gt_col]], startpos=gt_train_dict['startpos'][..., [3]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [3]], fig=fig_eot, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_eot(pred=pred_val_dict['flag'], gt=gt_val_dict['o_with_f'][..., [eot_gt_col]], startpos=gt_val_dict['startpos'][..., [3]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [3]], fig=fig_eot, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+  if 'eot' in args.pipeline:
+    fig_eot = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+    visualize_eot(pred=pred_train_dict['flag'], gt=gt_train_dict['o_with_f'][..., [eot_gt_col]], startpos=gt_train_dict['startpos'][..., [3]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [3]], fig=fig_eot, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+    visualize_eot(pred=pred_val_dict['flag'], gt=gt_val_dict['o_with_f'][..., [eot_gt_col]], startpos=gt_val_dict['startpos'][..., [3]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [3]], fig=fig_eot, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+    plotly.offline.plot(fig_eot, filename='./{}/trajectory_visualization_eot.html'.format(visualization_path), auto_open=True)
+    wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
 
   plotly.offline.plot(fig_traj, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=True)
-  plotly.offline.plot(fig_eot, filename='./{}/trajectory_visualization_eot.html'.format(visualization_path), auto_open=True)
   plotly.offline.plot(fig_displacement, filename='./{}/trajectory_visualization_displacement.html'.format(visualization_path), auto_open=True)
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
-  wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
 
 def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, fig=None, flag='train', n_vis=5):
   uv = uv.cpu().detach().numpy()
-  pred_eot = pred_eot.cpu().detach().numpy()
-  gt_eot = gt_eot.cpu().detach().numpy()
   depth = depth.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
   # Change the columns for each set
@@ -184,8 +209,11 @@ def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, 
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=pred_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-EOT(Pred)'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-EOT(GT)'.format(flag, i)), row=idx+1, col=col)
+    if 'eot' in args.pipeline:
+      pred_eot = pred_eot.cpu().detach().numpy()
+      gt_eot = gt_eot.cpu().detach().numpy()
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=pred_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-EOT(Pred)'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-EOT(GT)'.format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(pred, gt, lengths, mask, vis_idx, fig=None, flag='Train', n_vis=5):
   # detach() for visualization
@@ -345,4 +373,55 @@ def save_visualize(fig, postfix=None):
   save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
   initialize_folder(save_path)
   plotly.offline.plot(fig, filename='./{}/interactive_optimize_{}.html'.format(save_path, postfix), auto_open=False)
+
+def add_noise(input_trajectory, startpos, lengths):
+  factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
+
+  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory.shape).to(device)
+  ''' For see the maximum range of noise in uv-coordinate space
+  for i in np.arange(0.3, 2, 0.1):
+    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
+    x = []
+    for j in range(100):
+     x.append(np.all(noise_uv.cpu().numpy() < 3))
+    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
+  exit()
+  '''
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(args.batch_size * factor)
+  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
+  input_trajectory[noise_idx] += noise_uv[noise_idx] * masking_noise[noise_idx]
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+  return input_trajectory
+
+def print_loss(train, val):
+  train_loss_dict = train[0]
+  train_loss = train[1]
+  val_loss_dict = val[0]
+  val_loss = val[1]
+  print('\n   [##] Training...', end=' ')
+  print('Train Loss : {:.3f}'.format(train_loss.item()))
+  for idx, loss in enumerate(train_loss_dict.keys()):
+    if idx == 0:
+      print('   ======> {} : {:.3f}'.format(loss, train_loss_dict[loss]), end=', ')
+    elif idx == len(train_loss_dict.keys())-1:
+      print('{} : {:.3f}'.format(loss, train_loss_dict[loss]))
+    else:
+      print('{} : {:.3f}'.format(loss, train_loss_dict[loss]), end=', ')
+
+  print('   [##] Validating...', end=' ')
+  print('Val Loss : {:.3f}'.format(val_loss.item()))
+  for idx, loss in enumerate(val_loss_dict.keys()):
+    if idx == 0:
+      print('   ======> {} : {:.3f}'.format(loss, val_loss_dict[loss]), end=', ')
+    elif idx == len(val_loss_dict.keys())-1:
+      print('{} : {:.3f}'.format(loss, val_loss_dict[loss]))
+    else:
+      print('{} : {:.3f}'.format(loss, val_loss_dict[loss]), end=', ')
 

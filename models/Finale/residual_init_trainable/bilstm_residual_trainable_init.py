@@ -49,12 +49,12 @@ class BiLSTMResidualTrainableInit(pt.nn.Module):
 
     self.fc_blocks = pt.nn.Sequential(*fc_blocks)
 
-  def forward(self, x, hidden, cell_state, lengths):
+  def forward(self, in_f, lengths, hidden=None, cell_state=None):
     # Passing in the input(x) and hidden state into the model and obtaining the outputs
     # Use packed sequence to speed up the RNN/LSTM
     # pack_padded_sequence => RNN => pad_packed_sequence[0] to get the data in batch
-    x_packed = pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
-    out_packed = x_packed
+    in_f_packed = pack_padded_sequence(in_f, lengths=lengths, batch_first=True, enforce_sorted=False)
+    out_packed = in_f_packed
     residual = pt.Tensor([0.]).cuda()
     for idx, recurrent_block in enumerate(self.recurrent_blocks):
       # print("IDX = {}".format(idx), self.h[idx], self.c[idx])
@@ -114,14 +114,6 @@ class BiLSTMResidualTrainableInit(pt.nn.Module):
     else :
       # this need for stacked bidirectional LSTM/LSTM/RNN
       return pt.nn.LSTM(input_size=in_f*self.bidirectional, hidden_size=hidden_f, num_layers=num_layers, batch_first=True, bidirectional=self.bidirectional_flag, dropout=0.)
-
-  def initHidden(self, batch_size):
-    hidden = Variable(pt.randn(self.n_layers*self.bidirectional, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
-    return hidden
-
-  def initCellState(self, batch_size):
-    cell_state = Variable(pt.randn(self.n_layers*self.bidirectional, batch_size, self.hidden_dim, dtype=pt.float32)).cuda()
-    return cell_state
 
   def initial_state(self):
     h = Variable(pt.zeros(self.n_layers*self.bidirectional, self.batch_size, self.hidden_dim, dtype=pt.float32)).cuda()

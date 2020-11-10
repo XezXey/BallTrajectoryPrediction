@@ -1,0 +1,4 @@
+{"Learning Rate": 0.003, "_runtime": 4.3443944454193115, "_timestamp": 1602517820.3088524, "_step": 0}
+{"Train Loss": 7910.7080078125, "Validation Loss": 45915.359375, "_runtime": 5.264695644378662, "_timestamp": 1602517821.2291536, "_step": 1}
+{"Train Loss": 8792.7919921875, "Validation Loss": 42691.06640625, "_runtime": 5.9166419506073, "_timestamp": 1602517821.8811, "_step": 2}
+{"Train Loss": 8415.3681640625, "Validation Loss": 39524.2265625, "_runtime": 6.570211172103882, "_timestamp": 1602517822.5346692, "_step": 3}
