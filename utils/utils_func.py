@@ -27,6 +27,9 @@ from models.Finale.residual.bigru_residual import BiGRUResidual
 from models.Finale.residual.gru_residual import GRUResidual
 # Trainable Initial State
 from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
+from models.Finale.init_trainable.bilstm_trainable_init import BiLSTMTrainableInit
+# Encoder
+from models.Finale.encoder.encoder import Encoder
 # Loss
 import main.Finale.loss as loss
 
@@ -68,30 +71,61 @@ def get_model_depth(model_arch, features_cols, args):
     # Predict only bw or fw depth direction
     output_size = 1
 
+  refinement_outsize = 3
   #############################################
   ############## Model Selection ##############
   #############################################
+
+  # Specified the size of latent 
+  addition_input_size = 0
+  if 'latent' in args.pipeline:
+    # Create Encoder Network
+    if args.latent_insize is None:
+      print("[#] Please specify the size of input latent")
+      exit()
+    model_latent = Encoder(input_size=args.latent_insize, output_size=args.latent_outsize, batch_size=args.batch_size, model='latent')
+    if 'eot' in args.pipeline:
+      addition_input_size  += args.latent_outsize + 1
+    else:
+      addition_input_size  += args.latent_outsize
+  else:
+    addition_input_size = len(features_cols)
+
+  if 'eot' in args.pipeline:
+    refinement_addition_insize = addition_input_size - 1
+    if 'refinement' in args.pipeline:
+      addition_input_size = 1
+  else:
+    refinement_addition_insize = addition_input_size
+
+
+
   if model_arch=='lstm_residual':
     model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = LSTMResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = LSTMResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm_residual':
     model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTMResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = BiLSTMResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm_residual_trainable_init':
     model_flag = BiLSTMResidualTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = BiLSTMResidualTrainableInit(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_depth = BiLSTMResidualTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_refinement = BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement')
+  elif model_arch=='bilstm_trainable_init':
+    model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
+    model_depth = BiLSTMTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_refinement = BiLSTMTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement')
   elif model_arch=='gru_residual':
     model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = GRUResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = GRUResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   elif model_arch=='bigru_residual':
     model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRUResidual(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = BiGRUResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   elif model_arch=='bigru':
     model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRU(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = BiGRU(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm':
     model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTM(input_size=2 + len(features_cols), output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = BiLSTM(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -100,15 +134,26 @@ def get_model_depth(model_arch, features_cols, args):
   ############# Pipeline Selection ############
   #############################################
 
-  if args.pipeline == ['eot', 'depth']:
-    model_cfg = {'model_flag':{'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size},
-                 'model_depth':{'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}}
-    model_dict = {'model_flag':model_flag, 'model_depth':model_depth}
+  model_cfg = {}
+  if 'eot' in args.pipeline:
+    model_cfg['model_flag'] = {'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size}
 
-  elif args.pipeline == ['depth']:
-    model_cfg = {'model_depth':{'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}}
-    model_dict = {'model_depth':model_depth}
+  if 'depth' in args.pipeline:
+    model_cfg['model_depth'] = {'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}
 
+  if 'latent' in args.pipeline:
+    model_cfg['model_latent'] = {'input_size':model_latent.input_size, 'output_size':model_latent.output_size,'fc_size':model_latent.fc_size}
+
+  if 'refinement' in args.pipeline:
+    model_cfg['model_refinement'] = {'input_size':model_refinement.input_size, 'output_size':model_refinement.output_size, 'hidden_dim':model_refinement.hidden_dim, 'n_layers':model_refinement.n_layers, 'n_stack':model_refinement.n_stack, 'recurrent_stacked':model_refinement.recurrent_stacked, 'fc_size':model_refinement.fc_size}
+
+  model_dict = {}
+  for model in args.pipeline:
+    if model == 'eot':
+      module_name = 'flag'
+    else:
+      module_name = model
+    model_dict['model_{}'.format(module_name)] = eval('model_{}'.format(module_name))
   return model_dict, model_cfg
 
 def get_model_xyz(model_arch, features_cols, args):
@@ -200,6 +245,10 @@ def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, 
   uv = uv.cpu().detach().numpy()
   depth = depth.cpu().detach().numpy()
   lengths = lengths.cpu().detach().numpy()
+  if pred_eot is not None:
+    pred_eot = pred_eot.cpu().detach().numpy()
+  if gt_eot is not None:
+    gt_eot = gt_eot.cpu().detach().numpy()
   # Change the columns for each set
   if flag == 'Train': col = 1
   elif flag == 'Validation': col=2
@@ -209,10 +258,9 @@ def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, 
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
     fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
-    if 'eot' in args.pipeline:
-      pred_eot = pred_eot.cpu().detach().numpy()
-      gt_eot = gt_eot.cpu().detach().numpy()
+    if pred_eot is not None:
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=pred_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-EOT(Pred)'.format(flag, i)), row=idx+1, col=col)
+    if gt_eot is not None:
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=gt_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_eot, name='{}-traj#{}-EOT(GT)'.format(flag, i)), row=idx+1, col=col)
 
 def visualize_trajectory(pred, gt, lengths, mask, vis_idx, fig=None, flag='Train', n_vis=5):
@@ -327,7 +375,6 @@ def construct_bipred_weight(weight, lengths):
 
   return pt.cat((fw_weight, bw_weight), dim=2)
 
-
 def construct_bipred_ramp(weight_template, lengths):
   fw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
   bw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
@@ -394,13 +441,14 @@ def add_noise(input_trajectory, startpos, lengths):
   exit()
   '''
   masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
-  n_noise = int(args.batch_size * factor)
-  noise_idx = np.random.choice(a=args.batch_size, size=(n_noise,), replace=False)
+  n_noise = int(input_trajectory.shape[0] * factor)
+  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
   input_trajectory[noise_idx] += noise_uv[noise_idx] * masking_noise[noise_idx]
   input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
   return input_trajectory
 
-def print_loss(train, val):
+'''
+def print_loss(train, val, suffix):
   train_loss_dict = train[0]
   train_loss = train[1]
   val_loss_dict = val[0]
@@ -424,4 +472,36 @@ def print_loss(train, val):
       print('{} : {:.3f}'.format(loss, val_loss_dict[loss]))
     else:
       print('{} : {:.3f}'.format(loss, val_loss_dict[loss]), end=', ')
+'''
 
+def print_loss(loss_list, name):
+  loss_dict = loss_list[0]
+  loss = loss_list[1]
+  print('   [##] {}...'.format(name), end=' ')
+  print('{} Loss : {:.3f}'.format(name, loss.item()))
+  for idx, loss in enumerate(loss_dict.keys()):
+    if idx == 0:
+      print('   ======> {} : {:.3f}'.format(loss, loss_dict[loss]), end=', ')
+    elif idx == len(loss_dict.keys())-1:
+      print('{} : {:.3f}'.format(loss, loss_dict[loss]))
+    else:
+      print('{} : {:.3f}'.format(loss, loss_dict[loss]), end=', ')
+
+def add_flag_noise(flag, lengths):
+  flag = flag * 0
+  return flag
+
+def get_pipeline_var(pred_dict, input_dict):
+  pred_flag = None
+  input_flag = None
+  if 'eot' in args.pipeline:
+    pred_flag = pred_dict['model_flag']
+    if args.env == 'unity':
+      input_flag = input_dict['input'][..., [2]]
+  if 'depth' in args.pipeline:
+    pred_depth = pred_dict['model_depth']
+
+  return pred_depth, pred_flag, input_flag
+
+def get_extrinsic_representation(cam_params_dict):
+  print(cam_params_dict)

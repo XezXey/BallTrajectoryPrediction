@@ -8,15 +8,15 @@ from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import matplotlib.pyplot as plt
 
 class BiLSTMResidualTrainableInit(pt.nn.Module):
-  def __init__(self, input_size, output_size, batch_size, bidirectional, trainable_init, model):
+  def __init__(self, input_size, output_size, batch_size, bidirectional, trainable_init, model, n_stack=4, hidden_dim=32):
     super(BiLSTMResidualTrainableInit, self).__init__()
     # Define the model parameters
     self.input_size = input_size
     self.output_size = output_size
     self.batch_size = batch_size
-    self.hidden_dim = 32
+    self.hidden_dim = hidden_dim
+    self.n_stack = n_stack
     self.n_layers = 1
-    self.n_stack = 4
     self.model = model
     self.bidirectional_flag = bidirectional
     if bidirectional:

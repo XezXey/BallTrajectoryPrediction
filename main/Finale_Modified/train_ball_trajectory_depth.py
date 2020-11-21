@@ -25,7 +25,7 @@ import utils.cummulative_depth as utils_cummulative
 import utils.transformation as utils_transform
 import utils.utils_model as utils_model
 # Loss
-import utils.loss
+import utils.loss as utils_loss
 
 # Argumentparser for input
 parser = argparse.ArgumentParser(description='Predict the 3D projectile')
@@ -67,12 +67,17 @@ parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of
 parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use Multiview loss', nargs='+', default=[])
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
+parser.add_argument('--latent_insize', dest='latent_insize', help='Latent input size', type=int, default=None)
+parser.add_argument('--latent_outsize', dest='latent_outsize', help='Latent output size', type=int, default=4)
+parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
+parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
 args = parser.parse_args()
 # Share args to every modules
 utils_func.share_args(args)
 utils_transform.share_args(args)
 utils_cummulative.share_args(args)
 utils_model.share_args(args)
+utils_loss.share_args(args)
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -100,16 +105,8 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   ####################################
   utils_model.train_mode(model_dict=model_dict)
 
-  pred_dict_train, in_train = utils_model.fw_pass(model_dict, input_dict=input_train_dict)
-  if args.pipeline == ['eot', 'depth']:
-    pred_flag_train = pred_dict_train['model_flag']
-    pred_depth_train = pred_dict_train['model_depth']
-    input_flag_train = input_train_dict['input'][..., [2]]
-
-  elif args.pipeline == ['depth']:
-    pred_depth_train = pred_dict_train['model_depth']
-    pred_flag_train = None
-    input_flag_train = None
+  pred_dict_train, in_train = utils_model.fw_pass(model_dict, input_dict=input_train_dict, cam_params_dict=cam_params_dict)
+  pred_depth_train, pred_flag_train, input_flag_train = utils_func.get_pipeline_var(pred_dict=pred_dict_train, input_dict=input_train_dict)
 
   if args.bi_pred_weight:
     bi_pred_weight_train = pred_depth_train[..., [2]]
@@ -120,6 +117,10 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
 
   # Project the (u, v, depth) to world space
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
+
+  if 'refinement' in args.pipeline:
+    for i in range(args.n_refinement):
+      pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train) # Calculate the loss
@@ -136,15 +137,8 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   # Evaluating mode
   utils_model.eval_mode(model_dict=model_dict)
 
-  pred_dict_val, in_val = utils_model.fw_pass(model_dict, input_dict=input_val_dict)
-  if args.pipeline == ['eot', 'depth']:
-    pred_flag_val = pred_dict_val['model_flag']
-    pred_depth_val = pred_dict_val['model_depth']
-    input_flag_val = input_val_dict['input'][..., [2]]
-  elif args.pipeline == ['depth']:
-    pred_depth_val = pred_dict_val['model_depth']
-    pred_flag_val = None
-    input_flag_val = None
+  pred_dict_val, in_val = utils_model.fw_pass(model_dict, input_dict=input_val_dict, cam_params_dict=cam_params_dict)
+  pred_depth_val, pred_flag_val, input_flag_val = utils_func.get_pipeline_var(pred_dict=pred_dict_val, input_dict=input_val_dict)
 
   if args.bi_pred_weight:
     bi_pred_weight_val = pred_depth_val[..., [2]]
@@ -156,10 +150,15 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   # Project the (u, v, depth) to world space
   pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
 
+  if 'refinement' in args.pipeline:
+    for i in range(args.n_refinement):
+      pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize)
+
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   val_loss_dict, val_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_val, input_dict=input_val_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_val) # Calculate the loss
 
-  utils_func.print_loss(train=[train_loss_dict, train_loss], val=[val_loss_dict, val_loss])
+  utils_func.print_loss(loss_list=[train_loss_dict, train_loss], name='Training')
+  utils_func.print_loss(loss_list=[val_loss_dict, val_loss], name='Validating')
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if vis_flag == True and vis_signal == True:
@@ -322,11 +321,11 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 10 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
-      print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='')
+      print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='\n')
       # Training set (Each index in batch_train came from the collate_fn_padd)
       input_train_dict = {'input':batch_train['input'][0].to(device), 'lengths':batch_train['input'][1].to(device), 'mask':batch_train['input'][2].to(device), 'startpos':batch_train['input'][3].to(device)}
       gt_train_dict = {'o_with_f':batch_train['gt'][0].to(device), 'lengths':batch_train['gt'][1].to(device), 'mask':batch_train['gt'][2].to(device), 'startpos':batch_train['gt'][3].to(device), 'xyz':batch_train['gt'][4].to(device)}

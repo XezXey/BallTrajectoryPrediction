@@ -24,8 +24,9 @@ import utils.utils_func as utils_func
 import utils.cummulative_depth as utils_cummulative
 import utils.transformation as utils_transform
 import utils.utils_inference_func as utils_inference_func
+import utils.utils_model as utils_model
 # Loss
-import loss
+import utils.loss as utils_loss
 
 # Argumentparser for input
 parser = argparse.ArgumentParser(description='Predict the 3D projectile')
@@ -50,7 +51,7 @@ parser.add_argument('--decumulate', help='Decumulate the depth by ray casting', 
 parser.add_argument('--start_decumulate', help='Epoch to start training with decumulate of an error', type=int, default=0)
 parser.add_argument('--teacherforcing_depth', help='Use a teacher forcing training scheme for depth displacement estimation', action='store_true', default=False)
 parser.add_argument('--teacherforcing_mixed', help='Use a teacher forcing training scheme for depth displacement estimation on some part of training set', action='store_true', default=False)
-parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', required=True)
+parser.add_argument('--selected_features', dest='selected_features', help='Specify the selected features columns(eot, og, ', nargs='+', default=[])
 parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
@@ -62,14 +63,18 @@ parser.add_argument('--trainable_init', help='Trainable initial state', action='
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multiview loss', nargs='+', default=[])
 parser.add_argument('--round', dest='round', help='Rounding pixel', action='store_true', default=False)
-parser
+parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
+parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
+parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
 
 args = parser.parse_args()
 # Share args to every modules
-utils_func.share_args(a=args)
-utils_inference_func.share_args(a=args)
-utils_cummulative.share_args(a=args)
-utils_transform.share_args(a=args)
+utils_func.share_args(args)
+utils_inference_func.share_args(args)
+utils_cummulative.share_args(args)
+utils_transform.share_args(args)
+utils_model.share_args(args)
+utils_loss.share_args(args)
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -84,24 +89,6 @@ else:
 features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
 x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
 input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='depth')
-
-def add_noise(input_trajectory, startpos, lengths):
-  factor = np.random.uniform(low=0.6, high=0.95)
-  if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=0.7)
-  else:
-    noise_sd = args.noise_sd
-
-  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
-  input_trajectory = pt.cumsum(input_trajectory, dim=1)
-  # print(input_trajectory.shape)
-  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory[..., [0, 1]].shape).to(device)
-  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., [0, 1]].shape)).to(device) > np.random.rand(1)[0]
-  n_noise = int(input_trajectory.shape[0] * factor)
-  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
-  input_trajectory[noise_idx, :, :] += noise_uv[noise_idx, :, :] * masking_noise[noise_idx, :, :]
-  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
-  return input_trajectory
 
 def add_flag_noise(flag, lengths):
   flag = flag * 0.
@@ -133,7 +120,7 @@ def get_each_batch_trajectory(pred, gt, mask, lengths, cam_params_dict):
       gt_d = pt.cat((gt_d, (gt_d_tmp[i] * mask_d[i])[:lengths[i], :]), dim=0)
       pred_d = pt.cat((pred_d, (pred_d_tmp[i] * mask_d[i])[:lengths[i], :]), dim=0)
 
-  return {'pred_xyz':pred_xyz, 'gt_xyz':gt_xyz, 'pred_d':pred_d, 'gt_d':gt_d}
+  return {'pred_xyz':pred_xyz.cpu().detach(), 'gt_xyz':gt_xyz.cpu().detach(), 'pred_d':pred_d.cpu().detach(), 'gt_d':gt_d.cpu().detach()}
 
 def evaluateModel(pred, gt, mask, lengths, cam_params_dict, threshold=1, delmask=True):
   # accepted_3axis_maxdist, accepted_3axis_loss, accepted_trajectory_loss, mae_loss_trajectory, mae_loss_3axis, maxdist_3axis, mse_loss_3axis
@@ -219,63 +206,43 @@ def evaluate(all_batch_trajectory):
         print("RMSE : ", rmse.cpu().detach().numpy())
     print("*"*100)
 
-def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
+def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
   # Testing RNN/LSTM model
   # Run over each example
   # Test a model
-  # Initial the state for model and Discriminator for EOT and Depth
-  hidden_eot = model_flag.initHidden(batch_size=args.batch_size)
-  cell_state_eot = model_flag.initCellState(batch_size=args.batch_size)
-  hidden_depth = model_depth.initHidden(batch_size=args.batch_size)
-  cell_state_depth = model_depth.initCellState(batch_size=args.batch_size)
 
   ####################################
   ############# Testing ##############
   ####################################
-  # Training mode
-  model_flag.eval()
-  model_depth.eval()
+  # Evaluating mode
+  # utils_model.eval_mode(model_dict=model_dict)
 
   # Add noise on the fly
-  # in_test = pt.round(input_test_dict['input'][..., [0, 1]].clone())
   if args.round:
     input_test_dict['input'][..., [0, 1]] = pt.round(input_test_dict['input'][..., [0, 1]])
     input_test_dict['startpos'][..., [0, 1]] = pt.round(input_test_dict['startpos'][..., [0, 1]])
   in_test = input_test_dict['input'][..., [0, 1]].clone()
   if args.noise:
-    in_test = add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
+    in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
-  ####################################
-  ################ EOT ###############
-  ####################################
-  pred_eot_test, (_, _) = model_flag(in_test, hidden_eot, cell_state_eot, lengths=input_test_dict['lengths'])
-  if args.flag_noise:
-    pred_eot_test = add_flag_noise(flag=pred_eot_test, lengths=input_test_dict['input'])
+  pred_dict_test, in_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
 
-  ####################################
-  ############### Depth ##############
-  ####################################
-  in_test = pt.cat((in_test, pred_eot_test, input_test_dict['input'][..., 3:]), dim=2)  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 3+)
-  pred_depth_test, (_, _) = model_depth(in_test, hidden_depth, cell_state_depth, lengths=input_test_dict['lengths'])
+  pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
+
   if args.bi_pred_weight:
     bi_pred_weight_test = pred_depth_test[..., [2]]
   else:
     bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
-  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_eot_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
+  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
   # Project the (u, v, depth) to world space
   pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
-  test_trajectory_loss = loss.TrajectoryLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
-  test_gravity_loss = loss.GravityLoss(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
-  # test_depth_loss = loss.DepthLoss(pred=pred_depth_test, gt=gt_test_dict['o_with_f'][..., [0]], lengths=input_test_dict['lengths'], mask=input_test_dict['mask'])
-  test_below_ground_loss = loss.BelowGroundPenalize(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
-  if args.env == 'mocap':
-    test_eot_loss = pt.tensor(0.).to(device)
-  else:
-    test_eot_loss = loss.EndOfTrajectoryLoss(pred=pred_eot_test, gt=gt_test_dict['o_with_f'][..., [1]], mask=input_test_dict['mask'][..., [2]], lengths=input_test_dict['lengths'], startpos=input_test_dict['startpos'][..., [2]], flag='test')
-  test_loss = test_trajectory_loss + test_gravity_loss + test_eot_loss
+  if 'refinement' in args.pipeline:
+      pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize)
+
+  test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test, input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test)
 
   ####################################
   ############# Evaluation ###########
@@ -285,13 +252,10 @@ def predict(input_test_dict, gt_test_dict, model_flag, model_depth, threshold, c
   reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
   each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
 
-  print('Test Loss : {:.3f}'.format(test_loss.item()), end=', ')
-  print('Trajectory Loss : {:.3f}'.format(test_trajectory_loss.item()), end=', ')
-  print('Gravity Loss : {:.3f}'.format(test_gravity_loss.item()), end=', ')
-  print('EndOfTrajectory Loss : {:.3f}'.format(test_eot_loss.item()))
+  utils_func.print_loss(loss_list=[test_loss_dict, test_loss], name='Testing')
 
   if vis_flag == True:
-    pred_test_dict = {'input':in_test, 'flag':pred_eot_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
+    pred_test_dict = {'input':in_test, 'flag':pred_flag_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
     utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation_visualize_flag, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
 
   return evaluation_results, reconstructed_trajectory, each_batch_trajectory
@@ -329,20 +293,28 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
 
-def load_checkpoint(model_eot, model_depth):
+def load_checkpoint(model_dict):
   print("="*100)
   print("[#] Model Parameters")
-  for k, v in model_eot.named_parameters():
-    print("===> ", k, v.shape)
+  for model in model_dict.keys():
+    for k, v in model_dict[model].named_parameters():
+      print("===> ", k, v.shape)
   print("="*100)
   if os.path.isfile(args.load_checkpoint):
     print("[#] Found the checkpoint...")
     checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
     # Load optimizer, learning rate, decay and scheduler parameters
-    model_eot.load_state_dict(checkpoint['model_flag'])
-    model_depth.load_state_dict(checkpoint['model_depth'])
-    # exit()
-    return model_eot, model_depth
+    print(checkpoint['model_cfg'].keys())
+    for model in checkpoint['model_cfg'].keys():
+      if 'model' in model:
+        available_module = model.split('_')[1]
+        if available_module == 'flag':
+          available_module = 'eot'
+        if available_module in args.pipeline:
+          model_dict[model].load_state_dict(checkpoint[model])
+      else:
+        model_dict['model_{}'.format(model)].load_state_dict(checkpoint['model_{}'.format(model)])
+    return model_dict
 
   else:
     print("[#] Checkpoint not found...")
@@ -403,10 +375,10 @@ if __name__ == '__main__':
     print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
     print("===============================================================================================================================================================")
   # Model definition
-  model_flag, model_depth, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
+  model_dict, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
+  print(model_dict)
   print(model_cfg)
-  model_flag = model_flag.to(device)
-  model_depth = model_depth.to(device)
+  model_dict = {model:model_dict[model].to(device) for model in model_dict.keys()}
 
   # Load the checkpoint if it's available.
   if args.load_checkpoint is None:
@@ -416,13 +388,12 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    model_flag, model_depth = load_checkpoint(model_flag, model_depth)
+    model_dict = load_checkpoint(model_dict)
 
   print('[#]Model Architecture')
-  print('####### Model - EOT #######')
-  print(model_flag)
-  print('####### Model - Depth #######')
-  print(model_depth)
+  for model in model_cfg.keys():
+    print('####### Model - {} #######'.format(model))
+    print(model_dict[model])
 
   # Test a model iterate over dataloader to get each batch and pass to predict function
   evaluation_results_all = []
@@ -437,7 +408,7 @@ if __name__ == '__main__':
 
       # Call function to test
     evaluation_results, reconstructed_trajectory, each_batch_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
-                                                                                  model_flag=model_flag, model_depth=model_depth, vis_flag=args.vis_flag,
+                                                                                  model_dict=model_dict, vis_flag=args.vis_flag,
                                                                                   threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
 

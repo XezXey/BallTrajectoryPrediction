@@ -67,7 +67,7 @@ def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_
   ####################################
   fig = make_subplots(rows=n_vis*2, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}], [{'colspan':2}, None]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   # Visualize a trajectory
-  if args.env == 'unity':
+  if args.env == 'unity' and 'eot' in args.pipeline:
     gt_eot = input_test_dict['input'][..., [2]]
   else:
     gt_eot = None
@@ -110,10 +110,11 @@ def visualize_layout_update(fig=None, n_vis=3):
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, fig=None, flag='test', n_vis=5):
   # detach() for visualization
   uv = uv.cpu().detach().numpy()
-  pred_eot = pred_eot.cpu().detach().numpy()
   pred_xyz = pred_xyz.cpu().detach().numpy()
   gt_xyz = gt_xyz.cpu().detach().numpy()
-  if args.env == 'unity':
+  if pred_eot is not None:
+    pred_eot = pred_eot.cpu().detach().numpy()
+  if gt_eot is not None:
     gt_eot = gt_eot.cpu().detach().numpy()
   # Iterate to plot each trajectory
   count = 1
@@ -126,10 +127,11 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   for idx, i in enumerate(vis_idx):
     col_idx = 1
     row_idx = (idx*2) + 2
-    fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 0].shape[0]), y=uv[i][:lengths[i]+1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], U'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 1].shape[0]), y=uv[i][:lengths[i]+1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], V'.format(flag, i)), row=row_idx, col=col_idx)
 
-    if args.env == 'unity':
+    if pred_eot is not None:
+      fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)
+    if gt_eot is not None:
       fig.add_trace(go.Scatter(x=np.arange(gt_eot[i][:lengths[i]].shape[0]), y=gt_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_gt, mode='markers+lines', name='{}-Trajectory [{}], EOT GT'.format(flag, i)), row=row_idx, col=col_idx)
   return fig
