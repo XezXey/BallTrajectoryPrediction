@@ -274,7 +274,10 @@ def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pre
     ####################################
     if args.missing != None:
       uv_gt = input_dict['input'].cpu().detach().numpy()
-      uv_pred = pred_dict['depth'].cpu().detach().numpy()
+      uv_pred = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['depth'][:, :-1, [2, 3]]), dim=1).cpu().detach().numpy()
+      if i in pred_dict['missing_idx']:
+        nan_idx = np.where(pred_dict['missing_mask'][i].cpu().numpy()==True)[0]
+        uv[i][nan_idx, :] = np.nan
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dU'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dV'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_pred[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dU'.format(flag, i)), row=idx+1, col=col)
