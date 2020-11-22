@@ -5,6 +5,7 @@ import numpy as np
 import torch as pt
 import json
 import plotly
+import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
@@ -49,6 +50,7 @@ def share_args(a):
 
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.4)', size=4)
+marker_dict_noisy = dict(color='rgba(204, 102, 0, 0.4)', size=4)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=4)
 marker_dict_eot = dict(color='rgba(0, 255, 0, 0.4)', size=4)
 
@@ -70,6 +72,11 @@ def get_model_depth(model_arch, features_cols, args):
   else:
     # Predict only bw or fw depth direction
     output_size = 1
+
+  # Adding Missing points
+  if args.missing != None:
+    # Predict additional (du, dv) for next timestep
+    output_size += 2
 
   refinement_outsize = 3
   #############################################
@@ -97,8 +104,6 @@ def get_model_depth(model_arch, features_cols, args):
       addition_input_size = 1
   else:
     refinement_addition_insize = addition_input_size
-
-
 
   if model_arch=='lstm_residual':
     model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
@@ -222,8 +227,8 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
     pred_eot_val  = None
 
   fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_displacement(uv=pred_train_dict['input'][..., [0, 1]], depth=pred_train_dict[pred], pred_eot=pred_eot_train, gt_eot=gt_eot_train, lengths=input_train_dict['lengths'], n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred)
-  visualize_displacement(uv=pred_val_dict['input'][..., [0, 1]], depth=pred_val_dict[pred], pred_eot=pred_eot_val, lengths=input_val_dict['lengths'], gt_eot=gt_eot_val, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred)
+  visualize_displacement(input_dict=input_train_dict, pred_dict=pred_train_dict, pred_eot=pred_eot_train, gt_eot=gt_eot_train, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred)
+  visualize_displacement(input_dict=input_val_dict, pred_dict=pred_val_dict, pred_eot=pred_eot_val, gt_eot=gt_eot_val, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred)
 
   ####################################
   ############### EOT ################
@@ -241,10 +246,10 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
-def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, fig=None, flag='train', n_vis=5):
-  uv = uv.cpu().detach().numpy()
-  depth = depth.cpu().detach().numpy()
-  lengths = lengths.cpu().detach().numpy()
+def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pred, fig=None, flag='train', n_vis=5):
+  uv = pred_dict['input'][..., [0, 1]].cpu().detach().numpy()
+  depth = pred_dict[pred].cpu().detach().numpy()
+  lengths = input_dict['lengths'].cpu().detach().numpy()
   if pred_eot is not None:
     pred_eot = pred_eot.cpu().detach().numpy()
   if gt_eot is not None:
@@ -254,10 +259,36 @@ def visualize_displacement(uv, depth, pred_eot, gt_eot, lengths, vis_idx, pred, 
   elif flag == 'Validation': col=2
   # Iterate to plot each trajectory
   for idx, i in enumerate(vis_idx):
+    ####################################
+    ############## DEPTH ###############
+    ####################################
     if pred=='depth':
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
-    fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+      if args.bi_pred_avg or args.bi_pred_ramp or args.bi_pred_weight:
+        fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of Forward DEPTH'.format(flag, i)), row=idx+1, col=col)
+        fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of Backward DEPTH'.format(flag, i)), row=idx+1, col=col)
+      else:
+        fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of DEPTH'.format(flag, i)), row=idx+1, col=col)
+
+    ####################################
+    ############## dU, dV ##############
+    ####################################
+    if args.missing != None:
+      uv_gt = input_dict['input'].cpu().detach().numpy()
+      uv_pred = pred_dict['depth'].cpu().detach().numpy()
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dV'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_pred[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_pred[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dV'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_gt[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_gt[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dV'.format(flag, i)), row=idx+1, col=col)
+
+    else:
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+
+    ####################################
+    ############### EOT ################
+    ####################################
     if pred_eot is not None:
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=pred_eot[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-EOT(Pred)'.format(flag, i)), row=idx+1, col=col)
     if gt_eot is not None:
@@ -421,58 +452,6 @@ def save_visualize(fig, postfix=None):
   initialize_folder(save_path)
   plotly.offline.plot(fig, filename='./{}/interactive_optimize_{}.html'.format(save_path, postfix), auto_open=False)
 
-def add_noise(input_trajectory, startpos, lengths):
-  factor = np.random.uniform(low=0.6, high=0.95)
-  if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=1)
-  else:
-    noise_sd = args.noise_sd
-
-  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
-  input_trajectory = pt.cumsum(input_trajectory, dim=1)
-  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory.shape).to(device)
-  ''' For see the maximum range of noise in uv-coordinate space
-  for i in np.arange(0.3, 2, 0.1):
-    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
-    x = []
-    for j in range(100):
-     x.append(np.all(noise_uv.cpu().numpy() < 3))
-    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
-  exit()
-  '''
-  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
-  n_noise = int(input_trajectory.shape[0] * factor)
-  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
-  input_trajectory[noise_idx] += noise_uv[noise_idx] * masking_noise[noise_idx]
-  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
-  return input_trajectory
-
-'''
-def print_loss(train, val, suffix):
-  train_loss_dict = train[0]
-  train_loss = train[1]
-  val_loss_dict = val[0]
-  val_loss = val[1]
-  print('\n   [##] Training...', end=' ')
-  print('Train Loss : {:.3f}'.format(train_loss.item()))
-  for idx, loss in enumerate(train_loss_dict.keys()):
-    if idx == 0:
-      print('   ======> {} : {:.3f}'.format(loss, train_loss_dict[loss]), end=', ')
-    elif idx == len(train_loss_dict.keys())-1:
-      print('{} : {:.3f}'.format(loss, train_loss_dict[loss]))
-    else:
-      print('{} : {:.3f}'.format(loss, train_loss_dict[loss]), end=', ')
-
-  print('   [##] Validating...', end=' ')
-  print('Val Loss : {:.3f}'.format(val_loss.item()))
-  for idx, loss in enumerate(val_loss_dict.keys()):
-    if idx == 0:
-      print('   ======> {} : {:.3f}'.format(loss, val_loss_dict[loss]), end=', ')
-    elif idx == len(val_loss_dict.keys())-1:
-      print('{} : {:.3f}'.format(loss, val_loss_dict[loss]))
-    else:
-      print('{} : {:.3f}'.format(loss, val_loss_dict[loss]), end=', ')
-'''
 
 def print_loss(loss_list, name):
   loss_dict = loss_list[0]
@@ -505,3 +484,78 @@ def get_pipeline_var(pred_dict, input_dict):
 
 def get_extrinsic_representation(cam_params_dict):
   print(cam_params_dict)
+  pass
+
+def interpolate_missing(input_dict, pred_dict, in_missing, missing_dict):
+  uv = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_depth'][:, :-1, [2, 3]]), dim=1)
+  if args.missing == 'all':
+    # First (du, dv) are always known.
+    uv = uv
+  elif args.missing == 'some':
+    for missing_idx in missing_dict['idx']:
+      missing_mask = missing_dict['mask'][missing_idx]
+      uv[missing_idx] = (in_missing[missing_idx][..., [0, 1]] * ~missing_mask) + (uv[missing_idx] * missing_mask)
+  elif args.missing == 'none' and args.recon == 'ideal_uv':
+    uv = input_dict['input'][..., [0, 1]]
+  elif args.missing == 'none' and args.recon == 'noisy_uv':
+    uv = in_missing[..., [0, 1]]
+
+    # plt.scatter(np.arange(in_missing[0][..., 0].shape[0]), in_missing[0][..., 0].clone().cpu().detach().numpy(), label='in_missing', color='blue', alpha=0.5)
+  # plt.scatter(np.arange(in_missing[0][..., 1].shape[0]), in_missing[0][..., 1].clone().cpu().detach().numpy(), label='in_missing', color='blue', alpha=0.5)
+  # plt.scatter(np.arange(uv[0][..., 1].shape[0]), uv[0][..., 1].cpu().detach().numpy(), label='prediction', color='red', alpha=0.5)
+  # plt.plot(np.arange(missing_dict['mask'][0][..., 0].shape[0]), missing_dict['mask'][0][..., 0].cpu().detach().numpy(), label='mask', color='green', alpha=0.7)
+  # plt.scatter(np.arange(in_missing[0][..., 0].shape[0]), in_missing[0][..., 0].cpu().detach().numpy(), label='prediction', color='red', alpha=0.5)
+  # plt.legend()
+  # plt.show()
+  # exit()
+  return uv
+
+def add_noise(input_trajectory, startpos, lengths):
+
+  #############################################
+  ############# NOISY OBSERVATION #############
+  #############################################
+  factor = np.random.uniform(low=0.6, high=0.95)
+  if args.noise_sd is None:
+    noise_sd = np.random.uniform(low=0.3, high=1)
+  else:
+    noise_sd = args.noise_sd
+
+  input_trajectory = pt.cat((startpos, input_trajectory), dim=1)
+  input_trajectory = pt.cumsum(input_trajectory, dim=1)
+  noise_uv = pt.normal(mean=0.0, std=noise_sd, size=input_trajectory.shape).to(device)
+  ''' For see the maximum range of noise in uv-coordinate space
+  for i in np.arange(0.3, 2, 0.1):
+    noise_uv = pt.normal(mean=0.0, std=i, size=input_trajectory[..., :-1].shape).to(device)
+    x = []
+    for j in range(100):
+     x.append(np.all(noise_uv.cpu().numpy() < 3))
+    print('{:.3f} : {} with max = {:.3f}, min = {:.3f}'.format(i, np.all(x), pt.max(noise_uv), pt.min(noise_uv)))
+  exit()
+  '''
+  masking_noise = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  n_noise = int(input_trajectory.shape[0] * factor)
+  noise_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
+  input_trajectory[noise_idx] += noise_uv[noise_idx] * masking_noise[noise_idx]
+  masking_missing_diff = pt.nn.init.uniform_(pt.empty(input_trajectory[..., :-1].shape)).to(device) > np.random.rand(1)[0]
+  input_trajectory = pt.tensor(np.diff(input_trajectory.cpu().numpy(), axis=1)).to(device)
+
+  #############################################
+  ############ MISSING OBSERVATION ############
+  #############################################
+  if args.missing != None:
+    # First two points need to be visible because we need the first displacement for initial the autoregressive
+    masking_missing_diff[:, :2, :] = False
+    masking_missing_diff = masking_missing_diff[:, :-1, :] | masking_missing_diff[:, 1:, :]
+    missing_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
+    # teacher_trajectory = pt.cat((input_trajectory[:, 1:, :], pt.zeros(input_trajectory[:, [0], :].shape).to(device)), dim=1) * masking_missing_diff
+    # input_trajectory[missing_idx] = input_trajectory[missing_idx] * (~masking_missing_diff[missing_idx]) + input_trajectory[missing_idx] * (masking_missing_diff[missing_idx])
+    # plt.plot(input_trajectory[missing_idx][0][..., 0].cpu().detach().numpy())
+    # plt.plot(input_trajectory[missing_idx][0][..., 1].cpu().detach().numpy())
+    # plt.plot(masking_missing_diff[missing_idx][0][..., 0].cpu().detach().numpy())
+    # plt.show()
+    # exit()
+    missing_dict = {'mask':masking_missing_diff, 'idx':missing_idx}
+    return input_trajectory, missing_dict
+
+  return input_trajectory, None
