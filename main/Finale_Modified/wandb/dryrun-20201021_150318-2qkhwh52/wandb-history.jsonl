@@ -1,8 +1,0 @@
-{"Learning Rate": 0.01, "_runtime": 3.2305893898010254, "_timestamp": 1603292601.7884898, "_step": 0}
-{"Train Loss": 7282.8486328125, "Validation Loss": 5597.81396484375, "_runtime": 6.3036909103393555, "_timestamp": 1603292604.8615913, "_step": 1}
-{"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)": {"_type": "html-file", "path": "media/html/PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)_2_8d3cb45c.html", "sha256": "8d3cb45c26259e452cca2d27ae8c0de284299bd173abf7f516b11e9fbc2480be", "size": 4205326}, "_runtime": 8.444599390029907, "_timestamp": 1603292607.0024998, "_step": 2}
-{"DISPLACEMENT VISUALIZATION": {"_type": "plotly-file", "path": "media/plotly/DISPLACEMENT VISUALIZATION_3_f44c841e.plotly.json", "sha256": "f44c841eee0bf85c41f2a9a756551640c4e1f083166813c1ed08e13c35fc7ebd", "size": 846936}, "_runtime": 8.449078559875488, "_timestamp": 1603292607.006979, "_step": 3}
-{"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)": {"_type": "plotly-file", "path": "media/plotly/End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)_4_0425e196.plotly.json", "sha256": "0425e19647bce098cd4e84932a21c5acf2a0999e6b476b8d16d6fb0b2e42fd09", "size": 266891}, "_runtime": 8.610811948776245, "_timestamp": 1603292607.1687124, "_step": 4}
-{"Train Loss": 5053.20654296875, "Validation Loss": 2833.370361328125, "_runtime": 11.522915840148926, "_timestamp": 1603292610.0808163, "_step": 5}
-{"Train Loss": 2659.310546875, "Validation Loss": 794.2642822265625, "_runtime": 14.292711973190308, "_timestamp": 1603292612.8506124, "_step": 6}
-{"Train Loss": 776.3272094726562, "Validation Loss": 530.7838134765625, "_runtime": 17.253618955612183, "_timestamp": 1603292615.8115194, "_step": 7}

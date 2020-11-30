@@ -28,7 +28,7 @@ import utils.utils_func as utils_func
 import utils.cummulative_depth as utils_cummulative
 import utils.transformation as utils_transform
 # Loss
-import loss
+import utils.loss as utils_loss
 
 # GPU initialization
 if pt.cuda.is_available():
@@ -120,7 +120,7 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   count = 1
   for idx, i in enumerate(vis_idx):
     for col_idx in range(1, 3):
-      fig.add_trace(go.Scatter3d(x=pred_xyz[i][:lengths[i]+1, 0], y=pred_xyz[i][:lengths[i]+1, 1], z=pred_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {}, MaxDist = {}".format(flag, i, loss.TrajectoryLoss(pt.tensor(pred_xyz[i]).to(device), pt.tensor(gt_xyz[i]).to(device), mask=mask[i]), evaluation_results['MAE']['loss_3axis'][i], evaluation_results['MAE']['maxdist_3axis'][i, :])), row=idx+count, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=pred_xyz[i][:lengths[i]+1, 0], y=pred_xyz[i][:lengths[i]+1, 1], z=pred_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {}, MaxDist = {}".format(flag, i, utils_loss.TrajectoryLoss(pt.tensor(pred_xyz[i]).to(device), pt.tensor(gt_xyz[i]).to(device), mask=mask[i]), evaluation_results['MAE']['loss_3axis'][i], evaluation_results['MAE']['maxdist_3axis'][i, :])), row=idx+count, col=col_idx)
       fig.add_trace(go.Scatter3d(x=gt_xyz[i][:lengths[i]+1, 0], y=gt_xyz[i][:lengths[i]+1, 1], z=gt_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+count, col=col_idx)
     count +=1
   # Iterate to plot each displacement of (u, v, depth)

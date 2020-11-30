@@ -41,8 +41,7 @@ parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help=
 parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
 parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
 parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
-parser.add_argument('--no_animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_false')
-parser.add_argument('--animation', dest='animation_visualize_flag', help='Animated visualize flag', action='store_true')
+parser.add_argument('--animation', dest='animation', help='Animated visualize flag', action='store_true', default=False)
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
 parser.add_argument('--flag_noise', dest='flag_noise', help='Flag noise on the fly', action='store_true', default=False)
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
@@ -65,7 +64,10 @@ parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multivi
 parser.add_argument('--round', dest='round', help='Rounding pixel', action='store_true', default=False)
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
+parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
 parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
+parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
+parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 
 args = parser.parse_args()
 # Share args to every modules
@@ -225,7 +227,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   if args.noise:
     in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
-  pred_dict_test, in_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
+  pred_dict_test, in_test, missing_dict_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
 
   pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
@@ -234,15 +236,22 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   else:
     bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
-  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=input_test_dict['input'][..., [0, 1]], depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
+  if args.missing != None:
+    uv_test = utils_func.interpolate_missing(input_dict=input_test_dict, pred_dict=pred_dict_test, in_missing=in_test, missing_dict=missing_dict_test)
+  elif args.recon == 'ideal_uv':
+    uv_test = input_test_dict['input'][..., [0, 1]]
+  elif args.recon == 'noisy_uv':
+    uv_test = in_test[..., [0, 1]]
+
+  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=uv_test, depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 
   # Project the (u, v, depth) to world space
   pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
   if 'refinement' in args.pipeline:
-      pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize)
+    pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
 
-  test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test, input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test)
+  test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test, input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test, missing_dict=missing_dict_test)
 
   ####################################
   ############# Evaluation ###########
@@ -256,7 +265,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
 
   if vis_flag == True:
     pred_test_dict = {'input':in_test, 'flag':pred_flag_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
-    utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation_visualize_flag, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
+    utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
 
   return evaluation_results, reconstructed_trajectory, each_batch_trajectory
 
@@ -292,33 +301,6 @@ def collate_fn_padd(batch):
 
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
-
-def load_checkpoint(model_dict):
-  print("="*100)
-  print("[#] Model Parameters")
-  for model in model_dict.keys():
-    for k, v in model_dict[model].named_parameters():
-      print("===> ", k, v.shape)
-  print("="*100)
-  if os.path.isfile(args.load_checkpoint):
-    print("[#] Found the checkpoint...")
-    checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
-    # Load optimizer, learning rate, decay and scheduler parameters
-    print(checkpoint['model_cfg'].keys())
-    for model in checkpoint['model_cfg'].keys():
-      if 'model' in model:
-        available_module = model.split('_')[1]
-        if available_module == 'flag':
-          available_module = 'eot'
-        if available_module in args.pipeline:
-          model_dict[model].load_state_dict(checkpoint[model])
-      else:
-        model_dict['model_{}'.format(model)].load_state_dict(checkpoint['model_{}'.format(model)])
-    return model_dict
-
-  else:
-    print("[#] Checkpoint not found...")
-    exit()
 
 def summary(evaluation_results_all):
   print("="*100)
@@ -388,7 +370,7 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    model_dict = load_checkpoint(model_dict)
+    model_dict = utils_func.load_checkpoint_predict(model_dict)
 
   print('[#]Model Architecture')
   for model in model_cfg.keys():

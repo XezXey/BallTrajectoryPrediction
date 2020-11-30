@@ -70,6 +70,7 @@ parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', d
 parser.add_argument('--latent_insize', dest='latent_insize', help='Latent input size', type=int, default=None)
 parser.add_argument('--latent_outsize', dest='latent_outsize', help='Latent output size', type=int, default=4)
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
+parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
 parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
@@ -128,8 +129,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
 
   if 'refinement' in args.pipeline:
-    for i in range(args.n_refinement):
-      pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize)
+    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train) # Calculate the loss
@@ -165,8 +165,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
 
   if 'refinement' in args.pipeline:
-    for i in range(args.n_refinement):
-      pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize)
+    pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   val_loss_dict, val_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_val, input_dict=input_val_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_val, missing_dict=missing_dict_val) # Calculate the loss
@@ -176,8 +175,11 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if vis_flag == True and vis_signal == True:
+    if args.missing == None:
+      missing_dict_train = {'mask':None, 'idx':None}
+      missing_dict_val = {'mask':None, 'idx':None}
     pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx']}
-    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx']}
+    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx']}
     utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth')
 
   return train_loss.item(), val_loss.item(), model_dict
@@ -215,31 +217,6 @@ def collate_fn_padd(batch):
     return {'input':[input_batch, lengths, input_mask, input_startpos],
             'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
 
-def load_checkpoint(model_dict, optimizer, lr_scheduler):
-  if args.load_checkpoint == 'best':
-    load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
-  elif args.load_checkpoint == 'lastest':
-    load_checkpoint = '{}/{}/{}_lastest.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
-  else:
-    print("[#] The load_checkpoint should be \'best\' or \'lastest\' keywords...")
-    exit()
-
-  if os.path.isfile(load_checkpoint):
-    print("[#] Found the checkpoint...")
-    checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
-    # Load optimizer, learning rate, decay and scheduler parameters
-    for model in checkpoint['model_cfg'].keys():
-      model_dict[model].load_state_dict(checkpoint[model])
-
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-    start_epoch = checkpoint['epoch']
-    min_val_loss = checkpoint['min_val_loss']
-    return model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss
-
-  else:
-    print("[#] Checkpoint not found...")
-    exit()
 
 if __name__ == '__main__':
   print('[#]Training : Trajectory Estimation')
@@ -284,13 +261,10 @@ if __name__ == '__main__':
   model_dict = {model:model_dict[model].to(device) for model in model_dict.keys()}
 
   # Define optimizer, learning rate, decay and scheduler parameters
-  # params = []
   # for model
-  # params += list(model.parameters())
   params = []
   for model in model_dict.keys():
     params += list(model_dict[model].parameters())
-  # params_2 = list(model_dict[0].parameters()) + list(model_dict[1].parameters())
   optimizer = pt.optim.Adam(params, lr=args.lr)
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=args.decay_gamma)
   start_epoch = 1
@@ -303,10 +277,10 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss = load_checkpoint(model_dict, optimizer, lr_scheduler)
+    model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss = utils_func.load_checkpoint_train(model_dict, optimizer, lr_scheduler)
 
   print('[#]Model Architecture')
-  for model in model_cfg.keys():
+  for model in model_cfg.keys()
     print('####### Model - {} #######'.format(model))
     print(model_dict[model])
     # Log metrics with wandb
@@ -335,7 +309,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 15 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

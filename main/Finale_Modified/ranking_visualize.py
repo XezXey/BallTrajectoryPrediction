@@ -29,7 +29,7 @@ import utils.cummulative_depth as utils_cummulative
 import utils.transformation as utils_transform
 import utils.utils_inference_func as utils_inference_func
 # Loss
-import loss
+import utils.loss as utils_loss
 
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)

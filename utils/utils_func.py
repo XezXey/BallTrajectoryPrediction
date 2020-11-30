@@ -114,7 +114,9 @@ def get_model_depth(model_arch, features_cols, args):
   elif model_arch=='bilstm_residual_trainable_init':
     model_flag = BiLSTMResidualTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
     model_depth = BiLSTMResidualTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
-    model_refinement = BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement')
+    model_refinement_list = []
+    for i in range(args.n_refinement):
+      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
   elif model_arch=='bilstm_trainable_init':
     model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
     model_depth = BiLSTMTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
@@ -150,7 +152,8 @@ def get_model_depth(model_arch, features_cols, args):
     model_cfg['model_latent'] = {'input_size':model_latent.input_size, 'output_size':model_latent.output_size,'fc_size':model_latent.fc_size}
 
   if 'refinement' in args.pipeline:
-    model_cfg['model_refinement'] = {'input_size':model_refinement.input_size, 'output_size':model_refinement.output_size, 'hidden_dim':model_refinement.hidden_dim, 'n_layers':model_refinement.n_layers, 'n_stack':model_refinement.n_stack, 'recurrent_stacked':model_refinement.recurrent_stacked, 'fc_size':model_refinement.fc_size}
+    for idx, model_refinement in enumerate(model_refinement_list):
+      model_cfg['model_refinement_{}'.format(idx)] = {'input_size':model_refinement.input_size, 'output_size':model_refinement.output_size, 'hidden_dim':model_refinement.hidden_dim, 'n_layers':model_refinement.n_layers, 'n_stack':model_refinement.n_stack, 'recurrent_stacked':model_refinement.recurrent_stacked, 'fc_size':model_refinement.fc_size}
 
   model_dict = {}
   for model in args.pipeline:
@@ -158,7 +161,13 @@ def get_model_depth(model_arch, features_cols, args):
       module_name = 'flag'
     else:
       module_name = model
-    model_dict['model_{}'.format(module_name)] = eval('model_{}'.format(module_name))
+
+    if module_name == 'refinement':
+      for idx in range(args.n_refinement):
+        model_dict['model_{}_{}'.format(module_name, idx)] = eval('model_{}_list'.format(module_name))[idx]
+    else:
+      model_dict['model_{}'.format(module_name)] = eval('model_{}'.format(module_name))
+
   return model_dict, model_cfg
 
 def get_model_xyz(model_arch, features_cols, args):
@@ -490,9 +499,9 @@ def get_extrinsic_representation(cam_params_dict):
   pass
 
 def interpolate_missing(input_dict, pred_dict, in_missing, missing_dict):
+  # First (du, dv) are always known.
   uv = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_depth'][:, :-1, [2, 3]]), dim=1)
   if args.missing == 'all':
-    # First (du, dv) are always known.
     uv = uv
   elif args.missing == 'some':
     for missing_idx in missing_dict['idx']:
@@ -562,3 +571,74 @@ def add_noise(input_trajectory, startpos, lengths):
     return input_trajectory, missing_dict
 
   return input_trajectory, None
+
+
+def load_checkpoint_train(model_dict, optimizer, lr_scheduler):
+  if args.load_checkpoint == 'best':
+    load_checkpoint = '{}/{}/{}_best.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
+  elif args.load_checkpoint == 'lastest':
+    load_checkpoint = '{}/{}/{}_lastest.pth'.format(args.save_checkpoint + args.wandb_tags.replace('/', '_'), args.wandb_name, args.wandb_name)
+  else:
+    print("[#] The load_checkpoint should be \'best\' or \'lastest\' keywords...")
+    exit()
+
+  if os.path.isfile(load_checkpoint):
+    print("[#] Found the checkpoint...")
+    checkpoint = pt.load(load_checkpoint, map_location='cuda:0')
+    # Load optimizer, learning rate, decay and scheduler parameters
+    for model in checkpoint['model_cfg'].keys():
+      model_dict[model].load_state_dict(checkpoint[model])
+
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+    start_epoch = checkpoint['epoch']
+    min_val_loss = checkpoint['min_val_loss']
+    return model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss
+
+  else:
+    print("[#] Checkpoint not found...")
+    exit()
+
+def load_checkpoint_predict(model_dict):
+  print("="*100)
+  print("[#] Model Parameters")
+  for model in model_dict.keys():
+    for k, v in model_dict[model].named_parameters():
+      print("===> ", k, v.shape)
+  print("="*100)
+  if os.path.isfile(args.load_checkpoint):
+    print("[#] Found the checkpoint...")
+    checkpoint = pt.load(args.load_checkpoint, map_location='cuda:0')
+    # Load optimizer, learning rate, decay and scheduler parameters
+    print(checkpoint['model_cfg'].keys())
+    print(model_dict.keys())
+    count_refinement = 0
+    for model in checkpoint['model_cfg'].keys():
+      # Lastest version of dict keys
+      if 'model' in model:
+        available_module = model.split('_')[1]
+        if available_module == 'flag':
+          available_module = 'eot'
+        if available_module in args.pipeline:
+          if available_module == 'refinement' and model.split('_')[-1] == 'refinement':
+            model_dict['{}_{}'.format(model, count_refinement)].load_state_dict(checkpoint[model])
+            count_refinement += 1
+          else:
+            model_dict[model].load_state_dict(checkpoint[model])
+        else:
+          print("[#] The {} module weight not found...".format(available_module))
+          # exit()
+      else:
+        # Older version of dict keys
+        # if 'refinement' in available_module:
+          # for idx in range(args.n_refinement):
+          # model_dict['model_{}_{}'.format(model, idx)].load_state_dict(checkpoint[model])
+        # else:
+        model_dict['model_{}'.format(model)].load_state_dict(checkpoint['model_{}'.format(model)])
+
+    return model_dict
+
+  else:
+    print("[#] Checkpoint not found...")
+    exit()
+
