@@ -41,8 +41,8 @@ else:
   device = pt.device('cpu')
 
 args=None
-features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
-x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
+features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'fx', 'fy', 'fz', 'fx_norm', 'fy_norm', 'fz_norm', 'g']
+x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, fx, fy, fz, fx_norm, fy_norm, fz_norm, g = range(len(features))
 
 def share_args(a):
   global args
@@ -116,7 +116,7 @@ def get_model_depth(model_arch, features_cols, args):
     model_depth = BiLSTMResidualTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
     model_refinement_list = []
     for i in range(args.n_refinement):
-      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
+      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement', n_stack=2))
   elif model_arch=='bilstm_trainable_init':
     model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
     model_depth = BiLSTMTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
@@ -357,6 +357,18 @@ def get_selected_cols(args, pred):
     features_cols.append(f_sin)
   if 'f_cos' in args.selected_features:
     features_cols.append(f_cos)
+  if 'fx' in args.selected_features:
+    features_cols.append(fx)
+  if 'fy' in args.selected_features:
+    features_cols.append(fy)
+  if 'fz' in args.selected_features:
+    features_cols.append(fz)
+  if 'fx_norm' in args.selected_features:
+    features_cols.append(fx_norm)
+  if 'fy_norm' in args.selected_features:
+    features_cols.append(fy_norm)
+  if 'fz_norm' in args.selected_features:
+    features_cols.append(fz_norm)
   if 'depth' in args.selected_features:
     features_cols.append(d)
 

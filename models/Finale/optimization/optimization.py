@@ -1,6 +1,7 @@
 import torch as pt
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 # TrajectoryOptimization Class
 class TrajectoryOptimization(pt.nn.Module):
@@ -22,6 +23,7 @@ class TrajectoryOptimization(pt.nn.Module):
     # latent = self.latent.repeat(1, self.pred_xyz.shape[1], 1).cuda()
     # Latent by EOT-seperation
     latent = self.update_latent()
+    latent = latent * math.pi / 180.0
     in_f = pt.cat((xyz, pt.sin(latent), pt.cos(latent)), dim=2)
     for idx in range(self.n_refinement):
       pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=self.gt_dict['lengths'])
@@ -32,11 +34,13 @@ class TrajectoryOptimization(pt.nn.Module):
   def construct_latent(self):
     # This use EOT to split the latent. Stack and repeat to have the same shape with the "pred_xyz" 
     flag = self.pred_dict['model_flag']
+    lengths = self.gt_dict['lengths']
     flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
     close = pt.isclose(flag, pt.tensor(1.), atol=2e-1)
     latent_list = []
     for i in range(flag.shape[0]):
       where = pt.where(close[i] == True)[0]
+      where = where[where < lengths[i]]
       if len(where) == 0:
         # Flag prediction goes wrong
         latent = pt.nn.Parameter(pt.rand(1, 1, dtype=pt.float32).cuda(), requires_grad=True).cuda()
@@ -47,11 +51,6 @@ class TrajectoryOptimization(pt.nn.Module):
         latent = pt.nn.Parameter(pt.rand(n_latent+1, 1, dtype=pt.float32).cuda(), requires_grad=True).cuda()
         self.latent.append(pt.nn.Parameter(pt.rand(n_latent+1, 1, dtype=pt.float32).cuda(), requires_grad=True).cuda())
 
-      # print(latent.shape)
-      # latent_list.append(latent)
-    # latent = pt.stack(latent_list)
-    # print(latent.shape)
-    # self.register_parameter('latent', latent)
     return latent_list
 
   def update_latent(self):
@@ -59,23 +58,22 @@ class TrajectoryOptimization(pt.nn.Module):
     Return : latent with shape = (batchsize, seq_len, latent_size)
     '''
     flag = self.pred_dict['model_flag']
+    lengths = self.gt_dict['lengths']
     flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
     close = pt.isclose(flag, pt.tensor(1.), atol=2e-1)
-    # all_latent = []
     all_latent = pt.ones(flag.shape).cuda()
     for i in range(flag.shape[0]):
       # Each Trajectory
-      if len(pt.where(close[i] == True)[0]) == 0:
+      where = pt.where(close[i] == True)[0]
+      where = where[where < lengths[i]]
+      # where = list(where.cpu().detach().numpy())
+      if len(where) == 0:
         where = [0] + [flag.shape[1]]
       else:
-        where = [0] + list(pt.where(close[i] == True)[0].cpu().detach().numpy()+1) + [flag.shape[1]]
-      # each_latent = []
+        where = [0] + list(where.cpu().detach().numpy()+1) + [flag.shape[1]]
+      print(where)
       for j in range(len(where)-1):
         all_latent[i][where[j]:where[j+1]] = self.latent[i][j].repeat(where[j+1] - where[j], 1)
-        # Each EOT-seperation
-        # print(self.latent[j])
-        # print(self.latent[i][j])
-        # each_latent.append(self.latent[i][j].repeat(where[j+1] - where[j], 1))
 
       # all_latent.append(pt.cat(each_latent))
       # plt.plot(pt.cat(each_latent).cpu().detach().numpy(), 'r-o')

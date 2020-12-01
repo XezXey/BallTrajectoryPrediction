@@ -94,8 +94,8 @@ else:
 # Init wandb
 wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes, dir=args.wandb_dir)
 # Get selected features to input into a network
-features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
-x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
+features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'fx', 'fy', 'fz', 'fx_norm', 'fy_norm', 'fz_norm', 'g']
+x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, fx, fy, fz, fx_norm, fy_norm, fz_norm, g = range(len(features))
 input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='depth')
 
 def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_dict, epoch, vis_signal, optimizer, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
@@ -129,7 +129,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
 
   if 'refinement' in args.pipeline:
-    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize)
+    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train) # Calculate the loss
@@ -165,7 +165,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
 
   if 'refinement' in args.pipeline:
-    pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize)
+    pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize, pred_dict=pred_dict_val)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   val_loss_dict, val_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_val, input_dict=input_val_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_val, missing_dict=missing_dict_val) # Calculate the loss
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss = utils_func.load_checkpoint_train(model_dict, optimizer, lr_scheduler)
 
   print('[#]Model Architecture')
-  for model in model_cfg.keys()
+  for model in model_cfg.keys():
     print('####### Model - {} #######'.format(model))
     print(model_dict[model])
     # Log metrics with wandb

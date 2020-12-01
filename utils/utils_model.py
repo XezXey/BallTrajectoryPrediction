@@ -106,7 +106,7 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
 def optimization(model_dict, pred_xyz, gt_dict, cam_params_dict, latent_size, pred_dict):
   trajectory_optimizer = TrajectoryOptimization(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=1, n_refinement=args.n_refinement, pred_dict=pred_dict)
   trajectory_optimizer.train()
-  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=0.1)
+  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=10)
   lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.7, patience=10)
   t = tqdm(range(1000), desc='Optimizing...', leave=True)
   for i in t:
@@ -115,9 +115,9 @@ def optimization(model_dict, pred_xyz, gt_dict, cam_params_dict, latent_size, pr
     optimization_loss = calculate_optimization_loss(optimized_xyz=pred_xyz_optimized, gt_dict=gt_dict, cam_params_dict=cam_params_dict)
     # for param in trajectory_optimizer.named_parameters()parameters():
       # print(param)
-    for name, param in trajectory_optimizer.named_parameters():
-      if param.requires_grad:
-        print(name, param.data)
+    # for name, param in trajectory_optimizer.named_parameters():
+      # if param.requires_grad:
+        # print(name, param.data)
     for param_group in optimizer.param_groups:
       lr = param_group['lr']
     t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
@@ -140,7 +140,7 @@ def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
     multiview_loss = pt.tensor(0.)
 
   # print(trajectory_loss)
-  optimization_loss = below_ground_loss + multiview_loss + trajectory_loss # + multiview_loss
+  optimization_loss = below_ground_loss + multiview_loss + trajectory_loss
   return optimization_loss
 
 def train_mode(model_dict):

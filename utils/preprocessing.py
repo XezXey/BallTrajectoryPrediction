@@ -24,6 +24,18 @@ def get_selected_cols():
     features_cols.append('force_sine')
   if 'f_cos' in args.selected_features:
     features_cols.append('force_cosine')
+  if 'fx' in args.selected_features:
+    features_cols.append('fx')
+  if 'fy' in args.selected_features:
+    features_cols.append('fy')
+  if 'fz' in args.selected_features:
+    features_cols.append('fz')
+  if 'fx_norm' in args.selected_features:
+    features_cols.append('fx_norm')
+  if 'fy_norm' in args.selected_features:
+    features_cols.append('fy_norm')
+  if 'fz_norm' in args.selected_features:
+    features_cols.append('fz_norm')
 
   # Position columns
   position_cols = ['ball_world_x', 'ball_world_y', 'ball_world_z']
@@ -45,12 +57,6 @@ def computeDisplacement(trajectory_split, trajectory_type, camera_config):
     # Keep the first point as a starting point for performing a cumsum to retrieve whole trajectory 
     # First vstack(extend rows) with (First row, np.diff() of the rest)
     # Second hstack(extend columns) with (All columns, ['end_of_trajectory'] column) 
-    # print(trajectory_split[traj_type][0].iloc[1:, :].shape)
-    # print(trajectory_split[traj_type][0][['on_ground_flag']].iloc[1:, :].values.shape)
-    # print(trajectory_split[traj_type][0].loc[:, ['end_of_trajectory']].values.shape)
-    # print(np.zeros((1, 1)).shape)
-    # print(np.concatenate((trajectory_split[traj_type][0].loc[1:, ['on_ground_flag']].values, np.ones((1, 1)))).shape)
-    # exit()
     trajectory_npy[traj_type] = [np.hstack((np.vstack((trajectory_split[traj_type][i][position_cols].iloc[0].values,
                                                        np.diff(trajectory_split[traj_type][i][position_cols].values, axis=0))),
                                             trajectory_split[traj_type][i][features_cols].values,))
@@ -369,6 +375,17 @@ def eot_range(trajectory_npy):
   return trajectory_npy
   # pass
 
+def normalize_force(trajectory_df):
+  v3f = trajectory_df[['fx', 'fy', 'fz']].values
+  v3f_norm = v3f / (np.sqrt(np.sum(v3f**2, axis=1, keepdims=True)) + 1e-16)
+  # print(v3f.shape, v3f_norm.shape)
+  # print(v3f[:10], v3f_norm[:10])
+  trajectory_df['fx_norm'] = v3f_norm[:, 0]
+  trajectory_df['fy_norm'] = v3f_norm[:, 1]
+  trajectory_df['fz_norm'] = v3f_norm[:, 2]
+
+  return trajectory_df
+
 if __name__ == '__main__':
   # Argument for preprocessing
   parser = argparse.ArgumentParser(description="Ball trajectory-preprocessing script")
@@ -393,6 +410,7 @@ if __name__ == '__main__':
   parser.add_argument('--selected_space', dest='selected_space', help='Specify the selected spaces(ndc, screen)', type=str, required=True)
   parser.add_argument('--shift_eot', dest='shift_eot', help='Shift eot flag by 1 position', default=False, action='store_true')
   parser.add_argument('--eot_range', dest='eot_range', help='Make an eot flag become a range', default=0, type=int)
+  parser.add_argument('--f_norm', dest='f_norm', help='Normalize force vector', default=False, action='store_true')
 
   args = parser.parse_args()
   # List trial in directory
@@ -433,6 +451,8 @@ if __name__ == '__main__':
     for traj_type in trajectory_type:
       if os.path.isfile(dataset_folder[i] + "/{}Trajectory_Trial{}.csv".format(traj_type, trial_index[i])):
         trajectory_df[traj_type] = pd.read_csv(dataset_folder[i] + "/{}Trajectory_Trial{}.csv".format(traj_type, trial_index[i]), names=col_names, skiprows=1, delimiter=',')
+        if args.f_norm:
+          trajectory_df[traj_type] = normalize_force(trajectory_df=trajectory_df[traj_type])
     print("Trajectory type in Trial{} : {}".format(trial_index[i], trajectory_df.keys()))
 
     # Split the trajectory by flag
@@ -452,4 +472,5 @@ if __name__ == '__main__':
       # Write each trajectory
       np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, trial_index[i]), arr=trajectory_npy[traj_type])
     print("="*150)
+
 
