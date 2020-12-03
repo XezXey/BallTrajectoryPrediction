@@ -66,6 +66,7 @@ parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', d
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
 parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
 parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
+parser.add_argument('--latent_code', dest='latent_code', help='Optimze the latent code)', nargs='+', default=[])
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 
@@ -88,8 +89,8 @@ else:
   print('[%]GPU Disabled, CPU Enabled')
 
 # Get selected features to input into a network
-features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'g']
-x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, g = range(len(features))
+features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'fx', 'fy', 'fz', 'fx_norm', 'fy_norm', 'fz_norm', 'g']
+x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, fx, fy, fz, fx_norm, fy_norm, fz_norm, g = range(len(features))
 input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='depth')
 
 def add_flag_noise(flag, lengths):
@@ -227,39 +228,45 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   if args.noise:
     in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
-  pred_dict_test, in_test, missing_dict_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
+  if args.optimize and  'refinement' not in args.pipeline:
+    # Optimize with Depth estimation network
+    pred_xyz_test, pred_dict_test, missing_dict_test, input_uv_cumsum_test, pred_depth_cumsum_test = utils_model.optimize_depth(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, optimize=args.optimize, input_dict=input_test_dict)
+    pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
-  pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
-
-  if args.bi_pred_weight:
-    bi_pred_weight_test = pred_depth_test[..., [2]]
   else:
-    bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
+    pred_dict_test, in_test, missing_dict_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
 
-  if args.missing != None:
-    uv_test = utils_func.interpolate_missing(input_dict=input_test_dict, pred_dict=pred_dict_test, in_missing=in_test, missing_dict=missing_dict_test)
-  elif args.recon == 'ideal_uv':
-    uv_test = input_test_dict['input'][..., [0, 1]]
-  elif args.recon == 'noisy_uv':
-    uv_test = in_test[..., [0, 1]]
+    pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
-  pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=uv_test, depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
+    if args.bi_pred_weight:
+      bi_pred_weight_test = pred_depth_test[..., [2]]
+    else:
+      bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
-  # Project the (u, v, depth) to world space
-  pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
+    if args.missing != None:
+      uv_test = utils_func.interpolate_missing(input_dict=input_test_dict, pred_dict=pred_dict_test, in_missing=in_test, missing_dict=missing_dict_test)
+    elif args.recon == 'ideal_uv':
+      uv_test = input_test_dict['input'][..., [0, 1]]
+    elif args.recon == 'noisy_uv':
+      uv_test = in_test[..., [0, 1]]
+
+    pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=uv_test, depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
+
+    # Project the (u, v, depth) to world space
+    pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
   if 'refinement' in args.pipeline:
     pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
 
-  test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test, input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test, missing_dict=missing_dict_test)
+  test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test[..., [0, 1, 2]], input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test, missing_dict=missing_dict_test)
 
   ####################################
   ############# Evaluation ###########
   ####################################
   # Calculate loss per trajectory
-  evaluation_results = evaluateModel(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold, cam_params_dict=cam_params_dict)
+  evaluation_results = evaluateModel(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold, cam_params_dict=cam_params_dict)
   reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
-  each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test, gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
+  each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
 
   utils_func.print_loss(loss_list=[test_loss_dict, test_loss], name='Testing')
 
@@ -294,7 +301,10 @@ def collate_fn_padd(batch):
     gt_startpos = pt.unsqueeze(gt_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
-    gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
+    if args.optimize:
+      gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., :])), dim=-1) for trajectory in batch]
+    else:
+      gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
     gt_xyz = pad_sequence(gt_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
     gt_mask = (gt_xyz != padding_value)
@@ -388,7 +398,7 @@ if __name__ == '__main__':
     input_test_dict = {'input':batch_test['input'][0].to(device), 'lengths':batch_test['input'][1].to(device), 'mask':batch_test['input'][2].to(device), 'startpos':batch_test['input'][3].to(device)}
     gt_test_dict = {'o_with_f':batch_test['gt'][0].to(device), 'lengths':batch_test['gt'][1].to(device), 'mask':batch_test['gt'][2].to(device), 'startpos':batch_test['gt'][3].to(device), 'xyz':batch_test['gt'][4].to(device)}
 
-      # Call function to test
+    # Call function to test
     evaluation_results, reconstructed_trajectory, each_batch_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
                                                                                   model_dict=model_dict, vis_flag=args.vis_flag,
                                                                                   threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)

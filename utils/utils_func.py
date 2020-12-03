@@ -116,7 +116,7 @@ def get_model_depth(model_arch, features_cols, args):
     model_depth = BiLSTMResidualTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
     model_refinement_list = []
     for i in range(args.n_refinement):
-      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement', n_stack=2))
+      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
   elif model_arch=='bilstm_trainable_init':
     model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
     model_depth = BiLSTMTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')

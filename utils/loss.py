@@ -136,7 +136,7 @@ def MultiviewReprojectionLoss(pred, gt, mask, lengths, cam_params_dict):
     u_gt, v_gt, _ = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict[cam_use], normalize=False)
     u_pred, v_pred, _ = transformation.projectToScreenSpace(world=pred, cam_params_dict=cam_params_dict[cam_use], normalize=False)
     u_reprojection_loss = (pt.sum((((u_gt[..., 0] - u_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
-    v_reprojection_loss = (pt.sum((((v_gt[..., 0] - v_pred[..., 0]))**2) * mask[..., 0]) / pt.sum(mask[..., 0]))
+    v_reprojection_loss = (pt.sum((((v_gt[..., 0] - v_pred[..., 0]))**2) * mask[..., 1]) / pt.sum(mask[..., 1]))
     multiview_loss = (u_reprojection_loss + v_reprojection_loss)/2
     all_multiview_loss += multiview_loss
 
