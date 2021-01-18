@@ -175,6 +175,21 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
 
 
+def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
+  below_ground_loss = utils_loss.BelowGroundPenalize(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
+  trajectory_loss = utils_loss.TrajectoryLoss(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
+  gravity_loss = utils_loss.GravityLoss(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
+  if len(args.multiview_loss) > 0:
+    multiview_loss = utils_loss.MultiviewReprojectionLoss(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1]], lengths=gt_dict['lengths'], cam_params_dict=cam_params_dict)
+  else:
+    multiview_loss = pt.tensor(0.)
+
+  # print(trajectory_loss)
+  # print(below_ground_loss)
+  # print(multiview_loss)
+  optimization_loss = below_ground_loss + multiview_loss # + trajectory_loss # + multiview_loss #+ trajectory_loss # 
+  return optimization_loss
+
 def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, missing_dict):
     # Determine the latent size
     loss = []
@@ -191,7 +206,7 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
     latent_analyzer = OptimizationLatentAnalyze(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size,
                                                             n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code)
     if 'sin_cos' in args.latent_code:
-      degree = np.linspace(0, 360.0, int(1e4))
+      degree = np.linspace(0, 360.0, int(1e2))
       radian = degree * np.pi / 180
       best = {'xyz':None, 'loss':None, 'rad':None}
       worst = {'xyz':None, 'loss':None, 'rad':None}
@@ -202,6 +217,8 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
         in_f = pt.cat((pred_xyz.clone(), latent.type(pt.cuda.FloatTensor).to(device)), dim=2)
         refined_xyz = latent_analyzer(in_f=in_f)
         test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=refined_xyz[..., [0, 1, 2]], input_dict=input_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict, missing_dict=missing_dict)
+        optimization_loss = calculate_optimization_loss(optimized_xyz=refined_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict)
+        test_loss = optimization_loss
 
 
         if idx == 0:
@@ -242,27 +259,30 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
       fig.add_trace(go.Scatter3d(x=gt_x, y=gt_y, z=-gt_z, mode='markers+lines', marker=marker_dict_gt), row=1, col=2)
       # Latent 
       best_latent_sin, best_latent_cos = np.sin(best['rad']), np.cos(best['rad'])
-      best_latent_arrow_x = np.array([best_x[..., 0], best_x[..., 0] + best_latent_sin * 5])
+      best_latent_arrow_x = np.array([best_x[0], best_x[0] + best_latent_sin * 3])
       best_latent_arrow_y = np.array([0, 0])
-      best_latent_arrow_z = np.array([best_z[..., 2], best_z[..., 2] + best_latent_cos * 5])
+      best_latent_arrow_z = np.array([best_z[0], best_z[0] + best_latent_cos * 3])
       fig.add_trace(go.Scatter3d(x=best_latent_arrow_x, y=best_latent_arrow_y, z=-best_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=1)
       worst_latent_sin, worst_latent_cos = np.sin(worst['rad']), np.cos(worst['rad'])
-      worst_latent_arrow_x = np.array([worst_x[..., 0], worst_x[..., 0] + worst_latent_sin * 5])
+      worst_latent_arrow_x = np.array([worst_x[0], worst_x[0] + worst_latent_sin * 3])
       worst_latent_arrow_y = np.array([0, 0])
-      worst_latent_arrow_z = np.array([worst_z[..., 2], worst_z[..., 2] + worst_latent_cos * 5])
+      worst_latent_arrow_z = np.array([worst_z[0], worst_z[0] + worst_latent_cos * 3])
       fig.add_trace(go.Scatter3d(x=worst_latent_arrow_x, y=worst_latent_arrow_y, z=-worst_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=2)
       # Axis reference
-      selector = [[2.5, 1], [1, 2.5]] # Draw x and z
+      axis_offset = min([gt_x[0], gt_z[0]]) + 1
+      selector = [[axis_offset, 0], [0, axis_offset]] # Draw x and z
       for i, sel in enumerate(selector):
-        axis_x = np.array([best_x[..., 0], best_x[..., 0] * sel[0]])
+        axis_x = np.array([gt_x[0], gt_x[0] + sel[0]])
         axis_y = np.array([0, 0])
-        axis_z = np.array([best_z[..., 2], best_z[..., 2] * sel[1]])
+        axis_z = np.array([gt_z[0], gt_z[0] + sel[1]])
         fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=-axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=1)
         fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=-axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=2)
       # Loss landscape
       fig.add_trace(go.Scatter(x=radian, y=loss, mode='markers+lines'), row=2, col=1)
       global batch_ptr
-      plotly.offline.plot(fig, filename='./{}/Latent_Analysis/{}.html'.format(args.visualization_path, batch_ptr), auto_open=False)
+      fig['layout']['scene1'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
+      fig['layout']['scene2'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
+      plotly.offline.plot(fig, filename='./{}/Latent_Analysis_optimization_1e4/{}.html'.format(args.visualization_path, batch_ptr), auto_open=True)
       batch_ptr += 1
 
 
