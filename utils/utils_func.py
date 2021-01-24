@@ -142,6 +142,11 @@ def get_model_depth(model_arch, features_cols, args):
   #############################################
 
   model_cfg = {}
+
+  if 'uv' in args.pipeline:
+    model_uv = LSTMResidual(input_size=2, output_size=2, batch_size=args.batch_size, model='uv')
+    model_cfg['model_uv'] = {'input_size':model_uv.input_size, 'output_size':model_uv.output_size, 'hidden_dim':model_uv.hidden_dim, 'n_layers':model_uv.n_layers, 'n_stack':model_uv.n_stack, 'recurrent_stacked':model_uv.recurrent_stacked, 'fc_size':model_uv.fc_size}
+
   if 'eot' in args.pipeline:
     model_cfg['model_flag'] = {'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size}
 

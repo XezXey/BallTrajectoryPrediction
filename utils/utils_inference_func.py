@@ -108,6 +108,9 @@ def visualize_layout_update(fig=None, n_vis=3):
       fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
                                                   camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
                                                               up=dict(x=0, y=1, z=0)))
+      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-50, 50],), yaxis = dict(dtick=1, range=[-6, 6],), zaxis = dict(dtick=1, range=[-40, 40]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
+                                                  # camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
+                                                              # up=dict(x=0, y=1, z=0)))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, latent, fig=None, flag='test', n_vis=5):
@@ -136,18 +139,21 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
           where = [0]
         else:
           where = [0] + list(where)
-        # print(latent[i].shape)
-        # exit()
         print(latent[i])
         for latent_pos in where:
           if 'angle' in args.latent_code:
-            print(latent[i][latent_pos, 0])
+            # Latent size = 1 (Optimize angle)
             latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + np.cos(np.abs(latent[i][latent_pos, 0]) * math.pi/180.0) * 10])
-            # latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + np.cos(latent[i][latent_pos, 0]) * 10]
             latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
             latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + np.sin(np.abs(latent[i][latent_pos, 0]) * math.pi/180.0) * 10])
-            # latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + np.sin(latent[i][latent_pos, 0]) * 10]
+          if 'sin_cos' in args.latent_code:
+            # Latent size = 2 (Optimize sin_cos directly)
+            latent[i] = latent[i] / (np.sqrt(np.sum(latent[i]**2, axis=1, keepdims=True)) + 1e-16)
+            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent[i][latent_pos, 0] * 10])
+            latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
+            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent[i][latent_pos, 1] * 10])
           else:
+            # Latent size = 3 (Optimize Force direction)
             latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0]+latent[i][latent_pos, 0]*10]
             latent_arrow_y = [pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]+latent[i][latent_pos, 1]*10]
             latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2]+latent[i][latent_pos, 2]*10]

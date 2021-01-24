@@ -5,7 +5,7 @@ import sys
 import os
 import argparse
 import torch as pt
-sys.path.append(os.path.realpath('../..'))
+sys.path.append(os.path.realpath('../'))
 import utils.transformation as utils_transform
 
 parser = argparse.ArgumentParser(description='Predict the 3D projectile')
