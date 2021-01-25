@@ -72,9 +72,8 @@ parser.add_argument('--latent_outsize', dest='latent_outsize', help='Latent outp
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
 parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
 parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
-parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
-parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 parser.add_argument('--refine', dest='refine', help='I/O for refinement network', default='position')
+parser.add_argument('--recon', dest='recon', help='UV selection', default='ideal_uv')
 args = parser.parse_args()
 # Share args to every modules
 utils_func.share_args(args)
@@ -117,12 +116,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   else:
     bi_pred_weight_train = pt.zeros(pred_depth_train[..., [0]].shape)
 
-  if args.missing != None:
-    uv_train = utils_func.interpolate_missing(input_dict=input_train_dict, pred_dict=pred_dict_train, in_missing=in_train, missing_dict=missing_dict_train)
-  elif args.recon == 'ideal_uv':
-    uv_train = input_train_dict['input'][..., [0, 1]]
-  elif args.recon == 'noisy_uv':
-    uv_train = in_train['input'][..., [0, 1]]
+  uv_train = utils_func.select_uv_recon(input_dict=input_train_dict, pred_dict=pred_dict_train, in_f_noisy=in_train)
 
   pred_depth_cumsum_train, input_uv_cumsum_train = utils_cummulative.cummulative_fn(depth=pred_depth_train, uv=uv_train, depth_teacher=gt_train_dict['o_with_f'][..., [0]], startpos=input_train_dict['startpos'], lengths=input_train_dict['lengths'], eot=input_flag_train, cam_params_dict=cam_params_dict, epoch=epoch, args=args, gt=gt_train_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_train)
 
@@ -138,7 +132,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train) # Calculate the loss
 
-  train_loss.backward(retain_graph=True)
+  train_loss.backward()
 
   for model in model_dict:
     pt.nn.utils.clip_grad_norm_(model_dict[model].parameters(), args.clip)
@@ -158,10 +152,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   else:
     bi_pred_weight_val = pt.zeros(pred_depth_val[..., [0]].shape)
 
-  if args.missing != None:
-    uv_val = utils_func.interpolate_missing(input_dict=input_val_dict, pred_dict=pred_dict_val, in_missing=in_val, missing_dict=missing_dict_val)
-  else:
-    uv_val = input_val_dict['input'][..., [0, 1]]
+  uv_val = utils_func.select_uv_recon(input_dict=input_val_dict, pred_dict=pred_dict_val, in_f_noisy=in_val)
 
   pred_depth_cumsum_val, input_uv_cumsum_val = utils_cummulative.cummulative_fn(depth=pred_depth_val, uv=uv_val, depth_teacher=gt_val_dict['o_with_f'][..., [0]], startpos=input_val_dict['startpos'], lengths=input_val_dict['lengths'], eot=input_flag_val, cam_params_dict=cam_params_dict, epoch=epoch, args=args, gt=gt_val_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_val)
 
@@ -182,11 +173,12 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   wandb.log({'Train Loss':train_loss.item(), 'Validation Loss':val_loss.item()})
 
   if vis_flag == True and vis_signal == True:
-    if args.missing == None:
+    if 'uv' not in args.pipeline:
       missing_dict_train = {'mask':None, 'idx':None}
       missing_dict_val = {'mask':None, 'idx':None}
-    pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx']}
-    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx']}
+
+    pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx'], 'pred_uv':uv_train}
+    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx'], 'pred_uv':uv_val}
     utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth')
 
   return train_loss.item(), val_loss.item(), model_dict
@@ -265,7 +257,6 @@ if __name__ == '__main__':
   model_dict, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
   print(model_dict)
   print(model_cfg)
-  exit()
   model_dict = {model:model_dict[model].to(device) for model in model_dict.keys()}
 
   # Define optimizer, learning rate, decay and scheduler parameters
@@ -317,7 +308,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 15 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

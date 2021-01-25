@@ -73,11 +73,6 @@ def get_model_depth(model_arch, features_cols, args):
     # Predict only bw or fw depth direction
     output_size = 1
 
-  # Adding Missing points
-  if args.missing != None:
-    # Predict additional (du, dv) for next timestep
-    output_size += 2
-
   refinement_outsize = 3
   #############################################
   ############## Model Selection ##############
@@ -144,8 +139,11 @@ def get_model_depth(model_arch, features_cols, args):
   model_cfg = {}
 
   if 'uv' in args.pipeline:
-    model_uv = LSTMResidual(input_size=2, output_size=2, batch_size=args.batch_size, model='uv')
-    model_cfg['model_uv'] = {'input_size':model_uv.input_size, 'output_size':model_uv.output_size, 'hidden_dim':model_uv.hidden_dim, 'n_layers':model_uv.n_layers, 'n_stack':model_uv.n_stack, 'recurrent_stacked':model_uv.recurrent_stacked, 'fc_size':model_uv.fc_size}
+    model_uv_fw = BiLSTMResidualTrainableInit(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw')
+    model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
+
+    model_uv_bw = BiLSTMResidualTrainableInit(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw')
+    model_cfg['model_uv_bw'] = {'input_size':model_uv_bw.input_size, 'output_size':model_uv_bw.output_size, 'hidden_dim':model_uv_bw.hidden_dim, 'n_layers':model_uv_bw.n_layers, 'n_stack':model_uv_bw.n_stack, 'recurrent_stacked':model_uv_bw.recurrent_stacked, 'fc_size':model_uv_bw.fc_size}
 
   if 'eot' in args.pipeline:
     model_cfg['model_flag'] = {'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size}
@@ -170,6 +168,9 @@ def get_model_depth(model_arch, features_cols, args):
     if module_name == 'refinement':
       for idx in range(args.n_refinement):
         model_dict['model_{}_{}'.format(module_name, idx)] = eval('model_{}_list'.format(module_name))[idx]
+    elif module_name == 'uv':
+      model_dict['model_uv_fw'] = eval('model_uv_fw')
+      model_dict['model_uv_bw'] = eval('model_uv_bw')
     else:
       model_dict['model_{}'.format(module_name)] = eval('model_{}'.format(module_name))
 
@@ -205,7 +206,7 @@ def visualize_layout_update(fig=None, n_vis=3):
 
 def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, pred_train_dict, pred_val_dict, visualization_path, pred):
   # Visualize by make a subplots of trajectory
-  n_vis = 5
+  n_vis = 4
   # Random the index the be visualize
   train_vis_idx = np.random.randint(low=0, high=input_train_dict['input'].shape[0], size=(n_vis))
   val_vis_idx = np.random.randint(low=0, high=input_val_dict['input'].shape[0], size=(n_vis))
@@ -286,22 +287,32 @@ def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pre
     ####################################
     ############## dU, dV ##############
     ####################################
-    if args.missing != None:
-      uv_gt = input_dict['input'].cpu().detach().numpy()
-      uv_pred = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['depth'][:, :-1, [2, 3]]), dim=1).cpu().detach().numpy()
+    if 'uv' in args.pipeline:
+
+      uv_gt = np.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], input_dict['input'][..., [0, 1]]), dim=1).cpu().detach().numpy(), axis=1)
+      uv_pred = np.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], pred_dict['pred_uv'][..., [0, 1]]), dim=1).cpu().detach().numpy(), axis=1)
+
+      duv_gt = input_dict['input'][..., [0, 1]].cpu().detach().numpy()
+      duv_pred = pred_dict['pred_uv'][..., [0, 1]].cpu().detach().numpy()
+
       if i in pred_dict['missing_idx']:
         nan_idx = np.where(pred_dict['missing_mask'][i].cpu().numpy()==True)[0]
         uv[i][nan_idx, :] = np.nan
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dU'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dV'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_pred[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dU'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_pred[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dV'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_gt[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dU'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv_gt[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dV'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_pred[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_pred[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dV'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_gt[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_gt[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dV'.format(flag, i)), row=idx+1, col=col)
+
+
+      fig.add_trace(go.Scatter(x=uv_pred[i][:lengths[i]+1, 0], y=uv_pred[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated UV'.format(flag, i)), row=idx+1, col=col)
+
+      fig.add_trace(go.Scatter(x=uv_gt[i][:lengths[i]+1, 0], y=uv_gt[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth UV'.format(flag, i)), row=idx+1, col=col)
 
     else:
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
 
     ####################################
     ############### EOT ################
@@ -416,7 +427,7 @@ def get_selected_cols(args, pred):
 
 def reverse_masked_seq(seq, lengths):
   for i in range(seq.shape[0]):
-    seq[i][:lengths[i]] = pt.flip(seq[i][:lengths[i], [0]], dims=[0])
+    seq[i][:lengths[i]] = pt.flip(seq[i][:lengths[i], :], dims=[0])
   return seq
 
 def construct_bipred_weight(weight, lengths):
@@ -436,6 +447,9 @@ def construct_bipred_weight(weight, lengths):
   return pt.cat((fw_weight, bw_weight), dim=2)
 
 def construct_bipred_ramp(weight_template, lengths):
+  '''
+  This function increase the seq_len by 1. For cummulative weighted
+  '''
   fw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
   bw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
   # print(fw_weight.shape, bw_weight.shape)
@@ -511,23 +525,73 @@ def get_pipeline_var(pred_dict, input_dict):
 
   return pred_depth, pred_flag, input_flag
 
-def get_extrinsic_representation(cam_params_dict):
-  print(cam_params_dict)
-  pass
+def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
+  '''
+  Combining 2 direction of forward and backward into one uv
+  '''
 
-def interpolate_missing(input_dict, pred_dict, in_missing, missing_dict):
-  # First (du, dv) are always known.
-  uv = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_depth'][:, :-1, [2, 3]]), dim=1)
-  if args.missing == 'all':
-    uv = uv
-  elif args.missing == 'some':
-    for missing_idx in missing_dict['idx']:
-      missing_mask = missing_dict['mask'][missing_idx]
-      uv[missing_idx] = (in_missing[missing_idx][..., [0, 1]] * ~missing_mask) + (uv[missing_idx] * missing_mask)
-  elif args.missing == 'none' and args.recon == 'ideal_uv':
-    uv = input_dict['input'][..., [0, 1]]
-  elif args.missing == 'none' and args.recon == 'noisy_uv':
-    uv = in_missing[..., [0, 1]]
+  if mode == 'position':
+    # Construct ramping weight 
+    bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][..., [0]].shape), lengths=input_dict['lengths'])
+    bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
+
+    # Calculate last timestep uv for performing a backward cumsum
+    last_uv_temp = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], input_dict['input'][..., [0, 1]]), dim=1), dim=1)
+    last_u = pt.tensor([last_uv_temp[i][input_dict['lengths'][i], 0] for i in range(input_dict['input'].shape[0])]).view(-1, 1, 1)
+    last_v = pt.tensor([last_uv_temp[i][input_dict['lengths'][i], 1] for i in range(input_dict['input'].shape[0])]).view(-1, 1, 1)
+    last_uv = pt.cat((last_u, last_v), dim=2).to(device)
+
+    # Forward prediction cumsum
+    pred_uv_fw = pred_dict['model_uv_fw']
+    pred_uv_fw_cumsum = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], pred_uv_fw), dim=1), dim=1)
+    # Backward prediction cumsum
+    pred_uv_bw = pred_dict['model_uv_bw']
+    pred_uv_bw_cumsum = pt.cumsum(pt.cat((last_uv, pred_uv_bw), dim=1), dim=1)
+    pred_uv_bw_cumsum = reverse_masked_seq(seq=pred_uv_bw_cumsum, lengths=input_dict['lengths']+1)
+    # Weight with ramp function
+    pred_uv = (pred_uv_fw_cumsum * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw_cumsum * bi_pred_ramp_[..., [2, 3]])
+    # Return the displacement
+    return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
+
+  elif mode == 'delta':
+    bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][:, :-1, [0]].shape), lengths=input_dict['lengths']-1)
+    bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
+    # Forward prediction cumsum
+    pred_uv_fw = pred_dict['model_uv_fw']
+    # Backward prediction cumsum
+    pred_uv_bw = pred_dict['model_uv_bw']
+    pred_uv_bw = reverse_masked_seq(seq=pred_uv_bw, lengths=input_dict['lengths'])
+    # Weight with ramp function
+    pred_uv = (pred_uv_fw * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw * bi_pred_ramp_[..., [2, 3]])
+
+    return pred_uv
+
+def select_uv_recon(input_dict, pred_dict, in_f_noisy):
+  if args.recon == 'ideal_uv':
+    return input_dict['input'][..., [0, 1]]
+  elif args.recon == 'noisy_uv' and 'uv' not in args.pipeline:
+    return noisy_in_f
+  elif 'uv' in args.pipeline :
+    if args.recon == 'noisy_uv':
+      return noisy_in_f
+    elif args.recon =='pred_uv':
+      return pred_dict['model_uv']
+  else:
+    return input_dict['input_dict'][..., [0, 1]]
+
+# def interpolate_missing(input_dict, pred_dict, in_missing, missing_dict):
+  # # First (du, dv) are always known.
+  # uv = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_depth'][:, :-1, [2, 3]]), dim=1)
+  # if args.missing == 'all':
+    # uv = uv
+  # elif args.missing == 'some':
+    # for missing_idx in missing_dict['idx']:
+      # missing_mask = missing_dict['mask'][missing_idx]
+      # uv[missing_idx] = (in_missing[missing_idx][..., [0, 1]] * ~missing_mask) + (uv[missing_idx] * missing_mask)
+  # elif args.missing == 'none' and args.recon == 'ideal_uv':
+    # uv = input_dict['input'][..., [0, 1]]
+  # elif args.missing == 'none' and args.recon == 'noisy_uv':
+    # uv = in_missing[..., [0, 1]]
 
     # plt.scatter(np.arange(in_missing[0][..., 0].shape[0]), in_missing[0][..., 0].clone().cpu().detach().numpy(), label='in_missing', color='blue', alpha=0.5)
   # plt.scatter(np.arange(in_missing[0][..., 1].shape[0]), in_missing[0][..., 1].clone().cpu().detach().numpy(), label='in_missing', color='blue', alpha=0.5)
@@ -537,10 +601,13 @@ def interpolate_missing(input_dict, pred_dict, in_missing, missing_dict):
   # plt.legend()
   # plt.show()
   # exit()
-  return uv
+  # return uv
 
 def add_noise(input_trajectory, startpos, lengths):
-
+  '''
+  - Adding noise to uv tracking
+  - Obtaining a missing mask following 2 consecutive tracking (True=Missing, False=Not missing)
+  '''
   #############################################
   ############# NOISY OBSERVATION #############
   #############################################
@@ -572,16 +639,20 @@ def add_noise(input_trajectory, startpos, lengths):
   #############################################
   ############ MISSING OBSERVATION ############
   #############################################
-  if args.missing != None:
+  # Convetion False = Not Missing, True = Missing
+  if 'uv' in args.pipeline != None:
     # First two points need to be visible because we need the first displacement for initial the autoregressive
     masking_missing_diff[:, :2, :] = False
+    # Masking the missing displacement by considered 2 consecutive points
     masking_missing_diff = masking_missing_diff[:, :-1, :] | masking_missing_diff[:, 1:, :]
     missing_idx = np.random.choice(a=input_trajectory.shape[0], size=(n_noise,), replace=False)
     # teacher_trajectory = pt.cat((input_trajectory[:, 1:, :], pt.zeros(input_trajectory[:, [0], :].shape).to(device)), dim=1) * masking_missing_diff
     # input_trajectory[missing_idx] = input_trajectory[missing_idx] * (~masking_missing_diff[missing_idx]) + input_trajectory[missing_idx] * (masking_missing_diff[missing_idx])
-    # plt.plot(input_trajectory[missing_idx][0][..., 0].cpu().detach().numpy())
-    # plt.plot(input_trajectory[missing_idx][0][..., 1].cpu().detach().numpy())
-    # plt.plot(masking_missing_diff[missing_idx][0][..., 0].cpu().detach().numpy())
+    # print(input_trajectory[0].shape[0], input_trajectory[0][..., 0].shape[0])
+    # plt.plot(input_trajectory[0][..., 0].cpu().detach().numpy(), '-x', label='Missing-u', )
+    # plt.plot(input_trajectory[0][..., 1].cpu().detach().numpy(), '-x', label='Missing-v', )
+    # plt.plot(masking_missing_diff[missing_idx][0][..., 0].cpu().detach().numpy(), label='Missing maks')
+    # plt.legend()
     # plt.show()
     # exit()
     missing_dict = {'mask':masking_missing_diff, 'idx':missing_idx}

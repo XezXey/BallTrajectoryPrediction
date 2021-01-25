@@ -29,55 +29,74 @@ def share_args(a):
 def fw_pass(model_dict, input_dict, cam_params_dict):
   # Add noise on the fly
   in_f = input_dict['input'][..., [0, 1]].clone()
-  if args.noise:
-    in_f, missing_dict = utils_func.add_noise(input_trajectory=in_f[..., [0, 1]].clone(), startpos=input_dict['startpos'][..., [0, 1]], lengths=input_dict['lengths'])
-  else:
-    missing_dict = None
-  if 'extrinsic' in args.selected_features:
-    extrinsic = utils_func.get_extrinsic_representation(cam_params_dict=cam_params_dict)
+  in_f, missing_dict = utils_func.add_noise(input_trajectory=in_f[..., [0, 1]].clone(), startpos=input_dict['startpos'][..., [0, 1]], lengths=input_dict['lengths'])
 
   prediction_dict = {}
   pred_eot = pt.tensor([]).to(device)
   features_indexing = 2
+
+  if 'uv' in args.pipeline:
+    #############################################
+    #################### UV #####################
+    #############################################
+    '''
+    Make a prediction then
+    - concat the first timestep to the prediction
+    - ignore the last timestep prediction
+    Because we make a prediction of t+1
+    '''
+    # FORWARD DIRECTION
+    model_uv_fw = model_dict['model_uv_fw']
+    in_f_uv_fw = in_f
+    pred_uv_fw, (_, _) = model_uv_fw(in_f=in_f_uv_fw, lengths=input_dict['lengths'])
+    pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :-1, [0, 1]]), dim=1)
+
+
+    # BACKWARD DIRECTION
+    model_uv_bw = model_dict['model_uv_bw']
+    lengths = input_dict['lengths']
+    in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f[..., [0, 1]], lengths=input_dict['lengths'])
+    pred_uv_bw, (_, _) = model_uv_bw(in_f=in_f_uv_bw, lengths=input_dict['lengths'])
+    pred_uv_bw = pt.cat((pt.unsqueeze(in_f_uv_bw[:, [0], [0, 1]], dim=1), pred_uv_bw[:, :-1, [0, 1]]), dim=1)
+
+    # Use the interpolate_missing to combine 2 direction into one displacement
+    prediction_dict['model_uv_fw'] = pred_uv_fw
+    prediction_dict['model_uv_bw'] = pred_uv_bw
+
+    pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode='position')
+    prediction_dict['model_uv'] = pred_uv
+
   if 'eot' in args.pipeline:
     #############################################
     #################### EOT ####################
     #############################################
+    if 'uv' in args.pipeline:
+      in_f_eot = pred_uv
+    else:
+      in_f_eot = in_f
     model_flag = model_dict['model_flag']
-    pred_eot, (_, _) = model_flag(in_f=in_f, lengths=input_dict['lengths'])
+    pred_eot, (_, _) = model_flag(in_f=in_f_eot, lengths=input_dict['lengths'])
     prediction_dict['model_flag'] = pred_eot
     features_indexing = 3
 
-  if 'latent' in args.pipeline:
-    #############################################
-    ################### LATENT ##################
-    #############################################
-    # Will be implemented
-    # Considering between 
-    # 1. Attention masking
-    # 2. EOT flag split
-    x = pt.where(input_dict['input'][0][..., 2] == 1.)[0]
-    x[-1] = 0
-    x = pt.cat((x[[-1]], x[0:-1]))
-    for i in range(len(x)):
-      print(input_dict['input'][0][x[i]-3:x[i]+3, 3:])
-      # print(input_dict['input'][0][x[1]-3:x[1]+3, 3:])
-      print(" Cut: ", input_dict['input'][0][x[i], 3:])
-      # print(input_dict['input'][0][x[1], 3:])
-    exit()
-
-  # Concat the (u_noise, v_noise, pred_eot, other_features(col index 2 if pred_eot is [] else 3)
-  if 'refinement' in args.pipeline:
-    in_f = pt.cat((in_f, pred_eot), dim=2)
-  else:
-    in_f = pt.cat((in_f, pred_eot, input_dict['input'][..., features_indexing:]), dim=2)
 
   if 'depth' in args.pipeline:
     ######################################
     ################ DEPTH ###############
     ######################################
+    # Concat the (u_noise, v_noise, pred_eot, other_features(col index 2 if pred_eot is [] else 3)
+    if 'uv' in args.pipeline:
+      in_f_depth = pred_uv
+    else:
+      in_f_depth = in_f
+
+    if 'refinement' in args.pipeline:
+      in_f_depth = pt.cat((in_f_depth, pred_eot), dim=2)
+    else:
+      in_f_depth = pt.cat((in_f_depth, pred_eot, input_dict['input'][..., features_indexing:]), dim=2)
+
     model_depth = model_dict['model_depth']
-    pred_depth, (_, _) = model_depth(in_f=in_f, lengths=input_dict['lengths'])
+    pred_depth, (_, _) = model_depth(in_f=in_f_depth, lengths=input_dict['lengths'])
     prediction_dict['model_depth'] = pred_depth
 
   return prediction_dict, in_f, missing_dict
@@ -224,7 +243,7 @@ def refinement_delta(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, p
 
   else:
     for idx in range(args.n_refinement):
-      pred_xyz_delta = pred_xyz[:, 1:, :] - pred_xyz[:, :-1, :]
+      pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
       in_f = pt.cat((pred_xyz_delta, gt_dict['xyz'][:, 1:, features_indexing:]), dim=2)
       model_refinement = model_dict['model_refinement_{}'.format(idx)]
       pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=gt_dict['lengths']-1)
@@ -316,8 +335,8 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
   ######################################
   ########### Interpolation ############
   ######################################
-  if args.missing != None:
-    uv_pred = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_depth'][:, :-1, [2, 3]]), dim=1)
+  if 'uv' in args.pipeline:
+    uv_pred = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_dict['model_uv'][:, :-1, [0, 1]]), dim=1)
     interpolation_loss = utils_loss.InterpolationLoss(uv_gt=input_dict['input'][..., [0, 1]], uv_pred=uv_pred, mask=input_dict['mask'][..., [0, 1]], lengths=input_dict['lengths'])
   else:
     interpolation_loss = pt.tensor(0.)
