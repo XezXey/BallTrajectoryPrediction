@@ -70,6 +70,7 @@ parser.add_argument('--latent_code', dest='latent_code', help='Optimze the laten
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 parser.add_argument('--refine', dest='refine', help='Refinement space', default='position')
+parser.add_argument('--auto_regressive', dest='auto_regressive', help='Auto regressive', action='store_true', default=False)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -235,8 +236,9 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
   else:
+    # Forward pass
     pred_dict_test, in_test, missing_dict_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
-
+    # Pipeline variable
     pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
     if args.bi_pred_weight:
@@ -244,12 +246,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     else:
       bi_pred_weight_test = pt.zeros(pred_depth_test[..., [0]].shape)
 
-    if args.missing != None:
-      uv_test = utils_func.interpolate_missing(input_dict=input_test_dict, pred_dict=pred_dict_test, in_missing=in_test, missing_dict=missing_dict_test)
-    elif args.recon == 'ideal_uv':
-      uv_test = input_test_dict['input'][..., [0, 1]]
-    elif args.recon == 'noisy_uv':
-      uv_test = in_test[..., [0, 1]]
+      uv_test = utils_func.select_uv_recon(input_dict=input_test_dict, pred_dict=pred_dict_test, in_f_noisy=in_test)
 
     pred_depth_cumsum_test, input_uv_cumsum_test = utils_cummulative.cummulative_fn(depth=pred_depth_test, uv=uv_test, depth_teacher=gt_test_dict['o_with_f'][..., [0]], startpos=input_test_dict['startpos'], lengths=input_test_dict['lengths'], eot=pred_flag_test, cam_params_dict=cam_params_dict, epoch=0, args=args, gt=gt_test_dict['xyz'][..., [0, 1, 2]], bi_pred_weight=bi_pred_weight_test)
 

@@ -29,6 +29,7 @@ from models.Finale.residual.gru_residual import GRUResidual
 # Trainable Initial State
 from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
 from models.Finale.init_trainable.bilstm_trainable_init import BiLSTMTrainableInit
+from models.Finale.residual_init_trainable.residual_block import ResidualBlock, ResNetLayer
 # Encoder
 from models.Finale.encoder.encoder import Encoder
 # Loss
@@ -128,6 +129,12 @@ def get_model_depth(model_arch, features_cols, args):
   elif model_arch=='bilstm':
     model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = BiLSTM(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
+  elif model_arch=='residual_block':
+    model_flag = ResNetLayer(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
+    model_depth = ResNetLayer(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_refinement_list = []
+    for i in range(args.n_refinement):
+      model_refinement_list.append(ResNetLayer(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()

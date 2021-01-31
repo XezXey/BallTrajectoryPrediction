@@ -99,15 +99,15 @@ def EndOfTrajectoryLoss(pred, gt, startpos, mask, lengths, flag='Train'):
   # Here we use output mask so we need to append the startpos to the pred before multiplied with mask(already included the startpos)
   pred = pred * mask
   gt = gt * mask
+  # Prevent of pt.log(-value)
+  eps = 1e-10
   # Implement from scratch
   # Flatten and concat all trajectory together
   gt = pt.cat(([gt[i][:lengths[i]+1] for i in range(startpos.shape[0])]))
   pred = pt.cat(([pred[i][:lengths[i]+1] for i in range(startpos.shape[0])]))
   # Class weight for imbalance class problem
-  pos_weight = pt.sum(gt == 0)/pt.sum(gt==1)
+  pos_weight = pt.sum(gt == 0)/(pt.sum(gt==1) + eps)
   neg_weight = 1
-  # Prevent of pt.log(-value)
-  eps = 1e-10
   # Calculate the BCE loss
   eot_loss = pt.mean(-((pos_weight * gt * pt.log(pred + eps)) + (neg_weight * (1-gt)*pt.log(1-pred + eps))))
 

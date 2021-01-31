@@ -74,6 +74,7 @@ parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinem
 parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
 parser.add_argument('--refine', dest='refine', help='I/O for refinement network', default='position')
 parser.add_argument('--recon', dest='recon', help='UV selection', default='ideal_uv')
+parser.add_argument('--auto_regressive', dest='auto_regressive', help='Auto regressive', action='store_true', default=False)
 args = parser.parse_args()
 # Share args to every modules
 utils_func.share_args(args)
@@ -308,7 +309,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 2 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

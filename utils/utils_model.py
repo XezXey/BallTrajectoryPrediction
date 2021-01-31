@@ -35,7 +35,7 @@ def fw_pass(model_dict, input_dict, cam_params_dict):
   pred_eot = pt.tensor([]).to(device)
   features_indexing = 2
 
-  if 'uv' in args.pipeline:
+  if 'uv' in args.pipeline and not args.auto_regressive:
     #############################################
     #################### UV #####################
     #############################################
@@ -65,6 +65,9 @@ def fw_pass(model_dict, input_dict, cam_params_dict):
 
     pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode='position')
     prediction_dict['model_uv'] = pred_uv
+
+  elif 'uv' in args.pipeline and args.auto_regressive:
+    exit()
 
   if 'eot' in args.pipeline:
     #############################################
