@@ -30,6 +30,9 @@ from models.Finale.residual.gru_residual import GRUResidual
 from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
 from models.Finale.init_trainable.bilstm_trainable_init import BiLSTMTrainableInit
 from models.Finale.residual_init_trainable.residual_block import ResidualBlock, ResNetLayer
+# Auto Regressive
+from models.Finale.residual_init_trainable.residual_block_ar import ResidualBlock_AR, ResNetLayer_AR
+from models.Finale.residual_init_trainable.bilstm_residual_trainable_init_ar import BiLSTMResidualTrainableInit_AR
 # Encoder
 from models.Finale.encoder.encoder import Encoder
 # Loss
@@ -146,10 +149,19 @@ def get_model_depth(model_arch, features_cols, args):
   model_cfg = {}
 
   if 'uv' in args.pipeline:
-    model_uv_fw = BiLSTMResidualTrainableInit(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw')
+    if model_arch =='residual_block':
+      # FORWARD
+      model_uv_fw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
+      model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
+    else:
+      model_uv_fw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
     model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
 
-    model_uv_bw = BiLSTMResidualTrainableInit(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw')
+    # BACWARD 
+    if model_arch =='residual_block':
+      model_uv_bw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
+    else:
+      model_uv_bw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw', autoregressive=args.autoregressive)
     model_cfg['model_uv_bw'] = {'input_size':model_uv_bw.input_size, 'output_size':model_uv_bw.output_size, 'hidden_dim':model_uv_bw.hidden_dim, 'n_layers':model_uv_bw.n_layers, 'n_stack':model_uv_bw.n_stack, 'recurrent_stacked':model_uv_bw.recurrent_stacked, 'fc_size':model_uv_bw.fc_size}
 
   if 'eot' in args.pipeline:
@@ -269,7 +281,7 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
 def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pred, fig=None, flag='train', n_vis=5):
-  uv = pred_dict['input'][..., [0, 1]].cpu().detach().numpy()
+  duv = pred_dict['input'][..., [0, 1]].cpu().detach().numpy()
   depth = pred_dict[pred].cpu().detach().numpy()
   lengths = input_dict['lengths'].cpu().detach().numpy()
   if pred_eot is not None:

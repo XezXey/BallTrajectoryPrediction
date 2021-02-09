@@ -98,7 +98,7 @@ class ResidualBlock(pt.nn.Module):
 
   def forward(self, x):
     in_f = x['in_f']
-    print("INPUT : ", in_f)
+    # print("INPUT : ", in_f)
     lengths = x['lengths']
     hidden = x['hidden']
     cell_state = x['cell_state']
@@ -121,12 +121,11 @@ class ResidualBlock(pt.nn.Module):
     # Residual from recurrent block to FC
     out = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
-    print("OUTPUT LSTM : ", out)
+    # print("OUTPUT LSTM : ", out)
     out = self.fc_blocks(out)
-    print("OUTPUT FC: ", out)
+    # print("OUTPUT FC: ", out)
     out_block = self.relu(out+in_f)
-    print("OUTPUT BLOCK: ", out_block)
-    exit()
+    # print("OUTPUT BLOCK: ", out_block)
     return {'in_f':out_block, 'lengths':lengths, 'hidden':hidden, 'cell_state':cell_state}
 
   def create_fc_block(self, in_f, out_f, is_last_layer=False):

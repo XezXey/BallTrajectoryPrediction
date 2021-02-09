@@ -70,7 +70,7 @@ parser.add_argument('--latent_code', dest='latent_code', help='Optimze the laten
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 parser.add_argument('--refine', dest='refine', help='Refinement space', default='position')
-parser.add_argument('--auto_regressive', dest='auto_regressive', help='Auto regressive', action='store_true', default=False)
+parser.add_argument('--autoregressive', dest='autoregressive', help='Doing auto regression for interpolation', action='store_true', default=False)
 
 args = parser.parse_args()
 # Share args to every modules
