@@ -206,6 +206,73 @@ def fw_pass(model_dict, input_dict, cam_params_dict):
 
   return prediction_dict, in_f, missing_dict
 
+'''
+def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
+  ######################################
+  ############# REFINEMENT #############
+  ######################################
+  if args.refine == 'position':
+      pred_xyz = refinement_position(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz, optimize=args.optimize, pred_dict=pred_dict, refine=args.refine)
+  elif args.refine == 'delta':
+      pred_xyz = refinement_delta(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz, optimize=args.optimize, pred_dict=pred_dict, refine=args.refine)
+
+  return pred_xyz
+'''
+
+def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
+  ######################################
+  ############# REFINEMENT #############
+  ######################################
+  features_indexing = 3
+  if 'eot' in args.pipeline:
+    features_indexing = 4
+
+  for idx in range(args.n_refinement):
+    ####################################
+    ########### N-REFINEMENT ###########
+    ####################################
+    '''
+    Theres' 3 types of input and 2 types of output
+    INPUT : 1. XYZ
+            2. dXYZ (in time domain)
+            3. dXYZ (in position domain)
+    OUTPUT :  1. dXYZ (in time domain)
+              2. dXYZ (in position domain)
+    '''
+    ####################################
+    ############ INPUT PREP ############
+    ####################################
+    if args.in_refine == 'xyz':
+      in_f = pt.cat((pred_xyz, gt_dict['xyz'][..., features_indexing:]), dim=2)
+    elif args.in_refine == 'dtxyz':
+      pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
+      in_f = pt.cat((pred_xyz_delta, gt_dict['xyz'][:, 1:, features_indexing:]), dim=2)
+    elif args.in_refine =='xyz_dtxyz':
+      # dtxyz
+      pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
+      pred_xyz_delta = pt.cat((pred_xyz_delta, pred_xyz_delta[:, [-1], :]), dim=1)
+      pred_xyz_delta = utils_func.duplicate_at_length(seq=pred_xyz_delta, lengths=gt_dict['lengths'])
+      # xyz & dtxyz & latent
+      in_f = pt.cat((pred_xyz, pred_xyz_delta, gt_dict['xyz'][:, :, features_indexing:]), dim=2)
+
+    ####################################
+    ########### OUTPUT PREP ############
+    ####################################
+
+
+
+    in_f = pt.cat((pred_xyz, gt_dict['xyz'][..., features_indexing:]), dim=2)
+    model_refinement = model_dict['model_refinement_{}'.format(idx)]
+    pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=gt_dict['lengths'])
+    # Fix the 1st and last points Cuz prediction depth with direction or bidirectional is always correct 
+    if args.fix_refinement:
+      pred_refinement[:, 0, :] = pred_refinement[:, 0, :] * 0.
+      for j in range(pred_refinement.shape[0]):
+        pred_refinement[j, gt_dict['lengths'][j]-1, :] = pred_refinement[j, gt_dict['lengths'][j]-1, :] * 0.
+    pred_xyz = pred_xyz + pred_refinement
+
+  return pred_xyz
+
 def optimize_depth(model_dict, gt_dict, cam_params_dict, optimize, input_dict):
   # Add noise on the fly
   in_f = input_dict['input'][..., [0, 1]].clone()

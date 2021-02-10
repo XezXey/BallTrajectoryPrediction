@@ -254,10 +254,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
   if 'refinement' in args.pipeline:
-    if args.refine == 'position':
-      pred_xyz_test = utils_model.refinement_position(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test, refine=args.refine)
-    elif args.refine == 'delta':
-      pred_xyz_test = utils_model.refinement_delta(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test, refine=args.refine)
+      pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test, refine=args.refine)
 
 
   test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test[..., [0, 1, 2]], input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test, missing_dict=missing_dict_test)

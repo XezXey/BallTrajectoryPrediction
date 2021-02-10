@@ -749,3 +749,14 @@ def load_checkpoint_predict(model_dict):
     print("[#] Checkpoint not found...")
     exit()
 
+def duplicate_at_length(seq, lengths):
+  rep_mask = pt.zeros(size=seq.shape).to(device)
+  lengths = lengths - 1 # zero-th indexing
+  # Masking the duplicate at specific lengths (lastest element)
+  for idx in range(rep_mask.shape[0]):
+    rep_mask[idx, lengths[idx], :] = 1
+
+  # Use the a value before the last one to replace
+  replace_seq = pt.unsqueeze(seq[pt.arange(seq.shape[0]), lengths-1], dim=1)
+  duplicated = seq.masked_scatter_(rep_mask==1, replace_seq)
+  return duplicated

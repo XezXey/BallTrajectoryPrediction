@@ -1,21 +1,21 @@
-2021-02-09 00:32:48,545 DEBUG   MainThread:30530 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
-2021-02-09 00:32:48,554 DEBUG   MainThread:30530 [meta.py:setup():97] code probe starting
-2021-02-09 00:32:48,555 DEBUG   MainThread:30530 [meta.py:_setup_code_git():49] probe for git information
-2021-02-09 00:32:48,564 DEBUG   MainThread:30530 [meta.py:_setup_code_program():58] save program starting
-2021-02-09 00:32:48,564 DEBUG   MainThread:30530 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-02-09 00:32:48,564 DEBUG   MainThread:30530 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210208_173248-2am4fku4/code/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-02-09 00:32:48,565 DEBUG   MainThread:30530 [meta.py:_setup_code_program():67] save program
-2021-02-09 00:32:48,565 DEBUG   MainThread:30530 [meta.py:setup():119] code probe done
-2021-02-09 00:32:48,572 DEBUG   MainThread:30530 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/2am4fku4
-2021-02-09 00:32:48,574 INFO    MainThread:30530 [run_manager.py:wrap_existing_process():1144] wrapping existing process 30497
-2021-02-09 00:32:48,574 WARNING MainThread:30530 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
-2021-02-09 00:32:48,726 INFO    MainThread:30530 [run_manager.py:init_run():924] system metrics and metadata threads started
-2021-02-09 00:32:48,726 INFO    MainThread:30530 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
-2021-02-09 00:32:48,726 INFO    MainThread:30530 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
-2021-02-09 00:32:49,550 INFO    Thread-3  :30530 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210208_173248-2am4fku4/config.yaml
-2021-02-09 00:32:55,526 INFO    MainThread:30530 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
-2021-02-09 00:32:55,527 INFO    MainThread:30530 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
-2021-02-09 00:32:55,534 INFO    MainThread:30530 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
-c_etc():1324] process received interrupt signal, shutting down
-2021-02-09 00:32:55,527 INFO    MainThread:30530 [2am4fku4:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
-2021-02-09 00:32:55,534 INFO    MainThread:30530 [2am4fku4:run_manager.py:shutdown():1068] shutting down system stats and metadata service
+2021-02-10 17:10:32,045 DEBUG   MainThread:7002 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2021-02-10 17:10:32,053 DEBUG   MainThread:7002 [meta.py:setup():97] code probe starting
+2021-02-10 17:10:32,054 DEBUG   MainThread:7002 [meta.py:_setup_code_git():49] probe for git information
+2021-02-10 17:10:32,064 DEBUG   MainThread:7002 [meta.py:_setup_code_program():58] save program starting
+2021-02-10 17:10:32,064 DEBUG   MainThread:7002 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-02-10 17:10:32,064 DEBUG   MainThread:7002 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210210_101031-3o2wvtzj/code/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-02-10 17:10:32,064 DEBUG   MainThread:7002 [meta.py:_setup_code_program():67] save program
+2021-02-10 17:10:32,064 DEBUG   MainThread:7002 [meta.py:setup():119] code probe done
+2021-02-10 17:10:32,072 DEBUG   MainThread:7002 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/3o2wvtzj
+2021-02-10 17:10:32,073 INFO    MainThread:7002 [run_manager.py:wrap_existing_process():1144] wrapping existing process 6969
+2021-02-10 17:10:32,073 WARNING MainThread:7002 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2021-02-10 17:10:32,210 INFO    MainThread:7002 [run_manager.py:init_run():924] system metrics and metadata threads started
+2021-02-10 17:10:32,211 INFO    MainThread:7002 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
+2021-02-10 17:10:32,211 INFO    MainThread:7002 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
+2021-02-10 17:10:33,050 INFO    Thread-3  :7002 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210210_101031-3o2wvtzj/config.yaml
+2021-02-10 17:10:36,014 INFO    MainThread:7002 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
+2021-02-10 17:10:36,015 INFO    MainThread:7002 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-02-10 17:10:36,016 INFO    MainThread:7002 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
+nc_etc():1324] process received interrupt signal, shutting down
+2021-02-10 17:10:36,015 INFO    MainThread:7002 [3o2wvtzj:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-02-10 17:10:36,016 INFO    MainThread:7002 [3o2wvtzj:run_manager.py:shutdown():1068] shutting down system stats and metadata service
