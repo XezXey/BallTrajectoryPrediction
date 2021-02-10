@@ -75,9 +75,11 @@ parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This wi
 parser.add_argument('--refine', dest='refine', help='I/O for refinement network', default='position')
 parser.add_argument('--recon', dest='recon', help='UV selection', default='ideal_uv')
 parser.add_argument('--autoregressive', dest='autoregressive', help='Doing auto_regression for interpolation', action='store_true', default=False)
-parser.add_argument('--in_refine', dest='in_refine', help='I/O for refinement network', default='xyz')
-
+parser.add_argument('--in_refine', dest='in_refine', help='Input for refinement network', default='xyz')
+parser.add_argument('--out_refine', dest='out_refine', help='Output for refinement network', default='xyz')
 args = parser.parse_args()
+
+
 # Share args to every modules
 utils_func.share_args(args)
 utils_transform.share_args(args)
@@ -127,7 +129,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
 
   if 'refinement' in args.pipeline:
-    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train, refine=args.refine)
+    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train)
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
   train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train) # Calculate the loss

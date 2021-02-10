@@ -219,7 +219,7 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
   return pred_xyz
 '''
 
-def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
+def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict):
   ######################################
   ############# REFINEMENT #############
   ######################################
@@ -243,10 +243,16 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
     ############ INPUT PREP ############
     ####################################
     if args.in_refine == 'xyz':
+      # xyz
       in_f = pt.cat((pred_xyz, gt_dict['xyz'][..., features_indexing:]), dim=2)
+      # lengths
+      lengths = gt_dict['lengths']
     elif args.in_refine == 'dtxyz':
+      # dtxyz
       pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
       in_f = pt.cat((pred_xyz_delta, gt_dict['xyz'][:, 1:, features_indexing:]), dim=2)
+      # lengths
+      lengths = gt_dict['lengths']-1
     elif args.in_refine =='xyz_dtxyz':
       # dtxyz
       pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
@@ -254,23 +260,40 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
       pred_xyz_delta = utils_func.duplicate_at_length(seq=pred_xyz_delta, lengths=gt_dict['lengths'])
       # xyz & dtxyz & latent
       in_f = pt.cat((pred_xyz, pred_xyz_delta, gt_dict['xyz'][:, :, features_indexing:]), dim=2)
+      # lengths
+      lengths = gt_dict['lengths']
+
+    # Prediction
+    model_refinement = model_dict['model_refinement_{}'.format(idx)]
+    pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=lengths)
+    # print("IN : ", gt_dict['lengths'])
+    # print("TARGET : ", pt.max(gt_dict['lengths']))
 
     ####################################
     ########### OUTPUT PREP ############
     ####################################
+    if args.out_refine == 'dtxyz_cumsum':
+      # Cummulative from t=0
+      if args.in_refine == 'xyz' or args.in_refine == 'xyz_dtxyz':
+        pred_xyz = pt.cumsum(pt.cat((pred_xyz[:, [0], :], pred_refinement[:, :-1, :]), dim=1), dim=1)
+      elif args.in_refine == 'dtxyz':
+        pred_xyz = pt.cumsum(pt.cat((pred_xyz[:, [0], :], pred_refinement), dim=1), dim=1)
 
+    elif args.out_refine == 'dtxyz_consec':
+      # Consecutive from (t-1) + dt
+      if args.in_refine == 'xyz' or args.in_refine == 'xyz_dtxyz':
+        pred_xyz = pt.cat((pred_xyz[:, [0], :], (pred_xyz[:, :-1, :] + pred_refinement[:, :-1, :])), dim=1)
+      elif args.in_refine == 'dtxyz':
+        pred_xyz = pt.cat((pred_xyz[:, [0], :], (pred_xyz[:, :-1, :] + pred_refinement)), dim=1)
 
+    elif args.out_refine == 'xyz':
+      if args.in_refine == 'xyz' or args.in_refine == 'xyz_dtxyz':
+        pred_xyz = pred_xyz + pred_refinement
+      elif args.in_refine == 'dtxyz':
+        pred_xyz = pt.cat((pred_xyz[:, [0], :], pred_xyz[:, 1:, :] + pred_refinement), dim=1)
 
-    in_f = pt.cat((pred_xyz, gt_dict['xyz'][..., features_indexing:]), dim=2)
-    model_refinement = model_dict['model_refinement_{}'.format(idx)]
-    pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=gt_dict['lengths'])
-    # Fix the 1st and last points Cuz prediction depth with direction or bidirectional is always correct 
-    if args.fix_refinement:
-      pred_refinement[:, 0, :] = pred_refinement[:, 0, :] * 0.
-      for j in range(pred_refinement.shape[0]):
-        pred_refinement[j, gt_dict['lengths'][j]-1, :] = pred_refinement[j, gt_dict['lengths'][j]-1, :] * 0.
-    pred_xyz = pred_xyz + pred_refinement
-
+    # print("OUT : ", pred_xyz.shape, pred_refinement.shape)
+    # exit()
   return pred_xyz
 
 def optimize_depth(model_dict, gt_dict, cam_params_dict, optimize, input_dict):

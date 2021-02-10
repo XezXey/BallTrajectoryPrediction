@@ -104,6 +104,9 @@ def get_model_depth(model_arch, features_cols, args):
   else:
     refinement_addition_insize = addition_input_size
 
+  if args.in_refine == 'xyz_dtxyz':
+    refinement_addition_insize += 3
+
   if model_arch=='lstm_residual':
     model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
     model_depth = LSTMResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
