@@ -207,18 +207,44 @@ def fw_pass(model_dict, input_dict, cam_params_dict):
 
   return prediction_dict, in_f, missing_dict
 
-'''
-def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
-  ######################################
-  ############# REFINEMENT #############
-  ######################################
-  if args.refine == 'position':
-      pred_xyz = refinement_position(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz, optimize=args.optimize, pred_dict=pred_dict, refine=args.refine)
-  elif args.refine == 'delta':
-      pred_xyz = refinement_delta(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz, optimize=args.optimize, pred_dict=pred_dict, refine=args.refine)
+def latent_transform(in_f):
+  # Angle same = xcos, y, zsin
+  if args.latent_transf == 'angle_same' or args.latent_transf == 'angle_sameP':
+    if args.in_refine == 'xyz' or args.in_refine == 'dtxyz':
+      angle = pt.cat((in_f[..., [4]], pt.ones(size=(in_f.shape[0], in_f.shape[1], 1)).to(device), in_f[..., [3]]), dim=2)
+      in_f_ = pt.mul(in_f[..., [0, 1, 2]], angle)       # xcos, y, zsin or dt_xcos, dt_y, dt_zsin
+    elif args.in_refine == 'xyz_dtxyz':
+      angle = pt.cat((in_f[..., [4]], pt.ones(size=(in_f.shape[0], in_f.shape[1], 1)).to(device), in_f[..., [3]]), dim=2)
+      in_f_xyz = pt.mul(in_f[..., [0, 1, 2]], angle)        # xcos, y, zsin
+      in_f_dtxyz = pt.mul(in_f[..., [3, 4, 5]], angle)      # dt_xcos, dt_y, dt_zsin
+      in_f_ = pt.cat((in_f_xyz, in_f_dtxyz), dim=2)
 
-  return pred_xyz
-'''
+    if args.latent_transf == 'angle_sameP':
+      in_f_ = pt.cat((in_f_, angle[..., [0, 2]]), dim=2)
+
+
+  # Angle expand = xcos, xsin, ycos, ysin, zcos, zsin, ...
+  elif args.latent_transf == 'angle_expand' or args.latent_transf == 'angle_expandP':
+    if args.in_refine == 'xyz' or args.in_refine == 'dtxyz':
+      angle = pt.cat((in_f[..., [3]], in_f[..., [4]]), dim=2)
+      in_f_x = in_f[..., [0]] * angle       # xsin, xcos or dt_xsin, dt_xcos
+      in_f_y = in_f[..., [1]] * angle       # ysin, ycos or dt_ysin, dt_ycos
+      in_f_z = in_f[..., [2]] * angle       # zsin, zcos or dt_zsin, dt_zcos
+      in_f_ = pt.cat((in_f_x, in_f_y, in_f_z), dim=2)
+    elif args.in_refine == 'xyz_dtxyz':
+      angle = pt.cat((in_f[..., [3]], in_f[..., [4]]), dim=2)
+      in_f_x = in_f[..., [0]] * angle       # xsin, xcos
+      in_f_y = in_f[..., [1]] * angle       # ysin, ycos
+      in_f_z = in_f[..., [2]] * angle       # zsin, zcos
+      in_f_dtx = in_f[..., [3]] * angle     # dt_xsin, dt_xcos
+      in_f_dty = in_f[..., [4]] * angle     # dt_ysin, dt_ycos
+      in_f_dtz = in_f[..., [5]] * angle     # dt_zsin, dt_zcos
+      in_f_ = pt.cat((in_f_x, in_f_y, in_f_z, in_f_dtx, in_f_dty, in_f_dtz), dim=2)
+
+    if args.latent_transf == 'angle_expandP':
+      in_f_ = pt.cat((in_f_, angle), dim=2)
+
+  return in_f_
 
 def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict):
   ######################################
@@ -274,6 +300,8 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
       # lengths
       lengths = gt_dict['lengths']
 
+    if args.latent_transf is not None:
+      in_f = latent_transform(in_f=in_f)
     # Prediction
     model_refinement = model_dict['model_refinement_{}'.format(idx)]
     pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=lengths)
@@ -489,114 +517,6 @@ def optimization_depth(model_dict, gt_dict, cam_params_dict, optimize, input_dic
   pred_xyz_optimized = pt.cat((pred_xyz_optimized, latent_optimized), dim=2)
   return pred_xyz_optimized, pred_dict, None, input_uv_cumsum, pred_depth_cumsum
 
-def refinement_position(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
-  ######################################
-  ############# REFINEMENT #############
-  ######################################
-  features_indexing = 3
-  if 'eot' in args.pipeline:
-    features_indexing = 4
-
-  if optimize:
-    latent_size = model_dict['model_refinement_0'].input_size - features_indexing + 1 # Initial the latent size
-    pred_xyz_optimized = optimization_refinement_position(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, pred_dict=pred_dict)
-    return pred_xyz_optimized
-
-  else:
-    for idx in range(args.n_refinement):
-      in_f = pt.cat((pred_xyz, gt_dict['xyz'][..., features_indexing:]), dim=2)
-      model_refinement = model_dict['model_refinement_{}'.format(idx)]
-      pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=gt_dict['lengths'])
-      # Fix the 1st and last points Cuz prediction depth with direction or bidirectional is always correct 
-      if args.fix_refinement:
-        pred_refinement[:, 0, :] = pred_refinement[:, 0, :] * 0.
-        for j in range(pred_refinement.shape[0]):
-          pred_refinement[j, gt_dict['lengths'][j]-1, :] = pred_refinement[j, gt_dict['lengths'][j]-1, :] * 0.
-      pred_xyz = pred_xyz + pred_refinement
-    return pred_xyz
-
-def optimization_refinement_position(model_dict, pred_xyz, gt_dict, cam_params_dict, latent_size, pred_dict):
-  trajectory_optimizer = TrajectoryOptimizationRefinementPosition(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code)
-  latent_optimized = trajectory_optimizer.update_latent()
-  trajectory_optimizer.train()
-  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=100)
-  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10)
-  t = tqdm(range(1000), desc='Optimizing...', leave=True)
-  for i in t:
-    optimizer.zero_grad()
-    pred_xyz_optimized = trajectory_optimizer(pred_xyz)
-    optimization_loss = calculate_optimization_loss(optimized_xyz=pred_xyz_optimized, gt_dict=gt_dict, cam_params_dict=cam_params_dict)
-
-    for param_group in optimizer.param_groups:
-      lr = param_group['lr']
-    t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
-    t.refresh()
-    if lr < 0.001:
-      break
-    lr_scheduler.step(optimization_loss)
-    optimization_loss.backward(retain_graph=True)
-    optimizer.step()
-
-    for name, param in trajectory_optimizer.named_parameters():
-      print(name, param)
-
-  latent_optimized = trajectory_optimizer.update_latent()
-  pred_xyz_optimized = pt.cat((pred_xyz_optimized, latent_optimized), dim=2)
-  return pred_xyz_optimized
-
-def refinement_delta(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, refine):
-  ######################################
-  ############# REFINEMENT #############
-  ######################################
-  features_indexing = 3
-  if 'eot' in args.pipeline:
-    features_indexing = 4
-
-  if optimize:
-    latent_size = model_dict['model_refinement_0'].input_size - features_indexing + 1 # Initial the latent size
-    pred_xyz_optimized = optimization_refinement_delta(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, pred_dict=pred_dict)
-    return pred_xyz_optimized
-
-  else:
-    for idx in range(args.n_refinement):
-      pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
-      in_f = pt.cat((pred_xyz_delta, gt_dict['xyz'][:, 1:, features_indexing:]), dim=2)
-      model_refinement = model_dict['model_refinement_{}'.format(idx)]
-      pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=gt_dict['lengths']-1)
-      pred_xyz = pt.cat((pred_xyz[:, [0], :3], pred_refinement), dim=1)
-      pred_xyz = pt.cumsum(pred_xyz, dim=1)
-    return pred_xyz
-
-def optimization_refinement_delta(model_dict, pred_xyz, gt_dict, cam_params_dict, latent_size, pred_dict):
-  trajectory_optimizer = TrajectoryOptimizationRefinementDelta(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code)
-  latent_optimized = trajectory_optimizer.update_latent()
-  trajectory_optimizer.train()
-  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=100)
-  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10)
-  t = tqdm(range(1000), desc='Optimizing...', leave=True)
-  for i in t:
-    optimizer.zero_grad()
-    pred_xyz_optimized = trajectory_optimizer(pred_xyz)
-    optimization_loss = calculate_optimization_loss(optimized_xyz=pred_xyz_optimized, gt_dict=gt_dict, cam_params_dict=cam_params_dict)
-
-    for param_group in optimizer.param_groups:
-      lr = param_group['lr']
-    t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
-    t.refresh()
-    if lr < 0.001:
-      break
-    lr_scheduler.step(optimization_loss)
-    optimization_loss.backward(retain_graph=True)
-    optimizer.step()
-
-    for name, param in trajectory_optimizer.named_parameters():
-      print(name, param)
-
-  latent_optimized = trajectory_optimizer.update_latent()
-  pred_xyz_optimized = pt.cat((pred_xyz_optimized, latent_optimized), dim=2)
-  return pred_xyz_optimized
-
-
 def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
   below_ground_loss = utils_loss.BelowGroundPenalize(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
   trajectory_loss = utils_loss.TrajectoryLoss(pred=optimized_xyz[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
@@ -671,7 +591,7 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
     depth_loss = depth_loss_fw + depth_loss_bw
 
   # Sum up all loss 
-  loss = trajectory_loss + eot_loss*10 + gravity_loss + below_ground_loss + multiview_loss + interpolation_loss*10 + depth_loss*100
-  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item()*10, "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item()*10, "Depth Loss":depth_loss.item()*100}
+  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + multiview_loss + interpolation_loss + depth_loss * 100
+  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item() * 100}
 
   return loss_dict, loss

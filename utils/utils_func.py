@@ -62,22 +62,27 @@ def initialize_folder(path):
   if not os.path.exists(path):
       os.makedirs(path)
 
+def latent_transform_size(depth_extra_insize, refinement_extra_insize):
+  if args.optimize == 'refinement':
+    # Adding a latent at refinement network
+    if args.latent_transf == 'angle_same':      # Angle same = xcos, y, zsin
+      refinement_extra_insize -= 2
+    elif args.latent_transf == 'angle_sameP':    # Angle same + preserve sin and cos
+      refinement_extra_insize += 0
+    elif args.latent_transf == 'angle_expand':    # Angle expand = xsin, xcos, ysin, ycos, zsin, zcos
+      refinement_extra_insize += 4
+    elif args.latent_transf == 'angle_expandP':    # Angle expand + preserve sin and cos
+      refinement_extra_insize += 6
+
+
+  return depth_extra_insize, refinement_extra_insize
+
 def get_model_depth(model_arch, features_cols, args):
+  if len(args.model_arch) != len(args.pipeline):
+    # Sanity check
+    print("[#] The number of specified architecture and pipeline must be the same")
+    exit()
 
-  #############################################
-  ############ Prediction Selection ###########
-  #############################################
-  if args.bi_pred_avg or args.bi_pred_ramp:
-    # Predict depth in 2 direction
-    depth_outsize = 2
-  elif args.bi_pred_weight:
-    # Predict depth in 2 direction
-    depth_outsize = 3
-  else:
-    # Predict only bw or fw depth direction
-    depth_outsize = 1
-
-  refinement_outsize = 3
   #############################################
   ############## Model Selection ##############
   #############################################
@@ -96,53 +101,69 @@ def get_model_depth(model_arch, features_cols, args):
     # Adding a latent at both networks
     refinement_extra_insize = len(features_cols) - 1 if 'eot' in args.pipeline else len(features_cols)
     depth_extra_insize = len(features_cols) if 'eot' in args.pipeline else len(features_cols)-1
+  else:
+    depth_extra_insize = 1 if 'eot' in args.pipeline else 0
+    refinement_extra_insize = 0
+
 
   if args.in_refine == 'xyz_dtxyz':
     refinement_extra_insize += 3
 
+  # Latent transformation
+  if args.latent_transf is not None:
+    depth_extra_insize, refinement_extra_insize = latent_transform_size(depth_extra_insize, refinement_extra_insize)
+
+  # Input size
   flag_insize = 2
   depth_insize = 2 + depth_extra_insize
   refinement_insize = 3 + refinement_extra_insize
+  input_size = {'eot':flag_insize, 'depth':depth_insize, 'refinement':refinement_insize}
 
-  if model_arch=='lstm_residual':
-    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = LSTMResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bilstm_residual':
-    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTMResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bilstm_residual_trainable_init':
-    model_flag = BiLSTMResidualTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = BiLSTMResidualTrainableInit(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
-    model_refinement_list = []
-    for i in range(args.n_refinement):
-      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_extra_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
-  elif model_arch=='bilstm_trainable_init':
-    model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = BiLSTMTrainableInit(input_size=depth_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
-    model_refinement_list = []
-    for i in range(args.n_refinement):
-      model_refinement_list.append(BiLSTMTrainableInit(input_size=refinement_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
-  elif model_arch=='gru_residual':
-    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = GRUResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bigru_residual':
-    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRUResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bigru':
-    model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRU(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bilstm':
-    model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTM(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
-  elif model_arch=='residual_block':
-    model_flag = ResNetLayer(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = ResNetLayer(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
-    model_refinement_list = []
-    for i in range(args.n_refinement):
-      model_refinement_list.append(ResNetLayer(input_size=3 + refinement_extra_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
-  else :
-    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
-    exit()
+  #############################################
+  ############ Prediction Selection ###########
+  #############################################
+  if args.bi_pred_avg or args.bi_pred_ramp:
+    # Predict depth in 2 direction
+    depth_outsize = 2
+  elif args.bi_pred_weight:
+    # Predict depth in 2 direction
+    depth_outsize = 3
+  else:
+    # Predict only bw or fw depth direction
+    depth_outsize = 1
+
+  refinement_outsize = 3
+  # output size
+  flag_outsize = 1
+  depth_outsize = depth_outsize
+  refinement_outsize = refinement_outsize
+  output_size = {'eot':flag_outsize, 'depth':depth_outsize, 'refinement':refinement_outsize}
+
+  model_flag = []
+  model_depth = []
+  model_refinement_list = []
+
+  for idx, arch in enumerate(args.model_arch):
+    insize = input_size[args.pipeline[idx]]
+    outsize = output_size[args.pipeline[idx]]
+    if arch == 'lstm_init_skip':
+      model = BiLSTMResidualTrainableInit
+    elif arch == 'lstm_init_resblock':
+      model = ResNetLayer
+    elif arch == 'lstm_init':
+      model = BiLSTMTrainableInit
+    else :
+      print("Please input correct model architecture : gru, bigru, lstm, bilstm")
+      exit()
+
+    model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=True if args.bidirectional[idx] == 'T' else False, model=args.pipeline[idx] if args.pipeline[idx] != 'eot' else 'flag')
+
+    if args.pipeline[idx] == 'eot':
+      model_flag = model
+    elif args.pipeline[idx] == 'depth':
+      model_depth = model
+    elif args.pipeline[idx] == 'refinement':
+      model_refinement_list.append(model)
 
   #############################################
   ############# Pipeline Selection ############
@@ -166,14 +187,15 @@ def get_model_depth(model_arch, features_cols, args):
       model_uv_bw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw', autoregressive=args.autoregressive)
     model_cfg['model_uv_bw'] = {'input_size':model_uv_bw.input_size, 'output_size':model_uv_bw.output_size, 'hidden_dim':model_uv_bw.hidden_dim, 'n_layers':model_uv_bw.n_layers, 'n_stack':model_uv_bw.n_stack, 'recurrent_stacked':model_uv_bw.recurrent_stacked, 'fc_size':model_uv_bw.fc_size}
 
+  #############################################
+  ################ Model Config ###############
+  #############################################
+
   if 'eot' in args.pipeline:
     model_cfg['model_flag'] = {'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size}
 
   if 'depth' in args.pipeline:
     model_cfg['model_depth'] = {'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}
-
-  if 'latent' in args.pipeline:
-    model_cfg['model_latent'] = {'input_size':model_latent.input_size, 'output_size':model_latent.output_size,'fc_size':model_latent.fc_size}
 
   if 'refinement' in args.pipeline:
     for idx, model_refinement in enumerate(model_refinement_list):
@@ -702,7 +724,7 @@ def load_checkpoint_train(model_dict, optimizer, lr_scheduler):
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    annealing_scheduler = Checkpoint['annealing_scheduler']
+    annealing_scheduler = checkpoint['annealing_scheduler']
     return model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss, annealing_scheduler
 
   else:

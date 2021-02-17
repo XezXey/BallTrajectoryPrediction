@@ -43,8 +43,8 @@ parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB ses
 parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
 parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
 parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
-parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
 parser.add_argument('--clip', dest='clip', type=float, help='Clipping gradients value', required=True)
+parser.add_argument('--model_arch', dest='model_arch', help='Input the model architecture(lstm, bilstm, gru, bigru)', nargs='+', default=[])
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
 parser.add_argument('--no_noise', dest='noise', help='Noise on the fly', action='store_false')
 parser.add_argument('--noise_sd', dest='noise_sd', help='Std. of noise', type=float, default=None)
@@ -63,7 +63,7 @@ parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp w
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', default='unity')
-parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of bidirectional', action='store_true')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of bidirectional', nargs='+', default=[])
 parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use Multiview loss', nargs='+', default=[])
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
@@ -78,6 +78,7 @@ parser.add_argument('--out_refine', dest='out_refine', help='Output for refineme
 parser.add_argument('--annealing', dest='annealing', help='Apply annealing', action='store_true', default=False)
 parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
+parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
 args = parser.parse_args()
 
 
