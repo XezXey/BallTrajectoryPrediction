@@ -69,78 +69,77 @@ def get_model_depth(model_arch, features_cols, args):
   #############################################
   if args.bi_pred_avg or args.bi_pred_ramp:
     # Predict depth in 2 direction
-    output_size = 2
+    depth_outsize = 2
   elif args.bi_pred_weight:
     # Predict depth in 2 direction
-    output_size = 3
+    depth_outsize = 3
   else:
     # Predict only bw or fw depth direction
-    output_size = 1
+    depth_outsize = 1
 
   refinement_outsize = 3
   #############################################
   ############## Model Selection ##############
   #############################################
 
-  # Specified the size of latent 
-  addition_input_size = 0
-  if 'latent' in args.pipeline:
-    # Create Encoder Network
-    if args.latent_insize is None:
-      print("[#] Please specify the size of input latent")
-      exit()
-    model_latent = Encoder(input_size=args.latent_insize, output_size=args.latent_outsize, batch_size=args.batch_size, model='latent')
-    if 'eot' in args.pipeline:
-      addition_input_size  += args.latent_outsize + 1
-    else:
-      addition_input_size  += args.latent_outsize
-  else:
-    addition_input_size = len(features_cols)
-
-  if 'eot' in args.pipeline:
-    refinement_addition_insize = addition_input_size - 1
-    if 'refinement' in args.pipeline:
-      addition_input_size = 1
-  else:
-    refinement_addition_insize = addition_input_size
+  # Specified the size of latent (Including EOT)
+  # Latent position injection
+  if args.optimize == 'refinement':
+    # Adding a latent at refinement network
+    refinement_extra_insize = len(features_cols) - 1 if 'eot' in args.pipeline else len(features_cols)
+    depth_extra_insize = 1 if 'eot' in args.pipeline else 0
+  elif args.optimize == 'depth':
+    # Adding a latent at depth network
+    refinement_extra_insize = 0
+    depth_extra_insize = len(features_cols) if 'eot' in args.pipeline else len(features_cols)-1
+  elif args.optimize == 'both':
+    # Adding a latent at both networks
+    refinement_extra_insize = len(features_cols) - 1 if 'eot' in args.pipeline else len(features_cols)
+    depth_extra_insize = len(features_cols) if 'eot' in args.pipeline else len(features_cols)-1
 
   if args.in_refine == 'xyz_dtxyz':
-    refinement_addition_insize += 3
+    refinement_extra_insize += 3
+
+  flag_insize = 2
+  depth_insize = 2 + depth_extra_insize
+  refinement_insize = 3 + refinement_extra_insize
 
   if model_arch=='lstm_residual':
     model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = LSTMResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = LSTMResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm_residual':
     model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTMResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
+    model_depth = BiLSTMResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
   elif model_arch=='bilstm_residual_trainable_init':
     model_flag = BiLSTMResidualTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = BiLSTMResidualTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_depth = BiLSTMResidualTrainableInit(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
     model_refinement_list = []
     for i in range(args.n_refinement):
-      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
+      model_refinement_list.append(BiLSTMResidualTrainableInit(input_size=3 + refinement_extra_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
   elif model_arch=='bilstm_trainable_init':
     model_flag = BiLSTMTrainableInit(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = BiLSTMTrainableInit(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
-    model_refinement = BiLSTMTrainableInit(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement')
-  elif model_arch=='gru_residual':
-    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = GRUResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bigru_residual':
-    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRUResidual(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bigru':
-    model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiGRU(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
-  elif model_arch=='bilstm':
-    model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_depth = BiLSTM(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, model='depth')
-  elif model_arch=='residual_block':
-    model_flag = ResNetLayer(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
-    model_depth = ResNetLayer(input_size=2 + addition_input_size, output_size=output_size, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_depth = BiLSTMTrainableInit(input_size=depth_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
     model_refinement_list = []
     for i in range(args.n_refinement):
-      model_refinement_list.append(ResNetLayer(input_size=3 + refinement_addition_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
+      model_refinement_list.append(BiLSTMTrainableInit(input_size=refinement_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
+  elif model_arch=='gru_residual':
+    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = GRUResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bigru_residual':
+    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiGRUResidual(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bigru':
+    model_flag = BiGRU(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiGRU(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
+  elif model_arch=='bilstm':
+    model_flag = BiLSTM(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
+    model_depth = BiLSTM(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, model='depth')
+  elif model_arch=='residual_block':
+    model_flag = ResNetLayer(input_size=2, output_size=1, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='flag')
+    model_depth = ResNetLayer(input_size=2 + depth_extra_insize, output_size=depth_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='depth')
+    model_refinement_list = []
+    for i in range(args.n_refinement):
+      model_refinement_list.append(ResNetLayer(input_size=3 + refinement_extra_insize, output_size=refinement_outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=args.bidirectional, model='refinement'))
   else :
     print("Please input correct model architecture : gru, bigru, lstm, bilstm")
     exit()
@@ -319,9 +318,9 @@ def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pre
 
       if i in pred_dict['missing_idx']:
         nan_idx = np.where(pred_dict['missing_mask'][i].cpu().numpy()==True)[0]
-        uv[i][nan_idx, :] = np.nan
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dU'.format(flag, i)), row=idx+1, col=col)
-      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dV'.format(flag, i)), row=idx+1, col=col)
+        duv[i][nan_idx, :] = np.nan
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dU'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_noisy, name='{}-traj#{}-Input dV'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_pred[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dU'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_pred[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Interpolated dV'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv_gt[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth dU'.format(flag, i)), row=idx+1, col=col)
@@ -703,7 +702,8 @@ def load_checkpoint_train(model_dict, optimizer, lr_scheduler):
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     start_epoch = checkpoint['epoch']
     min_val_loss = checkpoint['min_val_loss']
-    return model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss
+    annealing_scheduler = Checkpoint['annealing_scheduler']
+    return model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss, annealing_scheduler
 
   else:
     print("[#] Checkpoint not found...")

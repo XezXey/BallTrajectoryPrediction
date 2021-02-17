@@ -15,12 +15,10 @@ class OptimizationLatentAnalyze(pt.nn.Module):
     self.pred_dict = pred_dict
     self.latent_code = latent_code
 
-  def forward(self, in_f):
+  def forward(self, in_f, lengths):
     for idx in range(self.n_refinement):
-      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=self.gt_dict['lengths'])
-      xyz = in_f[..., [0, 1, 2]]
-      xyz = xyz + pred_refinement
-    return xyz
+      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=lengths)
+    return pred_refinement
 
   def construct_latent(self):
     # This use EOT to split the latent. Stack and repeat to have the same shape with the "pred_xyz" 

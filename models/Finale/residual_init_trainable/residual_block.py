@@ -32,9 +32,14 @@ class ResNetLayer(pt.nn.Module):
     # Create Resnet Block
     self.blocks = pt.nn.Sequential(*[ResidualBlock(input_size=input_size, output_size=output_size, batch_size=batch_size, bidirectional=bidirectional,
                                                    trainable_init=trainable_init, model=model, n_stack=n_stack, hidden_dim=hidden_dim) for _ in range(n_block)])
+
     self.fc_out = pt.nn.Linear(input_size, output_size)
+
     if model == 'flag':
       self.sigmoid = pt.nn.Sigmoid()
+
+    # Manually set weight for residual
+    # self.manually_set_weight()
 
   def forward(self, in_f, lengths, hidden=None, cell_state=None):
     x = {'in_f':in_f, 'lengths':lengths, 'hidden':hidden, 'cell_state':cell_state}
@@ -45,6 +50,26 @@ class ResNetLayer(pt.nn.Module):
       x = self.fc_out(residual['in_f'])
 
     return x, (residual['hidden'], residual['cell_state'])
+
+  def set_init(self):
+    for block in self.blocks:
+      block.set_init()
+
+  def manually_set_weight(self):
+    for block in self.blocks:
+      for name, param in block.named_parameters():
+        if 'bias' in name:
+          pt.nn.init.constant_(param, 0.0)
+          # pt.nn.init.uniform_(param, 0.0, .005)
+          # pt.nn.init.normal_(param)
+          # pt.nn.init.zeros_(param)
+          # pt.nn.init.xavier_uniform_(param)
+        elif 'weight' in name:
+          # pt.nn.init.constant_(param, 0.0)
+          # pt.nn.init.uniform_(param, 0.0, .005)
+          # pt.nn.init.normal_(param)
+          # pt.nn.init.zeros_(param)
+          pt.nn.init.xavier_uniform_(param)
 
 
 class ResidualBlock(pt.nn.Module):

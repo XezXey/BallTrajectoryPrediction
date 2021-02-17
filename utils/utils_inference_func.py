@@ -139,19 +139,18 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
           where = [0]
         else:
           where = [0] + list(where)
-        print(latent[i])
         for latent_pos in where:
           if 'angle' in args.latent_code:
             # Latent size = 1 (Optimize angle)
             latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + np.cos(np.abs(latent[i][latent_pos, 0]) * math.pi/180.0) * 10])
             latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
             latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + np.sin(np.abs(latent[i][latent_pos, 0]) * math.pi/180.0) * 10])
-          if 'sin_cos' in args.latent_code:
+          elif 'sin_cos' in args.latent_code:
             # Latent size = 2 (Optimize sin_cos directly)
             latent[i] = latent[i] / (np.sqrt(np.sum(latent[i]**2, axis=1, keepdims=True)) + 1e-16)
-            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent[i][latent_pos, 0] * 10])
+            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent[i][latent_pos, 1] * 10])
             latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
-            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent[i][latent_pos, 1] * 10])
+            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent[i][latent_pos, 0] * 10])
           else:
             # Latent size = 3 (Optimize Force direction)
             latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0]+latent[i][latent_pos, 0]*10]

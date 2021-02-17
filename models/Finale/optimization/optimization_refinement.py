@@ -14,37 +14,40 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
     self.n_refinement = n_refinement
     self.pred_dict = pred_dict
     self.latent_code = latent_code
+    # Remove duplicate latent size
     if 'angle' in self.latent_code:
+      # angle use only 1 dims then use sin(angle) and cos(angle)
       latent_size -= 1
     if 'f' in self.latent_code and 'fnorm' in self.latent_code:
+      # force w/ fnorm use only 3 dims then use normalize for optimized f
       latent_size -= 3
-    if 'cos_sin' in self.latent_code:
-      latent_size -= 2
+    if 'sin_cos' in self.latent_code:
+      # sin_cos use both then no duplicated
+      latent_size -= 0
     self.latent_size = latent_size
     self.latent = pt.nn.ParameterList()
-    self.construct_latent()
 
-  def forward(self, xyz):
-    latent = self.update_latent()
+  def forward(self, in_f, lengths):
+    latent = self.update_latent(lengths)
     latent = self.manipulate_latent(latent)
-    in_f = pt.cat((xyz, latent), dim=2)
+    in_f = pt.cat((in_f, latent), dim=2)
     for idx in range(self.n_refinement):
-      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=self.gt_dict['lengths'])
-      xyz = xyz + pred_refinement
+      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=lengths)
       # rand_idx = np.random.randint(0, self.gt_dict['lengths'].shape[0])
       # plt.plot(pred_refinement[rand_idx][:self.gt_dict['lengths'][rand_idx], [0]].cpu().detach().numpy(), 'g-o')
       # plt.plot(pred_refinement[rand_idx][:self.gt_dict['lengths'][rand_idx], [1]].cpu().detach().numpy(), 'g-o')
       # plt.plot(pred_refinement[rand_idx][:self.gt_dict['lengths'][rand_idx], [2]].cpu().detach().numpy(), 'g-o')
       # plt.show()
-    return xyz
+    return pred_refinement
 
-  def construct_latent(self):
+  def construct_latent(self, lengths):
     # This use EOT to split the latent. Stack and repeat to have the same shape with the "pred_xyz" 
     flag = self.pred_dict['model_flag']
-    lengths = self.gt_dict['lengths']
-    flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
+    lengths = lengths
+    if pt.max(lengths) >= pt.max(self.gt_dict['lengths']):
+      # xyz features : Add first flag as zero to make these 2 seq have a same length
+      flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
     close = pt.isclose(flag, pt.tensor(1.), atol=5e-1)
-    latent_list = []
     for i in range(flag.shape[0]):
       where = pt.where(close[i] == True)[0]
       where = where[where < lengths[i]]
@@ -58,15 +61,16 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
         # latent = pt.nn.Parameter(pt.rand(n_latent+1, self.latent_size, dtype=pt.float32).cuda() * 100., requires_grad=True).cuda()
         self.latent.append(pt.nn.Parameter(pt.rand(n_latent+1, self.latent_size, dtype=pt.float32).cuda(), requires_grad=True).cuda())
 
-    return latent_list
 
-  def update_latent(self):
+  def update_latent(self, lengths):
     '''
     Return : latent with shape = (batchsize, seq_len, latent_size)
     '''
     flag = self.pred_dict['model_flag']
-    lengths = self.gt_dict['lengths']
-    flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
+    lengths = lengths
+    if pt.max(lengths) >= pt.max(self.gt_dict['lengths']):
+      # if input is xyz features : Add first flag as zero to make these 2 seq have a same length
+      flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
     close = pt.isclose(flag, pt.tensor(1.), atol=5e-1)
     all_latent = pt.ones((flag.shape[0], flag.shape[1], self.latent_size)).cuda()
     for i in range(flag.shape[0]):
@@ -74,7 +78,7 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
       where = pt.where(close[i] == True)[0]
       where = where[where < lengths[i]]
       if len(where) == 0:
-        where = [0] + [flag.shape[1]]
+        where = [0] + [flag.shape[1]-1]
       else:
         where = [0] + list(where.cpu().detach().numpy()+1) + [flag.shape[1]]
       for j in range(len(where)-1):

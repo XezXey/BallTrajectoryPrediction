@@ -67,16 +67,17 @@ parser.add_argument('--bidirectional', dest='bidirectional', help='Define use of
 parser.add_argument('--directional', dest='bidirectional', help='Define use of bidirectional', action='store_false')
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use Multiview loss', nargs='+', default=[])
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
-parser.add_argument('--latent_insize', dest='latent_insize', help='Latent input size', type=int, default=None)
-parser.add_argument('--latent_outsize', dest='latent_outsize', help='Latent output size', type=int, default=4)
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
 parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
-parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
+parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', default=None)
 parser.add_argument('--refine', dest='refine', help='I/O for refinement network', default='position')
 parser.add_argument('--recon', dest='recon', help='UV selection', default='ideal_uv')
 parser.add_argument('--autoregressive', dest='autoregressive', help='Doing auto_regression for interpolation', action='store_true', default=False)
 parser.add_argument('--in_refine', dest='in_refine', help='Input for refinement network', default='xyz')
 parser.add_argument('--out_refine', dest='out_refine', help='Output for refinement network', default='xyz')
+parser.add_argument('--annealing', dest='annealing', help='Apply annealing', action='store_true', default=False)
+parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
+parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
 args = parser.parse_args()
 
 
@@ -103,7 +104,7 @@ features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 
 x, y, z, u, v, d, eot, og, rad, f_sin, f_cos, fx, fy, fz, fx_norm, fy_norm, fz_norm, g = range(len(features))
 input_col, input_startpos_col, gt_col, gt_startpos_col, gt_xyz_col, features_cols = utils_func.get_selected_cols(args=args, pred='depth')
 
-def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_dict, epoch, vis_signal, optimizer, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):
+def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_dict, epoch, vis_signal, optimizer, cam_params_dict, annealing_weight, vis_flag=True, visualization_path='./visualize_html/'):
   # Training RNN/LSTM model
   # Run over each example
   # Train a model
@@ -129,12 +130,19 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
 
   if 'refinement' in args.pipeline:
-    pred_xyz_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train)
+    pred_xyz_refined_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train)
+  else: pred_xyz_refined_train = None
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
-  train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train) # Calculate the loss
+  train_loss_dict, train_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_train, pred_xyz_refined=pred_xyz_refined_train, input_dict=input_train_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_train, missing_dict=missing_dict_train, annealing_weight=annealing_weight) # Calculate the loss
 
   train_loss.backward()
+
+  # for model in model_dict.keys():
+    # print(model)
+    # if 'refinement' in model:
+      # for name, param in model_dict[model].named_parameters():
+        # print(name, param)
 
   for model in model_dict:
     pt.nn.utils.clip_grad_norm_(model_dict[model].parameters(), args.clip)
@@ -162,10 +170,12 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
 
   if 'refinement' in args.pipeline:
-    pred_xyz_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize, pred_dict=pred_dict_val, refine=args.refine)
+    pred_xyz_refined_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize, pred_dict=pred_dict_val)
+  else: pred_xyz_refined_val = None
+
 
   optimizer.zero_grad() # Clear existing gradients from previous epoch
-  val_loss_dict, val_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_val, input_dict=input_val_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_val, missing_dict=missing_dict_val) # Calculate the loss
+  val_loss_dict, val_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_val, pred_xyz_refined=pred_xyz_refined_val, input_dict=input_val_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_val, missing_dict=missing_dict_val, annealing_weight=annealing_weight) # Calculate the loss
 
   utils_func.print_loss(loss_list=[train_loss_dict, train_loss], name='Training')
   utils_func.print_loss(loss_list=[val_loss_dict, val_loss], name='Validating')
@@ -179,6 +189,7 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
     pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx'], 'pred_uv':uv_train}
     pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx'], 'pred_uv':uv_val}
     utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth')
+
 
   return train_loss.item(), val_loss.item(), model_dict
 
@@ -253,6 +264,8 @@ if __name__ == '__main__':
 
   # Model definition
   min_val_loss = 2e10
+  annealing_step = 0
+  annealing_weight = 1.0
   model_dict, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
   print(model_dict)
   print(model_cfg)
@@ -262,6 +275,9 @@ if __name__ == '__main__':
   # for model
   params = []
   for model in model_dict.keys():
+    if 'refinement' not in model:
+      print(model_dict[model].parameters())
+      # print("PARAM TO OPTIM : ", model)
     params += list(model_dict[model].parameters())
   optimizer = pt.optim.Adam(params, lr=args.lr)
   lr_scheduler = pt.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=args.decay_gamma)
@@ -275,7 +291,9 @@ if __name__ == '__main__':
   else:
     print('===>Load checkpoint with Optimizer state, Decay and Scheduler state')
     print('[#] Loading ... {}'.format(args.load_checkpoint))
-    model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss = utils_func.load_checkpoint_train(model_dict, optimizer, lr_scheduler)
+    model_dict, optimizer, start_epoch, lr_scheduler, min_val_loss, annealing_scheduler = utils_func.load_checkpoint_train(model_dict, optimizer, lr_scheduler)
+    annealing_step = annealing_scheduler['step']
+    annealing_weight = annealing_scheduler['weight']
 
   print('[#]Model Architecture')
   for model in model_cfg.keys():
@@ -317,7 +335,7 @@ if __name__ == '__main__':
       gt_train_dict = {'o_with_f':batch_train['gt'][0].to(device), 'lengths':batch_train['gt'][1].to(device), 'mask':batch_train['gt'][2].to(device), 'startpos':batch_train['gt'][3].to(device), 'xyz':batch_train['gt'][4].to(device)}
 
       # Call function to train
-      train_loss, val_loss, model_dict = train(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict,
+      train_loss, val_loss, model_dict = train(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, annealing_weight=annealing_weight,
                                                             model_dict=model_dict, vis_flag=args.vis_flag,
                                                             optimizer=optimizer, epoch=epoch, vis_signal=vis_signal,
                                                             cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
@@ -336,7 +354,14 @@ if __name__ == '__main__':
     if epoch % args.decay_cycle == 0:
       lr_scheduler.step()
       for param_group in optimizer.param_groups:
-        print("Stepping Learning rate to ", param_group['lr'])
+        print("[#]Stepping Learning rate to ", param_group['lr'])
+
+    # Decrease learning rate every n_epochs % annealing_cycle batch
+    if epoch % args.annealing_cycle == 0:
+      annealing_weight = annealing_weight * args.annealing_gamma ** annealing_step
+      annealing_step += 1
+      print("[#]Stepping annealing weight to ", annealing_weight)
+
 
     # Save the model checkpoint every finished the epochs
     print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))
@@ -346,8 +371,9 @@ if __name__ == '__main__':
       print('[+++]Saving the best model checkpoint : Prev loss {:.3f} > Curr loss {:.3f}'.format(min_val_loss, val_loss_per_epoch))
       print('[+++]Saving the best model checkpoint to : ', save_checkpoint_best)
       min_val_loss = val_loss_per_epoch
+      annealing_scheduler = {'step':annealing_step, 'weight':annealing_weight}
       # Save to directory
-      checkpoint = {'epoch':epoch+1, 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
+      checkpoint = {'epoch':epoch+1, 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg, 'annealing_scheduler':annealing_scheduler}
       for model in model_cfg:
         checkpoint[model] = model_dict[model].state_dict()
       pt.save(checkpoint, save_checkpoint_best)
@@ -361,7 +387,7 @@ if __name__ == '__main__':
       # Save the lastest checkpoint for continue training every 10 epoch
       save_checkpoint_lastest = '{}/{}_lastest.pth'.format(save_checkpoint, args.wandb_name)
       print('[#]Saving the lastest checkpoint to : ', save_checkpoint_lastest)
-      checkpoint = {'epoch':epoch+1, 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg}
+      checkpoint = {'epoch':epoch+1, 'optimizer':optimizer.state_dict(), 'lr_scheduler':lr_scheduler.state_dict(), 'min_val_loss':min_val_loss, 'model_cfg':model_cfg, 'annealing_scheduler':annealing_scheduler}
       for model in model_cfg:
         checkpoint[model] = model_dict[model].state_dict()
       pt.save(checkpoint, save_checkpoint_lastest)

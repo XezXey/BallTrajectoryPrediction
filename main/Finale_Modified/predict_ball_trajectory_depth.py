@@ -65,13 +65,16 @@ parser.add_argument('--round', dest='round', help='Rounding pixel', action='stor
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
 parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
-parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
+parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', required=True)
 parser.add_argument('--latent_code', dest='latent_code', help='Optimze the latent code)', nargs='+', default=[])
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
 parser.add_argument('--in_refine', dest='in_refine', help='Input of Refinement space', default='xyz')
 parser.add_argument('--out_refine', dest='out_refine', help='Output of Refinement space', default='xyz')
 parser.add_argument('--autoregressive', dest='autoregressive', help='Doing auto regression for interpolation', action='store_true', default=False)
+parser.add_argument('--annealing', dest='annealing', help='Apply annealing', action='store_true', default=False)
+parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
+parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -231,9 +234,9 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   if args.noise:
     in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
-  if args.optimize and  'refinement' not in args.pipeline:
+  if args.optimize == 'depth':
     # Optimize with Depth estimation network
-    pred_xyz_test, pred_dict_test, missing_dict_test, input_uv_cumsum_test, pred_depth_cumsum_test = utils_model.optimize_depth(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, optimize=args.optimize, input_dict=input_test_dict)
+    pred_xyz_test, pred_dict_test, missing_dict_test, input_uv_cumsum_test, pred_depth_cumsum_test = utils_model.optimization_depth(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, optimize=args.optimize, input_dict=input_test_dict)
     pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
   else:
@@ -255,6 +258,9 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
   if 'refinement' in args.pipeline:
+    if args.optimize == 'refinement':
+      pred_xyz_test = utils_model.optimization_refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
+    else:
       pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
 
 
