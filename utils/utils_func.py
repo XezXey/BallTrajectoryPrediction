@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from mpl_toolkits import mplot3d
+
+# Utils
+import utils.transformation as utils_transform
 import wandb
 # Models
 # No Stack
@@ -70,9 +73,15 @@ def latent_transform_size(depth_extra_insize, refinement_extra_insize):
     elif args.latent_transf == 'angle_sameP':    # Angle same + preserve sin and cos
       refinement_extra_insize += 0
     elif args.latent_transf == 'angle_expand':    # Angle expand = xsin, xcos, ysin, ycos, zsin, zcos
-      refinement_extra_insize += 4
+      if args.in_refine == 'xyz_dtxyz':
+        refinement_extra_insize += 4
+      else:
+        refinement_extra_insize += 1
     elif args.latent_transf == 'angle_expandP':    # Angle expand + preserve sin and cos
-      refinement_extra_insize += 6
+      if args.in_refine == 'xyz_dtxyz':
+        refinement_extra_insize += 6
+      else:
+        refinement_extra_insize += 3
 
 
   return depth_extra_insize, refinement_extra_insize
@@ -106,7 +115,7 @@ def get_model_depth(model_arch, features_cols, args):
     refinement_extra_insize = 0
 
 
-  if args.in_refine == 'xyz_dtxyz':
+  if args.in_refine == 'xyz_dtxyz' and (args.latent_transf != 'angle_expand' or args.latent_transf != 'angle_expandP'):
     refinement_extra_insize += 3
 
   # Latent transformation
@@ -247,7 +256,7 @@ def visualize_layout_update(fig=None, n_vis=3):
     fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-10, 10],), yaxis = dict(nticks=5, range=[-2, 3],), zaxis = dict(nticks=10, range=[-10, 10],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
   return fig
 
-def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, pred_train_dict, pred_val_dict, visualization_path, pred):
+def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, pred_train_dict, pred_val_dict, visualization_path, pred, cam_params_dict):
   # Visualize by make a subplots of trajectory
   n_vis = 4
   # Random the index the be visualize
@@ -285,8 +294,8 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
     pred_eot_val  = None
 
   fig_displacement = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter'}, {'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
-  visualize_displacement(input_dict=input_train_dict, pred_dict=pred_train_dict, pred_eot=pred_eot_train, gt_eot=gt_eot_train, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred)
-  visualize_displacement(input_dict=input_val_dict, pred_dict=pred_val_dict, pred_eot=pred_eot_val, gt_eot=gt_eot_val, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred)
+  visualize_displacement(input_dict=input_train_dict, pred_dict=pred_train_dict, gt_dict=gt_train_dict, pred_eot=pred_eot_train, gt_eot=gt_eot_train, n_vis=n_vis, vis_idx=train_vis_idx, fig=fig_displacement, flag='Train', pred=pred, cam_params_dict=cam_params_dict)
+  visualize_displacement(input_dict=input_val_dict, pred_dict=pred_val_dict, gt_dict=gt_val_dict, pred_eot=pred_eot_val, gt_eot=gt_eot_val, n_vis=n_vis, vis_idx=val_vis_idx, fig=fig_displacement, flag='Validation', pred=pred, cam_params_dict=cam_params_dict)
 
   ####################################
   ############### EOT ################
@@ -304,7 +313,7 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
-def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pred, fig=None, flag='train', n_vis=5):
+def visualize_displacement(input_dict, pred_dict, gt_dict, pred_eot, gt_eot, vis_idx, pred, cam_params_dict, fig=None, flag='train', n_vis=5):
   duv = pred_dict['input'][..., [0, 1]].cpu().detach().numpy()
   depth = pred_dict[pred].cpu().detach().numpy()
   lengths = input_dict['lengths'].cpu().detach().numpy()
@@ -354,8 +363,18 @@ def visualize_displacement(input_dict, pred_dict, pred_eot, gt_eot, vis_idx, pre
       fig.add_trace(go.Scatter(x=uv_gt[i][:lengths[i]+1, 0], y=uv_gt[i][:lengths[i]+1, 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Ground Truth UV'.format(flag, i)), row=idx+1, col=col)
 
     else:
+      world_pred = pt.unsqueeze(pred_dict['finale_xyz'][i, :, [0, 1, 2]], dim=0)
+      world_gt = pt.unsqueeze(gt_dict['xyz'][i, :, [0, 1, 2]], dim=0)
+      u_pred_proj, v_pred_proj, d_pred_proj = utils_transform.projectToScreenSpace(world=world_pred, cam_params_dict=cam_params_dict['main'])
+      uv_pred_proj = pt.cat((u_pred_proj, v_pred_proj), dim=2).cpu().detach().numpy()
+      u_gt_proj, v_gt_proj, d_gt_proj = utils_transform.projectToScreenSpace(world=world_gt, cam_params_dict=cam_params_dict['main'])
+      uv_gt_proj = pt.cat((u_gt_proj, v_gt_proj), dim=2).cpu().detach().numpy()
+
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of U'.format(flag, i)), row=idx+1, col=col)
       fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=duv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-Displacement of V'.format(flag, i)), row=idx+1, col=col)
+
+      fig.add_trace(go.Scatter(x=uv_pred_proj[0][:lengths[i], 0], y=uv_pred_proj[0][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-UV_Pred_Projection'.format(flag, i)), row=idx+1, col=col)
+      fig.add_trace(go.Scatter(x=uv_gt_proj[0][:lengths[i], 0], y=uv_gt_proj[0][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='{}-traj#{}-UV_Gt'.format(flag, i)), row=idx+1, col=col)
 
     ####################################
     ############### EOT ################

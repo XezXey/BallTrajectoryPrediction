@@ -59,7 +59,7 @@ class OptimizationLatentAnalyze(pt.nn.Module):
 
     if 'sin_cos' in self.latent_code and remaining_size > 0:
       # latent_sin_cos = pt.cat((latent[..., [latent_pointer:latent_pointer+2]], latent[..., [latent_pointer:latent_pointer+2]])), dim=2)
-      latent_sin_cos = latent[..., latent_pointer:latent_pointer+2] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2]**2, dim=1, keepdims=True) + 1e-16)
+      latent_sin_cos = latent[..., latent_pointer:latent_pointer+2] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2]**2, dim=2, keepdims=True) + 1e-16)
       latent_in.append(latent_sin_cos)
       print("Manipulate Sin Cos : ", latent_sin_cos.shape)
       remaining_size -= 2

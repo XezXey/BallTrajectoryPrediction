@@ -56,7 +56,7 @@ parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weig
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
-parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', action='store_true')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', nargs='+', default=[])
 parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
@@ -75,6 +75,7 @@ parser.add_argument('--autoregressive', dest='autoregressive', help='Doing auto 
 parser.add_argument('--annealing', dest='annealing', help='Apply annealing', action='store_true', default=False)
 parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
+parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -220,6 +221,9 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   # Run over each example
   # Test a model
 
+  pred_dict_test = {}
+  missing_dict_test = {}
+  latent_optimized = []
   ####################################
   ############# Testing ##############
   ####################################
@@ -234,12 +238,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   if args.noise:
     in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
-  if args.optimize == 'depth':
-    # Optimize with Depth estimation network
-    pred_xyz_test, pred_dict_test, missing_dict_test, input_uv_cumsum_test, pred_depth_cumsum_test = utils_model.optimization_depth(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, optimize=args.optimize, input_dict=input_test_dict)
-    pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
-
-  else:
+  if args.optimize is None or args.optimize != 'depth':
     # Forward pass
     pred_dict_test, in_test, missing_dict_test = utils_model.fw_pass(model_dict, input_dict=input_test_dict, cam_params_dict=cam_params_dict)
     # Pipeline variable
@@ -257,13 +256,18 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     # Project the (u, v, depth) to world space
     pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
-  if 'refinement' in args.pipeline:
-    if args.optimize == 'refinement':
-      pred_xyz_test = utils_model.optimization_refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
-    else:
-      pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
+    if 'refinement' in args.pipeline:
+      if args.optimize == 'refinement':
+        pred_xyz_test, latent_optimized = utils_model.optimization_refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
+      else:
+        pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
 
+  elif args.optimize == 'depth':
+    pred_xyz_test, latent_optimized, pred_dict_test, input_uv_cumsum_test, pred_depth_cumsum_test = utils_model.optimization_depth(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, optimize=args.optimize, pred_dict=pred_dict_test, input_dict=input_test_dict)
+    # Pipeline variable
+    pred_depth_test, pred_flag_test, input_flag_test = utils_func.get_pipeline_var(pred_dict=pred_dict_test, input_dict=input_test_dict)
 
+  # Calculate loss
   test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_test[..., [0, 1, 2]], input_dict=input_test_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict_test, missing_dict=missing_dict_test)
 
   ####################################
@@ -277,8 +281,8 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   utils_func.print_loss(loss_list=[test_loss_dict, test_loss], name='Testing')
 
   if vis_flag == True:
-    pred_test_dict = {'input':in_test, 'flag':pred_flag_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test}
-    utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args)
+    pred_test_dict = {'input':in_test, 'flag':pred_flag_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test, 'latent_optimized':latent_optimized}
+    utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args, cam_params_dict=cam_params_dict)
 
   return evaluation_results, reconstructed_trajectory, each_batch_trajectory
 

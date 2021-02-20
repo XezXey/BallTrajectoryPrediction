@@ -1,16 +1,21 @@
-2021-02-17 17:13:05,173 DEBUG   MainThread:12048 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
-2021-02-17 17:13:05,181 DEBUG   MainThread:12048 [meta.py:setup():97] code probe starting
-2021-02-17 17:13:05,182 DEBUG   MainThread:12048 [meta.py:_setup_code_git():49] probe for git information
-2021-02-17 17:13:05,192 DEBUG   MainThread:12048 [meta.py:_setup_code_program():58] save program starting
-2021-02-17 17:13:05,192 DEBUG   MainThread:12048 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-02-17 17:13:05,193 DEBUG   MainThread:12048 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210217_101304-38uazizk/code/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-02-17 17:13:05,193 DEBUG   MainThread:12048 [meta.py:_setup_code_program():67] save program
-2021-02-17 17:13:05,193 DEBUG   MainThread:12048 [meta.py:setup():119] code probe done
-2021-02-17 17:13:05,200 DEBUG   MainThread:12048 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/38uazizk
-2021-02-17 17:13:05,201 INFO    MainThread:12048 [run_manager.py:wrap_existing_process():1144] wrapping existing process 12011
-2021-02-17 17:13:05,202 WARNING MainThread:12048 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
-2021-02-17 17:13:05,345 INFO    MainThread:12048 [run_manager.py:init_run():924] system metrics and metadata threads started
-2021-02-17 17:13:05,345 INFO    MainThread:12048 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
-2021-02-17 17:13:05,346 INFO    MainThread:12048 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
-2021-02-17 17:13:06,177 INFO    Thread-3  :12048 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210217_101304-38uazizk/config.yaml
-2021-02-17 17:13:06,177 INFO    Thread-3  :12048 [38uazizk:run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210217_101304-38uazizk/config.yaml
+2021-02-19 22:08:01,692 DEBUG   MainThread:28333 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2021-02-19 22:08:01,700 DEBUG   MainThread:28333 [meta.py:setup():97] code probe starting
+2021-02-19 22:08:01,701 DEBUG   MainThread:28333 [meta.py:_setup_code_git():49] probe for git information
+2021-02-19 22:08:01,710 DEBUG   MainThread:28333 [meta.py:_setup_code_program():58] save program starting
+2021-02-19 22:08:01,711 DEBUG   MainThread:28333 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-02-19 22:08:01,711 DEBUG   MainThread:28333 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210219_150801-2hu8jryn/code/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-02-19 22:08:01,711 DEBUG   MainThread:28333 [meta.py:_setup_code_program():67] save program
+2021-02-19 22:08:01,711 DEBUG   MainThread:28333 [meta.py:setup():119] code probe done
+2021-02-19 22:08:01,719 DEBUG   MainThread:28333 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/2hu8jryn
+2021-02-19 22:08:01,720 INFO    MainThread:28333 [run_manager.py:wrap_existing_process():1144] wrapping existing process 28298
+2021-02-19 22:08:01,720 WARNING MainThread:28333 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2021-02-19 22:08:01,865 INFO    MainThread:28333 [run_manager.py:init_run():924] system metrics and metadata threads started
+2021-02-19 22:08:01,865 INFO    MainThread:28333 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
+2021-02-19 22:08:01,865 INFO    MainThread:28333 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
+2021-02-19 22:08:02,696 INFO    Thread-3  :28333 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210219_150801-2hu8jryn/config.yaml
+2021-02-19 22:08:12,999 INFO    MainThread:28333 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
+2021-02-19 22:08:13,000 INFO    MainThread:28333 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-02-19 22:08:13,008 INFO    MainThread:28333 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
+c_etc():1324] process received interrupt signal, shutting down
+2021-02-19 22:08:13,000 INFO    MainThread:28333 [2hu8jryn:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-02-19 22:08:13,008 INFO    MainThread:28333 [2hu8jryn:run_manager.py:shutdown():1068] shutting down system stats and metadata service

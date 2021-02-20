@@ -53,7 +53,7 @@ def get_cam_params_dict(cam_params_file, device):
 
   return cam_params_dict
 
-def projectToScreenSpace(world, cam_params_dict, normalize=True):
+def projectToScreenSpace(world, cam_params_dict, normalize=False):
   world = pt.cat((world, pt.ones(world.shape[0], world.shape[1], 1).to(device)), dim=-1)
   I = cam_params_dict['I']
   E = cam_params_dict['E']

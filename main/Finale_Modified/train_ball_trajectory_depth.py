@@ -187,9 +187,11 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
       missing_dict_train = {'mask':None, 'idx':None}
       missing_dict_val = {'mask':None, 'idx':None}
 
-    pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx'], 'pred_uv':uv_train}
-    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx'], 'pred_uv':uv_val}
-    utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth')
+    pred_xyz_train_finale = pred_xyz_train if 'refinement' not in args.pipeline else pred_xyz_refined_train
+    pred_xyz_val_finale = pred_xyz_val if 'refinement' not in args.pipeline else pred_xyz_refined_val
+    pred_train_dict = {'input':in_train, 'flag':pred_flag_train, 'depth':pred_depth_train, 'xyz':pred_xyz_train, 'xyz_refined':pred_xyz_refined_train, 'finale_xyz':pred_xyz_train_finale, 'missing_mask':missing_dict_train['mask'], 'missing_idx':missing_dict_train['idx'], 'pred_uv':uv_train}
+    pred_val_dict = {'input':in_val, 'flag':pred_flag_val, 'depth':pred_depth_val, 'xyz':pred_xyz_val, 'xyz_refined':pred_xyz_refined_train, 'finale_xyz':pred_xyz_val_finale, 'missing_mask':missing_dict_val['mask'], 'missing_idx':missing_dict_val['idx'], 'pred_uv':uv_val}
+    utils_func.make_visualize(input_train_dict=input_train_dict, gt_train_dict=gt_train_dict, input_val_dict=input_val_dict, gt_val_dict=gt_val_dict, pred_train_dict=pred_train_dict, pred_val_dict=pred_val_dict, visualization_path=visualization_path, pred='depth', cam_params_dict=cam_params_dict)
 
 
   return train_loss.item(), val_loss.item(), model_dict

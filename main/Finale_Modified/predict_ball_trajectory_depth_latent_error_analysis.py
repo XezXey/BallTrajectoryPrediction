@@ -53,7 +53,7 @@ parser.add_argument('--load_checkpoint', dest='load_checkpoint', type=str, help=
 parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
 parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
 parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
-parser.add_argument('--model_arch', dest='model_arch', type=str, help='Input the model architecture(lstm, bilstm, gru, bigru)', required=True)
+parser.add_argument('--model_arch', dest='model_arch', help='Input the model architecture(lstm, bilstm, gru, bigru)', nargs='+', default=[])
 parser.add_argument('--threshold', dest='threshold', type=float, help='Provide the error threshold of reconstructed trajectory', default=0.8)
 parser.add_argument('--animation', dest='animation', help='Animated visualize flag', action='store_true', default=False)
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
@@ -70,7 +70,7 @@ parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weig
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
-parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', action='store_true')
+parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', nargs='+', default=[])
 parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
@@ -79,7 +79,7 @@ parser.add_argument('--round', dest='round', help='Rounding pixel', action='stor
 parser.add_argument('--pipeline', dest='pipeline', help='Pipeline', nargs='+', default=[])
 parser.add_argument('--n_refinement', dest='n_refinement', help='Refinement Iterations', type=int, default=1)
 parser.add_argument('--fix_refinement', dest='fix_refinement', help='Fix Refinement for 1st and last points', action='store_true', default=False)
-parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', action='store_true', default=False)
+parser.add_argument('--optimize', dest='optimize', help='Flag to optimze(This will work when train with latent', default=None)
 parser.add_argument('--latent_code', dest='latent_code', help='Optimze the latent code)', nargs='+', default=[])
 parser.add_argument('--missing', dest='missing', help='Adding a missing data points while training', default=None)
 parser.add_argument('--recon', dest='recon', help='Using Ideal or Noisy uv for reconstruction', default='ideal_uv')
@@ -89,6 +89,7 @@ parser.add_argument('--out_refine', dest='out_refine', help='Output for refineme
 parser.add_argument('--annealing', dest='annealing', help='Apply annealing', action='store_true', default=False)
 parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
+parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
 
 
 args = parser.parse_args()
@@ -246,6 +247,8 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
       rad = pt.tensor(rad * np.ones((in_f.shape[0], in_f.shape[1], 2)))
       latent = pt.cat((pt.sin(rad[..., [0]]), pt.cos(rad[..., [1]])), dim=2)
       in_f_ = pt.cat((in_f.clone(), latent.type(pt.cuda.FloatTensor).to(device)), dim=2)
+      if args.latent_transf is not None:
+        in_f_ = utils_model.latent_transform(in_f=in_f_)
       pred_refinement = latent_analyzer(in_f=in_f_.detach().clone(), lengths=lengths)
 
       ####################################
@@ -270,6 +273,8 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
           pred_xyz_optimized = pred_xyz + pred_refinement
         elif args.in_refine == 'dtxyz':
           pred_xyz_optimized = pt.cat((pred_xyz[:, [0], :].detach().clone(), pred_xyz[:, 1:, :].detach().clone() + pred_refinement), dim=1)
+      elif args.out_refine == 'xyz_residua':
+        pred_xyz_optimized = pred_refinement
 
       test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_optimized[..., [0, 1, 2]], input_dict=input_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict, missing_dict=missing_dict)
       optimization_loss = calculate_optimization_loss(optimized_xyz=pred_xyz_optimized, gt_dict=gt_dict, cam_params_dict=cam_params_dict)
@@ -337,7 +342,7 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
     global batch_ptr
     fig['layout']['scene1'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
     fig['layout']['scene2'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
-    plotly.offline.plot(fig, filename='./{}/Latent_Analysis_optimization_1e4/{}.html'.format(args.visualization_path, batch_ptr), auto_open=True)
+    plotly.offline.plot(fig, filename='./{}/Latent_Analysis_optimization_dtxyz_dir/{}.html'.format(args.visualization_path, batch_ptr), auto_open=True)
     batch_ptr += 1
 
 

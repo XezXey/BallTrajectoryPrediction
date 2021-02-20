@@ -2,10 +2,13 @@ import torch as pt
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import sys
+import os
+from utils import utils_model as utils_model
 
 # TrajectoryOptimization Class
 class TrajectoryOptimizationRefinement(pt.nn.Module):
-  def __init__(self, pred_xyz, cam_params_dict, gt_dict, latent_size, model_dict, n_refinement, pred_dict, latent_code):
+  def __init__(self, pred_xyz, cam_params_dict, gt_dict, latent_size, model_dict, n_refinement, pred_dict, latent_code, latent_transf):
     super(TrajectoryOptimizationRefinement, self).__init__()
     self.pred_xyz = pred_xyz
     self.cam_params_dict = cam_params_dict
@@ -26,13 +29,18 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
       latent_size -= 0
     self.latent_size = latent_size
     self.latent = pt.nn.ParameterList()
+    self.latent_transf = latent_transf
 
   def forward(self, in_f, lengths):
     latent = self.update_latent(lengths)
     latent = self.manipulate_latent(latent)
-    in_f = pt.cat((in_f, latent), dim=2)
+    in_f_ = pt.cat((in_f, latent), dim=2)
+    if self.latent_transf is not None:
+      in_f__ = utils_model.latent_transform(in_f = in_f_)
+    else: in_f__ = in_f_
+
     for idx in range(self.n_refinement):
-      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f, lengths=lengths)
+      pred_refinement, (_, _) = self.model_dict['model_refinement_{}'.format(idx)](in_f=in_f__, lengths=lengths)
       # rand_idx = np.random.randint(0, self.gt_dict['lengths'].shape[0])
       # plt.plot(pred_refinement[rand_idx][:self.gt_dict['lengths'][rand_idx], [0]].cpu().detach().numpy(), 'g-o')
       # plt.plot(pred_refinement[rand_idx][:self.gt_dict['lengths'][rand_idx], [1]].cpu().detach().numpy(), 'g-o')
@@ -59,6 +67,7 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
         # Flag prediction work properly
         n_latent = len(where)
         # latent = pt.nn.Parameter(pt.rand(n_latent+1, self.latent_size, dtype=pt.float32).cuda() * 100., requires_grad=True).cuda()
+
         self.latent.append(pt.nn.Parameter(pt.rand(n_latent+1, self.latent_size, dtype=pt.float32).cuda(), requires_grad=True).cuda())
 
 
@@ -73,7 +82,9 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
       flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
     close = pt.isclose(flag, pt.tensor(1.), atol=5e-1)
     all_latent = pt.ones((flag.shape[0], flag.shape[1], self.latent_size)).cuda()
+    # all_latent = []
     for i in range(flag.shape[0]):
+      each_latent = []
       # Each Trajectory
       where = pt.where(close[i] == True)[0]
       where = where[where < lengths[i]]
@@ -82,7 +93,12 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
       else:
         where = [0] + list(where.cpu().detach().numpy()+1) + [flag.shape[1]]
       for j in range(len(where)-1):
+        # each_latent.append(self.latent[i][j].repeat(where[j+1] - where[j], 1))
         all_latent[i][where[j]:where[j+1]] = self.latent[i][j].repeat(where[j+1] - where[j], 1)
+      # each_latent = pt.cat((each_latent))
+    # all_latent.append(each_latent)
+    # all_latent = pt.stack(all_latent, dim=0)
+    # print(all_latent.shape)
 
       # all_latent.append(pt.cat(each_latent))
       # plt.plot(pt.cat(each_latent).cpu().detach().numpy(), 'r-o')
@@ -112,9 +128,17 @@ class TrajectoryOptimizationRefinement(pt.nn.Module):
       ############# SIN & COS #############
       #####################################
       # latent_sin_cos = pt.cat((latent[..., [latent_pointer:latent_pointer+2]], latent[..., [latent_pointer:latent_pointer+2]])), dim=2)
-      latent_sin_cos = latent[..., latent_pointer:latent_pointer+2] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2]**2, dim=1, keepdims=True) + 1e-16)
+      latent_sin_cos = latent[..., latent_pointer:latent_pointer+2] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2]**2, dim=2, keepdims=True) + 1e-16)
+      # print(latent[..., latent_pointer:latent_pointer+2])
+      # print(latent[..., latent_pointer:latent_pointer+2]**2)
+      # print(pt.sum(latent[..., latent_pointer:latent_pointer+2], dim=2))
+      # print(pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2], dim=2)))
+      # print(latent[..., [latent_pointer]] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2], dim=2)))
+      # print(latent[..., [latent_pointer+1]] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2], dim=2)))
+      # exit()
       latent_in.append(latent_sin_cos)
       print("Manipulate Sin Cos : ", latent_sin_cos.shape)
+      print("Manipulate Sin Cos : ", latent_sin_cos[0, :10])
       remaining_size -= 2
       latent_pointer += 2
 

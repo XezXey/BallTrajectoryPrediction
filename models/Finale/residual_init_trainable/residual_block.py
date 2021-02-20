@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import matplotlib.pyplot as plt
 
 class ResNetLayer(pt.nn.Module):
-  def __init__(self, input_size, output_size, batch_size, bidirectional, trainable_init, model, n_stack=4, hidden_dim=32, n_block=3):
+  def __init__(self, input_size, output_size, batch_size, bidirectional, trainable_init, model, n_stack=2, hidden_dim=32, n_block=2):
     super().__init__()
     # Define the model parameters
     self.input_size = input_size
@@ -46,6 +46,8 @@ class ResNetLayer(pt.nn.Module):
     residual = self.blocks(x)
     if self.model == 'flag':
       x = self.sigmoid(self.fc_out(residual['in_f']))
+    elif self.model == 'refinement':
+      x = residual['in_f']
     else:
       x = self.fc_out(residual['in_f'])
 
@@ -149,7 +151,7 @@ class ResidualBlock(pt.nn.Module):
     # print("OUTPUT LSTM : ", out)
     out = self.fc_blocks(out)
     # print("OUTPUT FC: ", out)
-    out_block = self.relu(out+in_f)
+    out_block = out+in_f
     # print("OUTPUT BLOCK: ", out_block)
     return {'in_f':out_block, 'lengths':lengths, 'hidden':hidden, 'cell_state':cell_state}
 
