@@ -130,8 +130,8 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   count = 1
   for idx, i in enumerate(vis_idx):
     for col_idx in range(1, 3):
-      fig.add_trace(go.Scatter3d(x=pred_xyz[i][:lengths[i]+1, 0], y=pred_xyz[i][:lengths[i]+1, 1], z=-pred_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {}, MaxDist = {}".format(flag, i, utils_loss.TrajectoryLoss(pt.tensor(pred_xyz[i]).to(device), pt.tensor(gt_xyz[i]).to(device), mask=mask[i]), evaluation_results['MAE']['loss_3axis'][i], evaluation_results['MAE']['maxdist_3axis'][i, :])), row=idx+count, col=col_idx)
-      fig.add_trace(go.Scatter3d(x=gt_xyz[i][:lengths[i]+1, 0], y=gt_xyz[i][:lengths[i]+1, 1], z=-gt_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+count, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=pred_xyz[i][:lengths[i]+1, 0], y=pred_xyz[i][:lengths[i]+1, 1], z=pred_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_pred, name="{}-Estimated Trajectory [{}], MSE = {:.3f}, MAE_trajectory = {}, MaxDist = {}".format(flag, i, utils_loss.TrajectoryLoss(pt.tensor(pred_xyz[i]).to(device), pt.tensor(gt_xyz[i]).to(device), mask=mask[i]), evaluation_results['MAE']['loss_3axis'][i], evaluation_results['MAE']['maxdist_3axis'][i, :])), row=idx+count, col=col_idx)
+      fig.add_trace(go.Scatter3d(x=gt_xyz[i][:lengths[i]+1, 0], y=gt_xyz[i][:lengths[i]+1, 1], z=gt_xyz[i][:lengths[i]+1, 2], mode='markers', marker=marker_dict_gt, name="{}-Ground Truth Trajectory [{}]".format(flag, i)), row=idx+count, col=col_idx)
       if args.optimize is not None:
         # We did an optimization on Depth or Refinement network
         where = np.where(close[i] == True)[0]
@@ -157,7 +157,7 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
             latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0]+latent_optimized[i][latent_pos, 0]*10]
             latent_arrow_y = [pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]+latent_optimized[i][latent_pos, 1]*10]
             latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2]+latent_optimized[i][latent_pos, 2]*10]
-          fig.add_trace(go.Scatter3d(x=latent_arrow_x, y=latent_arrow_y, z=-latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent, name="{}-Optimized Latent [{}]".format(flag, i)), row=idx+count, col=col_idx)
+          fig.add_trace(go.Scatter3d(x=latent_arrow_x, y=latent_arrow_y, z=latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent, name="{}-Optimized Latent [{}]".format(flag, i)), row=idx+count, col=col_idx)
     count +=1
   # Iterate to plot each displacement of (u, v, depth)
   for idx, i in enumerate(vis_idx):

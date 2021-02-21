@@ -8,6 +8,7 @@ import os
 import argparse
 import sys
 import time
+import re
 sys.path.append(os.path.realpath('../..'))
 from tqdm import tqdm
 from torchvision.transforms import ToTensor
@@ -32,13 +33,14 @@ import utils.utils_model as utils_model
 # Loss
 import utils.loss as utils_loss
 # Analysis model
-from models.Finale.optimization.optimization_refinement_ErrAnalysis import OptimizationLatentAnalyze
+from models.Finale.optimization.optimization import TrajectoryOptimization, TrajectoryOptimizationRefinement, TrajectoryOptimizationDepth, Analyzer
 # marker_dict for contain the marker properties
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.4)', size=4)
 marker_dict_noisy = dict(color='rgba(204, 102, 0, 0.4)', size=4)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=4)
 marker_dict_axis = [dict(color='rgba(255, 0, 0, 0.7)', size=2.5), dict(color='rgba(0, 0, 255, 0.7)', size=2.5)]
 marker_dict_latent = dict(color='rgba(11, 102, 35, 0.7)', size=7)
+marker_dict_latent_all = dict(color='rgba(255, 131, 0, 0.7)', size=1.5)
 batch_ptr = 0
 
 
@@ -194,7 +196,7 @@ def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
   # print(trajectory_loss)
   # print(below_ground_loss)
   # print(multiview_loss)
-  optimization_loss = below_ground_loss + multiview_loss # + trajectory_loss # + multiview_loss #+ trajectory_loss # 
+  optimization_loss = below_ground_loss + multiview_loss + trajectory_loss # + multiview_loss #+ trajectory_loss # 
   return optimization_loss
 
 def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_dict, missing_dict):
@@ -234,9 +236,10 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
     # lengths
     lengths = gt_dict['lengths']
 
-    # Initialize
-  latent_analyzer = OptimizationLatentAnalyze(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size,
-                                                            n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code)
+  # Initialize
+  latent_analyzer = Analyzer(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size,
+                                              n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code,
+                                              latent_transf=args.latent_transf)
   if 'sin_cos' in args.latent_code:
     degree = np.linspace(0, 360.0, int(1e2))
     radian = degree * np.pi / 180
@@ -247,9 +250,7 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
       rad = pt.tensor(rad * np.ones((in_f.shape[0], in_f.shape[1], 2)))
       latent = pt.cat((pt.sin(rad[..., [0]]), pt.cos(rad[..., [1]])), dim=2)
       in_f_ = pt.cat((in_f.clone(), latent.type(pt.cuda.FloatTensor).to(device)), dim=2)
-      if args.latent_transf is not None:
-        in_f_ = utils_model.latent_transform(in_f=in_f_)
-      pred_refinement = latent_analyzer(in_f=in_f_.detach().clone(), lengths=lengths)
+      pred_refinement = latent_analyzer(in_f=in_f_.clone(), lengths=lengths)
 
       ####################################
       ########### OUTPUT PREP ############
@@ -273,7 +274,7 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
           pred_xyz_optimized = pred_xyz + pred_refinement
         elif args.in_refine == 'dtxyz':
           pred_xyz_optimized = pt.cat((pred_xyz[:, [0], :].detach().clone(), pred_xyz[:, 1:, :].detach().clone() + pred_refinement), dim=1)
-      elif args.out_refine == 'xyz_residua':
+      elif args.out_refine == 'xyz_residual':
         pred_xyz_optimized = pred_refinement
 
       test_loss_dict, test_loss = utils_model.calculate_loss(pred_xyz=pred_xyz_optimized[..., [0, 1, 2]], input_dict=input_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, pred_dict=pred_dict, missing_dict=missing_dict)
@@ -312,22 +313,22 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
     gt_xyz = gt_dict['xyz'].cpu().detach().numpy()
     gt_x, gt_y, gt_z = gt_xyz[..., 0].reshape(-1), gt_xyz[..., 1].reshape(-1), gt_xyz[..., 2].reshape(-1)
     # Trajectory - Pred
-    fig.add_trace(go.Scatter3d(x=best_x, y=best_y, z=-best_z, mode='markers+lines', marker=marker_dict_pred, name='Best Loss : {}, Rad : {}'.format(best['loss'], best['rad'])), row=1, col=1)
-    fig.add_trace(go.Scatter3d(x=worst_x, y=worst_y, z=-worst_z, mode='markers+lines', marker=marker_dict_pred, name='Worst Loss : {}, Rad : {}'.format(worst['loss'], worst['rad'])), row=1, col=2)
+    fig.add_trace(go.Scatter3d(x=best_x, y=best_y, z=best_z, mode='markers+lines', marker=marker_dict_pred, name='Best Loss : {}, Rad : {}'.format(best['loss'], best['rad'])), row=1, col=1)
+    fig.add_trace(go.Scatter3d(x=worst_x, y=worst_y, z=worst_z, mode='markers+lines', marker=marker_dict_pred, name='Worst Loss : {}, Rad : {}'.format(worst['loss'], worst['rad'])), row=1, col=2)
     # Trajectory - GT
-    fig.add_trace(go.Scatter3d(x=gt_x, y=gt_y, z=-gt_z, mode='markers+lines', marker=marker_dict_gt), row=1, col=1)
-    fig.add_trace(go.Scatter3d(x=gt_x, y=gt_y, z=-gt_z, mode='markers+lines', marker=marker_dict_gt), row=1, col=2)
+    fig.add_trace(go.Scatter3d(x=gt_x, y=gt_y, z=gt_z, mode='markers+lines', marker=marker_dict_gt), row=1, col=1)
+    fig.add_trace(go.Scatter3d(x=gt_x, y=gt_y, z=gt_z, mode='markers+lines', marker=marker_dict_gt), row=1, col=2)
     # Latent 
     best_latent_sin, best_latent_cos = np.sin(best['rad']), np.cos(best['rad'])
-    best_latent_arrow_x = np.array([best_x[0], best_x[0] + best_latent_sin * 3])
+    best_latent_arrow_x = np.array([best_x[0], best_x[0] + best_latent_cos * 3])
     best_latent_arrow_y = np.array([0, 0])
-    best_latent_arrow_z = np.array([best_z[0], best_z[0] + best_latent_cos * 3])
-    fig.add_trace(go.Scatter3d(x=best_latent_arrow_x, y=best_latent_arrow_y, z=-best_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=1)
+    best_latent_arrow_z = np.array([best_z[0], best_z[0] + best_latent_sin * 3])
+    fig.add_trace(go.Scatter3d(x=best_latent_arrow_x, y=best_latent_arrow_y, z=best_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=1)
     worst_latent_sin, worst_latent_cos = np.sin(worst['rad']), np.cos(worst['rad'])
-    worst_latent_arrow_x = np.array([worst_x[0], worst_x[0] + worst_latent_sin * 3])
+    worst_latent_arrow_x = np.array([worst_x[0], worst_x[0] + worst_latent_cos * 3])
     worst_latent_arrow_y = np.array([0, 0])
-    worst_latent_arrow_z = np.array([worst_z[0], worst_z[0] + worst_latent_cos * 3])
-    fig.add_trace(go.Scatter3d(x=worst_latent_arrow_x, y=worst_latent_arrow_y, z=-worst_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=2)
+    worst_latent_arrow_z = np.array([worst_z[0], worst_z[0] + worst_latent_sin * 3])
+    fig.add_trace(go.Scatter3d(x=worst_latent_arrow_x, y=worst_latent_arrow_y, z=worst_latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent), row=1, col=2)
     # Axis reference
     axis_offset = min([gt_x[0], gt_z[0]]) + 1
     selector = [[axis_offset, 0], [0, axis_offset]] # Draw x and z
@@ -335,14 +336,34 @@ def latent_error_analysis(model_dict, input_dict, gt_dict, cam_params_dict, pred
       axis_x = np.array([gt_x[0], gt_x[0] + sel[0]])
       axis_y = np.array([0, 0])
       axis_z = np.array([gt_z[0], gt_z[0] + sel[1]])
-      fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=-axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=1)
-      fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=-axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=2)
+      fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=1)
+      fig.add_trace(go.Scatter3d(x=axis_x, y=axis_y, z=axis_z, mode='lines', line=dict(width=10), marker=marker_dict_axis[i]), row=1, col=2)
     # Loss landscape
     fig.add_trace(go.Scatter(x=radian, y=loss, mode='markers+lines'), row=2, col=1)
     global batch_ptr
+
     fig['layout']['scene1'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
     fig['layout']['scene2'].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1))
-    plotly.offline.plot(fig, filename='./{}/Latent_Analysis_optimization_dtxyz_dir/{}.html'.format(args.visualization_path, batch_ptr), auto_open=True)
+
+    for idx, each_rad in enumerate(tqdm(radian, desc='Possible : Sin, Cos')):
+      latent_sin, latent_cos = np.sin(each_rad), np.cos(each_rad)
+      # Latent 
+      best_latent_arrow_x = np.array([best_x[0], best_x[0] + latent_cos])
+      best_latent_arrow_y = np.array([0, 0])
+      best_latent_arrow_z = np.array([best_z[0], best_z[0] + latent_sin])
+      fig.add_trace(go.Scatter3d(x=best_latent_arrow_x, y=best_latent_arrow_y, z=best_latent_arrow_z, mode='lines', line=dict(width=2), marker=marker_dict_latent_all, name=each_rad), row=1, col=1)
+      worst_latent_arrow_x = np.array([worst_x[0], worst_x[0] + latent_cos])
+      worst_latent_arrow_y = np.array([0, 0])
+      worst_latent_arrow_z = np.array([worst_z[0], worst_z[0] + latent_sin])
+      fig.add_trace(go.Scatter3d(x=worst_latent_arrow_x, y=worst_latent_arrow_y, z=worst_latent_arrow_z, mode='lines', line=dict(width=2), marker=marker_dict_latent_all, name=each_rad), row=1, col=2)
+
+    pattern = r'((Results[0-9])\w+)'
+    prefix = re.findall(pattern, args.load_checkpoint)[0][0]
+    postfix = args.load_checkpoint.split('/')[-2]
+    filename = './{}/Latent_Analysis/{}_{}/'.format(args.visualization_path, prefix, postfix)
+    if not os.path.exists(filename):
+      os.makedirs(filename)
+    plotly.offline.plot(fig, filename='{}/{}.html'.format(filename, batch_ptr), auto_open=args.vis_flag)
     batch_ptr += 1
 
 

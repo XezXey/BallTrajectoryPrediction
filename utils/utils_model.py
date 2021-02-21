@@ -11,10 +11,9 @@ import utils.utils_func as utils_func
 import utils.cummulative_depth as utils_cummulative
 import utils.loss as utils_loss
 # Optimization
-from models.Finale.optimization.optimization_refinement_position import TrajectoryOptimizationRefinementPosition
-from models.Finale.optimization.optimization_refinement_delta import TrajectoryOptimizationRefinementDelta
-from models.Finale.optimization.optimization_refinement import TrajectoryOptimizationRefinement
-from models.Finale.optimization.optimization_depth import TrajectoryOptimizationDepth
+# from models.Finale.optimization.optimization_refinement import TrajectoryOptimizationRefinement
+# from models.Finale.optimization.optimization_depth import TrajectoryOptimizationDepth
+from models.Finale.optimization.optimization import TrajectoryOptimizationRefinement, TrajectoryOptimizationDepth
 args = None
 
 # GPU initialization
@@ -214,7 +213,7 @@ def latent_transform(in_f):
       angle = pt.cat((in_f[..., [4]], pt.ones(size=(in_f.shape[0], in_f.shape[1], 1)).to(device), in_f[..., [3]]), dim=2)
       in_f_ = pt.mul(in_f[..., [0, 1, 2]], angle)       # xcos, y, zsin or dt_xcos, dt_y, dt_zsin
     elif args.in_refine == 'xyz_dtxyz':
-      angle = pt.cat((in_f[..., [4]], pt.ones(size=(in_f.shape[0], in_f.shape[1], 1)).to(device), in_f[..., [3]]), dim=2)
+      angle = pt.cat((in_f[..., [7]], pt.ones(size=(in_f.shape[0], in_f.shape[1], 1)).to(device), in_f[..., [6]]), dim=2)
       in_f_xyz = pt.mul(in_f[..., [0, 1, 2]], angle)        # xcos, y, zsin
       in_f_dtxyz = pt.mul(in_f[..., [3, 4, 5]], angle)      # dt_xcos, dt_y, dt_zsin
       in_f_ = pt.cat((in_f_xyz, in_f_dtxyz), dim=2)
@@ -231,7 +230,7 @@ def latent_transform(in_f):
       in_f_z = in_f[..., [2]] * angle       # zsin, zcos or dt_zsin, dt_zcos
       in_f_ = pt.cat((in_f_x, in_f_y, in_f_z), dim=2)
     elif args.in_refine == 'xyz_dtxyz':
-      angle = pt.cat((in_f[..., [3]], in_f[..., [4]]), dim=2)
+      angle = pt.cat((in_f[..., [7]], in_f[..., [6]]), dim=2)
       in_f_x = in_f[..., [0]] * angle       # xsin, xcos
       in_f_y = in_f[..., [1]] * angle       # ysin, ycos
       in_f_z = in_f[..., [2]] * angle       # zsin, zcos
@@ -349,7 +348,7 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     latent_size = model_dict['model_refinement_0'].input_size - features_indexing + 1 - temp_size # Initial the latent size
 
   # Optimizer
-  trajectory_optimizer = TrajectoryOptimizationRefinement(model_dict=model_dict, pred_xyz=pred_xyz, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code, latent_transf=args.latent_transf)
+  trajectory_optimizer = TrajectoryOptimizationRefinement(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code, latent_transf=args.latent_transf)
   # Initialize
   ####################################
   ############ INPUT PREP ############
