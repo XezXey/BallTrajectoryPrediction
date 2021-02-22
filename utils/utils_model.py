@@ -301,6 +301,9 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
     if args.latent_transf is not None:
       in_f = latent_transform(in_f=in_f)
     # Prediction
+    if 'encoder' in args.pipeline:
+      model_encoder = model_dict['model_encoder']
+      in_f = model_encoder(in_f)
     model_refinement = model_dict['model_refinement_{}'.format(idx)]
     pred_refinement, (_, _) = model_refinement(in_f=in_f, lengths=lengths)
 
@@ -337,15 +340,29 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
   ###################################################
   ############# OPTIMIZATION REFINEMENT #############
   ###################################################
+  '''
+  Determined the latent dimension
+  1. dim = 0 when
+    -   No latent was fed
+  2. dim > 0 when
+    -   Latent was fed
+    -   Encoder was used
+  '''
 
+  # Initial the latent size
   features_indexing = 3
   if 'eot' in args.pipeline:
     features_indexing = 4
+  if 'encoder' in args.pipeline:
+    model_key = 'model_encoder'
+  else:
+    model_key = 'model_refinement_0'
+
   if args.latent_transf is None:
-    latent_size = model_dict['model_refinement_0'].input_size - features_indexing + 1 # Initial the latent size
+    latent_size = model_dict[model_key].input_size - features_indexing + 1 # Initial the latent size
   else:
     _, temp_size = utils_func.latent_transform_size(0, 0)
-    latent_size = model_dict['model_refinement_0'].input_size - features_indexing + 1 - temp_size # Initial the latent size
+    latent_size = model_dict[model_key].input_size - features_indexing + 1 - temp_size
 
   # Optimizer
   trajectory_optimizer = TrajectoryOptimizationRefinement(model_dict=model_dict, gt_dict=gt_dict, cam_params_dict=cam_params_dict, latent_size=latent_size, n_refinement=args.n_refinement, pred_dict=pred_dict, latent_code=args.latent_code, latent_transf=args.latent_transf)
@@ -369,7 +386,7 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     pred_xyz_delta = pred_xyz[:, :-1, :] - pred_xyz[:, 1:, :]
     pred_xyz_delta = pt.cat((pred_xyz_delta, pred_xyz_delta[:, [-1], :]), dim=1)
     pred_xyz_delta = utils_func.duplicate_at_length(seq=pred_xyz_delta, lengths=gt_dict['lengths'])
-    # xyz & dtxyz & latent
+    # xyz & dtxyz
     in_f = pt.cat((pred_xyz, pred_xyz_delta), dim=2)
     # lengths
     lengths = gt_dict['lengths']
@@ -402,7 +419,10 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
               2. dXYZ (in position domain)
     '''
     # Prediction
-    pred_refinement = trajectory_optimizer(in_f=in_f.detach().clone(), lengths=lengths)
+    model_encoder = None
+    if 'encoder' in args.pipeline:
+      model_encoder = model_dict['model_encoder']
+    pred_refinement = trajectory_optimizer(in_f=in_f.detach().clone(), lengths=lengths, model_encoder=model_encoder)
 
     ####################################
     ########### OUTPUT PREP ############
@@ -509,6 +529,10 @@ def optimization_depth(model_dict, gt_dict, cam_params_dict, optimize, input_dic
     pred_xyz_optimized = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum[i], depth=pred_depth_cumsum[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum.shape[0])])
 
     # Prediction
+    if 'encoder' in args.pipeline:
+      model_encoder = model_dict['model_encoder']
+      pred_xyz_optimized = model_encoder(pred_xyz_optimized)
+
     if 'refinement' in args.pipeline:
       for idx in range(args.n_refinement):
         model_refinement = model_dict['model_refinement_{}'.format(idx)]

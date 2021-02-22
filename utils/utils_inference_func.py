@@ -118,8 +118,8 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
   uv = uv.cpu().detach().numpy()
   pred_xyz = pred_xyz.cpu().detach().numpy()
   gt_xyz = gt_xyz.cpu().detach().numpy()
-  # latent = latent / pt.sqrt(pt.sum(latent**2, dim=1, keepdims=True) + 1e-16)
-  latent_optimized = latent_optimized.cpu().detach().numpy()
+  if args.optimize is not None:
+    latent_optimized = latent_optimized.cpu().detach().numpy()
   if pred_eot is not None:
     pred_eot = pred_eot.cpu().detach().numpy()
     eot = np.concatenate((np.zeros((pred_eot.shape[0], 1, 1)), pred_eot), axis=1)

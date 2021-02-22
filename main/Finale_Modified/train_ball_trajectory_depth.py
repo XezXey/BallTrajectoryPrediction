@@ -328,7 +328,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 15 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

@@ -14,24 +14,10 @@ from mpl_toolkits import mplot3d
 import utils.transformation as utils_transform
 import wandb
 # Models
-# No Stack
-# from models.Finale.vanilla_nostack.lstm import LSTM
-# from models.Finale.vanilla_nostack.bilstm import BiLSTM
-# from models.Finale.vanilla_nostack.gru import GRU
-# from models.Finale.vanilla_nostack.bigru import BiGRU
-# Stack
-from models.Finale.vanilla_stack.lstm import LSTM
-from models.Finale.vanilla_stack.bilstm import BiLSTM
-from models.Finale.vanilla_stack.gru import GRU
-from models.Finale.vanilla_stack.bigru import BiGRU
-# Residual
-from models.Finale.residual.bilstm_residual import BiLSTMResidual
-from models.Finale.residual.lstm_residual import LSTMResidual
-from models.Finale.residual.bigru_residual import BiGRUResidual
-from models.Finale.residual.gru_residual import GRUResidual
 # Trainable Initial State
-from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
 from models.Finale.init_trainable.bilstm_trainable_init import BiLSTMTrainableInit
+# Residual & Skip connection
+from models.Finale.residual_init_trainable.bilstm_residual_trainable_init import BiLSTMResidualTrainableInit
 from models.Finale.residual_init_trainable.residual_block import ResidualBlock, ResNetLayer
 # Auto Regressive
 from models.Finale.residual_init_trainable.residual_block_ar import ResidualBlock_AR, ResNetLayer_AR
@@ -93,7 +79,7 @@ def get_model_depth(model_arch, features_cols, args):
     exit()
 
   #############################################
-  ############## Model Selection ##############
+  ############## Model I/O Size ###############
   #############################################
 
   # Specified the size of latent (Including EOT)
@@ -122,14 +108,22 @@ def get_model_depth(model_arch, features_cols, args):
   if args.latent_transf is not None:
     depth_extra_insize, refinement_extra_insize = latent_transform_size(depth_extra_insize, refinement_extra_insize)
 
+  # Encoder Refinement - Initial
+  encoder_insize = 0
+  encoder_outsize = 0
+  if 'encoder' in args.pipeline:
+    depth_extra_insize = depth_extra_insize
+    encoder_insize = 3 + refinement_extra_insize
+    refinement_extra_insize = 0
+
   # Input size
   flag_insize = 2
   depth_insize = 2 + depth_extra_insize
   refinement_insize = 3 + refinement_extra_insize
-  input_size = {'eot':flag_insize, 'depth':depth_insize, 'refinement':refinement_insize}
+  input_size = {'eot':flag_insize, 'depth':depth_insize, 'encoder':encoder_insize, 'refinement':refinement_insize}
 
   #############################################
-  ############ Prediction Selection ###########
+  ########### Depth Weight Selection ##########
   #############################################
   if args.bi_pred_avg or args.bi_pred_ramp:
     # Predict depth in 2 direction
@@ -145,8 +139,9 @@ def get_model_depth(model_arch, features_cols, args):
   # output size
   flag_outsize = 1
   depth_outsize = depth_outsize
+  encoder_outsize = 3
   refinement_outsize = refinement_outsize
-  output_size = {'eot':flag_outsize, 'depth':depth_outsize, 'refinement':refinement_outsize}
+  output_size = {'eot':flag_outsize, 'depth':depth_outsize, 'encoder':encoder_outsize, 'refinement':refinement_outsize}
 
   model_flag = []
   model_depth = []
@@ -161,21 +156,29 @@ def get_model_depth(model_arch, features_cols, args):
       model = ResNetLayer
     elif arch == 'lstm_init':
       model = BiLSTMTrainableInit
+    elif arch == 'encoder':
+      model = Encoder
     else :
       print("Please input correct model architecture : gru, bigru, lstm, bilstm")
       exit()
 
-    model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=True if args.bidirectional[idx] == 'T' else False, model=args.pipeline[idx] if args.pipeline[idx] != 'eot' else 'flag')
+    if args.pipeline[idx] == 'encoder':
+      residual = True if 'xyz_residual' == args.out_refine else False
+      model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, residual=residual, model=args.pipeline[idx])
+    else:
+      model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=True if args.bidirectional[idx] == 'T' else False, model=args.pipeline[idx] if args.pipeline[idx] != 'eot' else 'flag')
 
     if args.pipeline[idx] == 'eot':
       model_flag = model
     elif args.pipeline[idx] == 'depth':
       model_depth = model
+    elif args.pipeline[idx] == 'encoder':
+      model_encoder = model
     elif args.pipeline[idx] == 'refinement':
       model_refinement_list.append(model)
 
   #############################################
-  ############# Pipeline Selection ############
+  ######### UV-AutoRegressive Module ##########
   #############################################
 
   model_cfg = {}
@@ -206,6 +209,9 @@ def get_model_depth(model_arch, features_cols, args):
   if 'depth' in args.pipeline:
     model_cfg['model_depth'] = {'input_size':model_depth.input_size, 'output_size':model_depth.output_size, 'hidden_dim':model_depth.hidden_dim, 'n_layers':model_depth.n_layers, 'n_stack':model_depth.n_stack, 'recurrent_stacked':model_depth.recurrent_stacked, 'fc_size':model_depth.fc_size}
 
+  if 'encoder' in args.pipeline:
+    model_cfg['model_encoder'.format(idx)] = {'input_size':model_encoder.input_size, 'output_size':model_encoder.output_size, 'residual':model_encoder.residual}
+
   if 'refinement' in args.pipeline:
     for idx, model_refinement in enumerate(model_refinement_list):
       model_cfg['model_refinement_{}'.format(idx)] = {'input_size':model_refinement.input_size, 'output_size':model_refinement.output_size, 'hidden_dim':model_refinement.hidden_dim, 'n_layers':model_refinement.n_layers, 'n_stack':model_refinement.n_stack, 'recurrent_stacked':model_refinement.recurrent_stacked, 'fc_size':model_refinement.fc_size}
@@ -228,28 +234,6 @@ def get_model_depth(model_arch, features_cols, args):
 
   return model_dict, model_cfg
 
-def get_model_xyz(model_arch, features_cols, args):
-  if model_arch=='lstm_residual':
-    model_flag = LSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_xyz = LSTMResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
-  elif model_arch=='bilstm_residual':
-    model_flag = BiLSTMResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_xyz = BiLSTMResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
-  elif model_arch=='gru_residual':
-    model_flag = GRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_xyz = GRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
-  elif model_arch=='bigru_residual':
-    model_flag = BiGRUResidual(input_size=2, output_size=1, batch_size=args.batch_size, model='flag')
-    model_xyz = BiGRUResidual(input_size=2 + len(features_cols), output_size=3, batch_size=args.batch_size, model='xyz')
-  else :
-    print("Please input correct model architecture : gru, bigru, lstm, bilstm")
-    exit()
-
-  model_cfg = {'flag':{'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size},
-               'xyz':{'input_size':model_xyz.input_size, 'output_size':model_xyz.output_size, 'hidden_dim':model_xyz.hidden_dim, 'n_layers':model_xyz.n_layers, 'n_stack':model_xyz.n_stack, 'recurrent_stacked':model_xyz.recurrent_stacked, 'fc_size':model_xyz.fc_size}}
-
-  return model_flag, model_xyz, model_cfg
-
 def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
@@ -269,8 +253,12 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   fig_traj = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
   # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-  visualize_trajectory(pred=pt.mul(pred_train_dict['xyz'], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_trajectory(pred=pt.mul(pred_val_dict['xyz'], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+  visualize_trajectory(pred=pt.mul(pred_train_dict['xyz'][..., [0, 1, 2]], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+  visualize_trajectory(pred=pt.mul(pred_val_dict['xyz'][..., [0, 1, 2]], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+
+  if 'refinement' in args.pipeline:
+    visualize_trajectory(pred=pt.mul(pred_train_dict['finale_xyz'][..., [0, 1, 2]], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
+    visualize_trajectory(pred=pt.mul(pred_val_dict['finale_xyz'][..., [0, 1, 2]], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
   fig_traj.update_layout(height=1920, width=1500, autosize=True) # Adjust the layout/axis for pitch scale
   # fig_traj = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
 
