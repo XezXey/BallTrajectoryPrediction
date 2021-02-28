@@ -380,9 +380,15 @@ def normalize_force(trajectory_df):
   v3f_norm = v3f / (np.sqrt(np.sum(v3f**2, axis=1, keepdims=True)) + 1e-16)
   # print(v3f.shape, v3f_norm.shape)
   # print(v3f[:10], v3f_norm[:10])
+  v3f_norm = v3f / (np.sqrt(np.sum(v3f**2, axis=-1, keepdims=True)) + 1e-16)
+  # print(v3f.shape, v3f_norm.shape)
+  # print(v3f[:10], v3f_norm[:10])
   trajectory_df['fx_norm'] = v3f_norm[:, 0]
   trajectory_df['fy_norm'] = v3f_norm[:, 1]
   trajectory_df['fz_norm'] = v3f_norm[:, 2]
+
+  # print(trajectory_df[['fx', 'fy', 'fz', 'fx_norm', 'fy_norm', 'fz_norm']].values)
+  # exit()
 
   return trajectory_df
 

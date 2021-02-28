@@ -45,6 +45,7 @@ def share_args(a):
   args = a
 
 # marker_dict for contain the marker properties
+marker_dict_input = dict(color='rgba(0, 128, 0, 0.7)', size=3)
 marker_dict_gt = dict(color='rgba(0, 0, 255, 0.7)', size=3)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.7)', size=3)
 # Visualize the displacement
@@ -53,6 +54,34 @@ marker_dict_v = dict(color='rgba(0, 255, 0, 0.7)', size=4)
 marker_dict_depth = dict(color='rgba(0, 0, 255, 0.5)', size=4)
 marker_dict_latent = dict(color='rgba(11, 102, 35, 0.7)', size=7)
 marker_dict_eot = dict(color='rgba(0, 255, 0, 1)', size=5)
+
+def autoregressive_plot(pred_uv, gt_dict, ):
+  # Here we passed input_test_dict as a gt_dict.
+  gt_uv = pt.cumsum(pt.cat((gt_dict['startpos'][..., [0, 1]], gt_dict['input'][..., [0, 1]]), dim=1), dim=1).detach().cpu().numpy()
+  pred_uv = pt.cumsum(pt.cat((gt_dict['startpos'][..., [0, 1]], pred_uv), dim=1), dim=1).detach().cpu().numpy()
+  missing = pt.cat((pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda(), gt_dict['in_f_missing'].cuda(), pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda()), dim=1).detach().cpu().numpy()
+  missing = missing[:, :-1, :] & missing[:, 1:, :]
+  missing = np.where(missing == 1, np.nan, missing)
+  lengths = gt_dict['lengths']+1
+  # Visualize by make a subplots of trajectory
+  n_vis = 5
+  if n_vis > args.batch_size:
+    n_vis = args.batch_size
+  elif n_vis > gt_dict['input'].shape[0]:
+    n_vis = gt_dict['input'].shape[0]
+
+  # Random the index the be visualize
+  vis_idx = np.random.choice(a=np.arange(gt_dict['input'].shape[0]), size=(n_vis), replace=False)
+  fig = make_subplots(rows=n_vis, cols=1, specs=[[{'type':'scatter'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
+
+  for idx, i in enumerate(vis_idx):
+    missing_x = (missing[i][:lengths[i], [0]] * gt_uv[i][:lengths[i], [0]] + gt_uv[i][:lengths[i], [0]]).reshape(-1)
+    missing_y = (missing[i][:lengths[i], [0]] * gt_uv[i][:lengths[i], [1]] + gt_uv[i][:lengths[i], [1]]).reshape(-1)
+    fig.add_trace(go.Scatter(x=gt_uv[i][:lengths[i], 0], y=gt_uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_gt, name='Traj#{}-UV-GroundTruth'.format(i)), row=idx+1, col=1)
+    fig.add_trace(go.Scatter(x=missing_x, y=missing_y, mode='markers+lines', marker=marker_dict_input, name='Traj#{}-UV-Input'.format(i)), row=idx+1, col=1)
+    fig.add_trace(go.Scatter(x=pred_uv[i][:lengths[i], 0], y=pred_uv[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='Traj#{}-UV-Interpolated'.format(i)), row=idx+1, col=1)
+
+  plotly.offline.plot(fig, filename='./{}/trajectory_visualization_ar.html'.format(args.visualization_path), auto_open=True)
 
 def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_dict, evaluation_results, animation_visualize_flag, args, cam_params_dict):
   # Visualize by make a subplots of trajectory
@@ -74,7 +103,6 @@ def make_visualize(input_test_dict, gt_test_dict, visualization_path, pred_test_
   else:
     gt_eot = None
 
-  print("VIS : ", pred_test_dict['xyz'])
   fig = visualize_trajectory(uv=input_test_dict['input'], pred_xyz=pt.mul(pred_test_dict['xyz'][..., [0, 1, 2]], gt_test_dict['mask'][..., [0, 1, 2]]), gt_xyz=gt_test_dict['xyz'][..., [0, 1, 2]], startpos=gt_test_dict['startpos'], lengths=input_test_dict['lengths'], mask=gt_test_dict['mask'], fig=fig, flag='Test', n_vis=n_vis, evaluation_results=evaluation_results, vis_idx=vis_idx, pred_eot=pred_test_dict['flag'], gt_eot=gt_eot, args=args, latent_optimized=pred_test_dict['latent_optimized'], cam_params_dict=cam_params_dict['main'])
   # Adjust the layout/axis
   # AUTO SCALED/PITCH SCALED
@@ -143,20 +171,26 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
         for latent_pos in where:
           if 'angle' in args.latent_code:
             # Latent size = 1 (Optimize angle)
-            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + np.cos(np.abs(latent_optimized[i][latent_pos, 0]) * math.pi/180.0) * 10])
+            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + np.cos(np.abs(latent_optimized[i][latent_pos, 0]) * math.pi/180.0)])
             latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
-            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + np.sin(np.abs(latent_optimized[i][latent_pos, 0]) * math.pi/180.0) * 10])
+            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + np.sin(np.abs(latent_optimized[i][latent_pos, 0]) * math.pi/180.0)])
           elif 'sin_cos' in args.latent_code:
             # Latent size = 2 (Optimize sin_cos directly)
             latent_optimized[i] = latent_optimized[i] / (np.sqrt(np.sum(latent_optimized[i]**2, axis=-1, keepdims=True)) + 1e-16)
-            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent_optimized[i][latent_pos, 1] * 10])
+            latent_arrow_x = np.array([pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent_optimized[i][latent_pos, 1]])
             latent_arrow_y = np.array([pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]])
-            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent_optimized[i][latent_pos, 0] * 10])
-          else:
+            latent_arrow_z = np.array([pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent_optimized[i][latent_pos, 0]])
+          elif 'f' in args.latent_code:
+            latent_optimized[i] = latent_optimized[i] / (np.sqrt(np.sum(latent_optimized[i]**2, axis=-1, keepdims=True)) + 1e-16)
             # Latent size = 3 (Optimize Force direction)
-            latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0]+latent_optimized[i][latent_pos, 0]*10]
-            latent_arrow_y = [pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1]+latent_optimized[i][latent_pos, 1]*10]
-            latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2]+latent_optimized[i][latent_pos, 2]*10]
+            latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent_optimized[i][latent_pos, 0]]
+            latent_arrow_y = [pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1] + latent_optimized[i][latent_pos, 1]]
+            latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent_optimized[i][latent_pos, 2]]
+          elif 'f_norm' in args.latent_code:
+            # Latent size = 3 (Optimize Force direction)
+            latent_arrow_x = [pred_xyz[i][latent_pos, 0], pred_xyz[i][latent_pos, 0] + latent_optimized[i][latent_pos, 0]]
+            latent_arrow_y = [pred_xyz[i][latent_pos, 1], pred_xyz[i][latent_pos, 1] + latent_optimized[i][latent_pos, 1]]
+            latent_arrow_z = [pred_xyz[i][latent_pos, 2], pred_xyz[i][latent_pos, 2] + latent_optimized[i][latent_pos, 2]]
           fig.add_trace(go.Scatter3d(x=latent_arrow_x, y=latent_arrow_y, z=latent_arrow_z, mode='lines', line=dict(width=10), marker=marker_dict_latent, name="{}-Optimized Latent [{}]".format(flag, i)), row=idx+count, col=col_idx)
     count +=1
   # Iterate to plot each displacement of (u, v, depth)

@@ -42,7 +42,7 @@ class ResNetLayer_AR(pt.nn.Module):
   def forward(self, in_f, lengths, hidden=None, cell_state=None):
     x = {'in_f':in_f, 'lengths':lengths, 'hidden':hidden, 'cell_state':cell_state}
     residual = self.blocks(x)
-    if model == 'refinement':
+    if self.model == 'refinement' or self.model == 'uv':
       x = residual['in_f']
     else:
       x = self.fc_out(residual['in_f'])
@@ -115,7 +115,6 @@ class ResidualBlock_AR(pt.nn.Module):
     self.fc_blocks = pt.nn.Sequential(*fc_blocks)
 
     # Activation
-    self.relu = pt.nn.LeakyReLU(negative_slope=0.01)
 
   def forward(self, x):
     in_f = x['in_f']
@@ -149,15 +148,8 @@ class ResidualBlock_AR(pt.nn.Module):
 
     # Residual from recurrent block to FC
     # Pass the unpacked(The hidden features from RNN) to the FC layers
-    # print("OUTPUT LSTM : ", out)
-    # print(out_f.shape)
     out = self.fc_blocks(out_f)
-    # print(out.shape)
-    # print("OUTPUT FC: ", out)
-    # print(out_block.shape)
-    # print("OUTPUT BLOCK: ", out_block.shape)
-    # print("OUTPUT BLOCK: ", out_block)
-    # exit()
+    out_block = out + in_f
     return {'in_f':out_block, 'lengths':lengths, 'hidden':hidden, 'cell_state':cell_state}
 
 
@@ -184,7 +176,7 @@ class ResidualBlock_AR(pt.nn.Module):
     # Pass the unpacked(The hidden features from RNN) to the FC layers
     out = self.fc_blocks(out)
     # print("OUTPUT RESIDUAL : ", out)
-    out_block = self.relu(out+in_f)
+    out_block = out+in_f
     # print("OUTPUT APPLY RESIDUAL : ", out+in_f)
     # print("OUTPUT APPLY RELU : ", out_block)
     # exit()

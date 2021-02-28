@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 np.set_printoptions(precision=4)
 import torch as pt
+pt.manual_seed(25)
 import glob
 import os
 import argparse
@@ -76,6 +77,7 @@ parser.add_argument('--annealing', dest='annealing', help='Apply annealing', act
 parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
 parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
+parser.add_argument('--lr', dest='lr', type=float, help='Learning rate for optimizaer', default=10)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -230,13 +232,10 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   # Evaluating mode
   # utils_model.eval_mode(model_dict=model_dict)
 
-  # Add noise on the fly
+  # ROUNDING
   if args.round:
     input_test_dict['input'][..., [0, 1]] = pt.round(input_test_dict['input'][..., [0, 1]])
     input_test_dict['startpos'][..., [0, 1]] = pt.round(input_test_dict['startpos'][..., [0, 1]])
-  in_test = input_test_dict['input'][..., [0, 1]].clone()
-  if args.noise:
-    in_test = utils_func.add_noise(input_trajectory=in_test[..., [0, 1]].clone(), startpos=input_test_dict['startpos'][..., [0, 1]], lengths=input_test_dict['lengths'])
 
   if args.optimize is None or args.optimize != 'depth':
     # Forward pass

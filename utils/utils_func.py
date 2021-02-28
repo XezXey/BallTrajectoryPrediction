@@ -117,10 +117,11 @@ def get_model_depth(model_arch, features_cols, args):
     refinement_extra_insize = 0
 
   # Input size
+  uv_insize = 2
   flag_insize = 2
   depth_insize = 2 + depth_extra_insize
   refinement_insize = 3 + refinement_extra_insize
-  input_size = {'eot':flag_insize, 'depth':depth_insize, 'encoder':encoder_insize, 'refinement':refinement_insize}
+  input_size = {'uv':uv_insize, 'eot':flag_insize, 'depth':depth_insize, 'encoder':encoder_insize, 'refinement':refinement_insize}
 
   #############################################
   ########### Depth Weight Selection ##########
@@ -137,11 +138,12 @@ def get_model_depth(model_arch, features_cols, args):
 
   refinement_outsize = 3
   # output size
+  uv_outsize = 2
   flag_outsize = 1
   depth_outsize = depth_outsize
   encoder_outsize = 3
   refinement_outsize = refinement_outsize
-  output_size = {'eot':flag_outsize, 'depth':depth_outsize, 'encoder':encoder_outsize, 'refinement':refinement_outsize}
+  output_size = {'uv':uv_outsize, 'eot':flag_outsize, 'depth':depth_outsize, 'encoder':encoder_outsize, 'refinement':refinement_outsize}
 
   model_flag = []
   model_depth = []
@@ -158,6 +160,10 @@ def get_model_depth(model_arch, features_cols, args):
       model = BiLSTMTrainableInit
     elif arch == 'encoder':
       model = Encoder
+    elif arch == 'lstm_init_skip_ar':
+      model = BiLSTMResidualTrainableInit_AR
+    elif arch == 'lstm_init_resblock_ar':
+      model = ResNetLayer_AR
     else :
       print("Please input correct model architecture : gru, bigru, lstm, bilstm")
       exit()
@@ -165,6 +171,10 @@ def get_model_depth(model_arch, features_cols, args):
     if args.pipeline[idx] == 'encoder':
       residual = True if 'xyz_residual' == args.out_refine else False
       model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, residual=residual, model=args.pipeline[idx])
+
+    elif args.pipeline[idx] == 'uv':
+      model_uv_fw = model(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=True if args.bidirectional[idx] == 'T' else False, model='uv_fw', autoregressive=args.autoregressive)
+      model_uv_bw = model(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=True if args.bidirectional[idx] == 'T' else False, model='uv_bw', autoregressive=args.autoregressive)
     else:
       model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, trainable_init=args.trainable_init, bidirectional=True if args.bidirectional[idx] == 'T' else False, model=args.pipeline[idx] if args.pipeline[idx] != 'eot' else 'flag')
 
@@ -183,25 +193,26 @@ def get_model_depth(model_arch, features_cols, args):
 
   model_cfg = {}
 
-  if 'uv' in args.pipeline:
-    if model_arch =='residual_block':
-      # FORWARD
-      model_uv_fw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
-      model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
-    else:
-      model_uv_fw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
-    model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
+  # if 'uv' in args.pipeline:
+    # if model_arch =='residual_block':
+      # # FORWARD
+      # model_uv_fw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
+    # else:
+      # model_uv_fw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
 
-    # BACWARD 
-    if model_arch =='residual_block':
-      model_uv_bw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
-    else:
-      model_uv_bw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw', autoregressive=args.autoregressive)
-    model_cfg['model_uv_bw'] = {'input_size':model_uv_bw.input_size, 'output_size':model_uv_bw.output_size, 'hidden_dim':model_uv_bw.hidden_dim, 'n_layers':model_uv_bw.n_layers, 'n_stack':model_uv_bw.n_stack, 'recurrent_stacked':model_uv_bw.recurrent_stacked, 'fc_size':model_uv_bw.fc_size}
+    # # BACWARD 
+    # if model_arch =='residual_block':
+      # model_uv_bw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fb', autoregressive=args.autoregressive)
+    # else:
+      # model_uv_bw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw', autoregressive=args.autoregressive)
 
   #############################################
   ################ Model Config ###############
   #############################################
+
+  if 'uv' in args.pipeline:
+    model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
+    model_cfg['model_uv_bw'] = {'input_size':model_uv_bw.input_size, 'output_size':model_uv_bw.output_size, 'hidden_dim':model_uv_bw.hidden_dim, 'n_layers':model_uv_bw.n_layers, 'n_stack':model_uv_bw.n_stack, 'recurrent_stacked':model_uv_bw.recurrent_stacked, 'fc_size':model_uv_bw.fc_size}
 
   if 'eot' in args.pipeline:
     model_cfg['model_flag'] = {'input_size':model_flag.input_size, 'output_size':model_flag.output_size, 'hidden_dim':model_flag.hidden_dim, 'n_layers':model_flag.n_layers, 'n_stack':model_flag.n_stack, 'recurrent_stacked':model_flag.recurrent_stacked, 'fc_size':model_flag.fc_size}
@@ -253,12 +264,10 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
   fig_traj = make_subplots(rows=n_vis, cols=2, specs=[[{'type':'scatter3d'}, {'type':'scatter3d'}]]*n_vis, horizontal_spacing=0.05, vertical_spacing=0.01)
   # Append the start position and apply cummulative summation for transfer the displacement to the x, y, z coordinate. These will done by visualize_trajectory function
   # Can use mask directly because the mask obtain from full trajectory(Not remove the start pos)
-  visualize_trajectory(pred=pt.mul(pred_train_dict['xyz'][..., [0, 1, 2]], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
-  visualize_trajectory(pred=pt.mul(pred_val_dict['xyz'][..., [0, 1, 2]], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
-
-  if 'refinement' in args.pipeline:
+  if 'depth' in args.pipeline or 'refinement' in args.pipeline:
     visualize_trajectory(pred=pt.mul(pred_train_dict['finale_xyz'][..., [0, 1, 2]], gt_train_dict['mask'][..., [0, 1, 2]]), gt=gt_train_dict['xyz'][..., [0, 1, 2]], lengths=gt_train_dict['lengths'], mask=gt_train_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Train', n_vis=n_vis, vis_idx=train_vis_idx)
     visualize_trajectory(pred=pt.mul(pred_val_dict['finale_xyz'][..., [0, 1, 2]], gt_val_dict['mask'][..., [0, 1, 2]]), gt=gt_val_dict['xyz'][..., [0, 1, 2]], lengths=gt_val_dict['lengths'], mask=gt_val_dict['mask'][..., [0, 1, 2]], fig=fig_traj, flag='Validation', n_vis=n_vis, vis_idx=val_vis_idx)
+
   fig_traj.update_layout(height=1920, width=1500, autosize=True) # Adjust the layout/axis for pitch scale
   # fig_traj = visualize_layout_update(fig=fig_traj, n_vis=n_vis)
 
@@ -296,14 +305,18 @@ def make_visualize(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict,
     plotly.offline.plot(fig_eot, filename='./{}/trajectory_visualization_eot.html'.format(visualization_path), auto_open=True)
     wandb.log({"End Of Trajectory flag Prediction : (Col1=Train, Col2=Val)":fig_eot})
 
-  plotly.offline.plot(fig_traj, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=True)
+  if 'depth' in args.pipeline:
+    plotly.offline.plot(fig_traj, filename='./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path), auto_open=True)
+    wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
+
   plotly.offline.plot(fig_displacement, filename='./{}/trajectory_visualization_displacement.html'.format(visualization_path), auto_open=True)
-  wandb.log({"PITCH SCALED : Trajectory Visualization(Col1=Train, Col2=Val)":wandb.Html(open('./{}/trajectory_visualization_depth_pitch_scaled.html'.format(visualization_path)))})
   wandb.log({"DISPLACEMENT VISUALIZATION":fig_displacement})
 
 def visualize_displacement(input_dict, pred_dict, gt_dict, pred_eot, gt_eot, vis_idx, pred, cam_params_dict, fig=None, flag='train', n_vis=5):
   duv = pred_dict['input'][..., [0, 1]].cpu().detach().numpy()
-  depth = pred_dict[pred].cpu().detach().numpy()
+  if 'depth' in args.pipeline:
+    depth = pred_dict[pred].cpu().detach().numpy()
+  else: depth = None
   lengths = input_dict['lengths'].cpu().detach().numpy()
   if pred_eot is not None:
     pred_eot = pred_eot.cpu().detach().numpy()
@@ -317,7 +330,7 @@ def visualize_displacement(input_dict, pred_dict, gt_dict, pred_eot, gt_eot, vis
     ####################################
     ############## DEPTH ###############
     ####################################
-    if pred=='depth':
+    if pred=='depth' and 'depth' in args.pipeline:
       if args.bi_pred_avg or args.bi_pred_ramp or args.bi_pred_weight:
         fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 0], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of Forward DEPTH'.format(flag, i)), row=idx+1, col=col)
         fig.add_trace(go.Scatter(x=np.arange(lengths[i]), y=depth[i][:lengths[i], 1], mode='markers+lines', marker=marker_dict_pred, name='{}-traj#{}-Displacement of Backward DEPTH'.format(flag, i)), row=idx+1, col=col)
@@ -566,6 +579,7 @@ def add_flag_noise(flag, lengths):
 def get_pipeline_var(pred_dict, input_dict):
   pred_flag = None
   input_flag = None
+  pred_depth = None
   if 'eot' in args.pipeline:
     pred_flag = pred_dict['model_flag']
     if args.env == 'unity':
@@ -578,9 +592,14 @@ def get_pipeline_var(pred_dict, input_dict):
 def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
   '''
   Combining 2 direction of forward and backward into one uv
+  1. position mode : combine on screen pixel space
+  2. delta mode : combine on delta-t of pixel space
+
+  Return : UV in dt space
   '''
 
   if mode == 'position':
+    # Combine on pixel space
     # Construct ramping weight 
     bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][..., [0]].shape), lengths=input_dict['lengths'])
     bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
@@ -604,11 +623,12 @@ def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
     return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
 
   elif mode == 'delta':
+    # Combine on delta space
     bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][:, :-1, [0]].shape), lengths=input_dict['lengths']-1)
     bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
-    # Forward prediction cumsum
+    # Forward prediction 
     pred_uv_fw = pred_dict['model_uv_fw']
-    # Backward prediction cumsum
+    # Backward prediction 
     pred_uv_bw = pred_dict['model_uv_bw']
     pred_uv_bw = reverse_masked_seq(seq=pred_uv_bw, lengths=input_dict['lengths'])
     # Weight with ramp function
@@ -690,7 +710,7 @@ def add_noise(input_trajectory, startpos, lengths):
   ############ MISSING OBSERVATION ############
   #############################################
   # Convetion False = Not Missing, True = Missing
-  if 'uv' in args.pipeline != None:
+  if 'uv' in args.pipeline:
     # First two points need to be visible because we need the first displacement for initial the autoregressive
     masking_missing_diff[:, :2, :] = False
     # Masking the missing displacement by considered 2 consecutive points

@@ -39,10 +39,10 @@ parser.add_argument('--save_checkpoint', dest='save_checkpoint', type=str, help=
 parser.add_argument('--load_checkpoint', dest='load_checkpoint', type=str, help='Path to load a trained model checkpoint', default=None)
 parser.add_argument('--visualization_path', dest='visualization_path', type=str, help='Path to visualization directory', default='./visualize_html/')
 parser.add_argument('--cam_params_file', dest='cam_params_file', type=str, help='Path to camera parameters file(Intrinsic/Extrinsic)')
-parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None)
-parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None)
+parser.add_argument('--wandb_name', dest='wandb_name', type=str, help='WanDB session name', default=None, required=True)
+parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default=None)
+parser.add_argument('--wandb_tags', dest='wandb_tags', type=str, help='WanDB tags name', default=None, required=True)
 parser.add_argument('--cuda_device_num', dest='cuda_device_num', type=int, help='Provide cuda device number', default=0)
-parser.add_argument('--wandb_notes', dest='wandb_notes', type=str, help='WanDB notes', default="")
 parser.add_argument('--clip', dest='clip', type=float, help='Clipping gradients value', required=True)
 parser.add_argument('--model_arch', dest='model_arch', help='Input the model architecture(lstm, bilstm, gru, bigru)', nargs='+', default=[])
 parser.add_argument('--noise', dest='noise', help='Noise on the fly', action='store_true')
@@ -99,6 +99,8 @@ else:
   print('[%]GPU Disabled, CPU Enabled')
 
 # Init wandb
+if args.wandb_notes is None:
+  args.wandb_notes = args.wandb_name
 wandb.init(project="ball-trajectory-estimation", name=args.wandb_name, tags=args.wandb_tags, notes=args.wandb_notes, dir=args.wandb_dir)
 # Get selected features to input into a network
 features = ['x', 'y', 'z', 'u', 'v', 'd', 'eot', 'og', 'rad', 'f_sin', 'f_cos', 'fx', 'fy', 'fz', 'fx_norm', 'fy_norm', 'fz_norm', 'g']
@@ -328,9 +330,10 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr']})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 1 == 0 else False
+    vis_signal = True if epoch % 20 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
+    # '''
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
       print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='\n')
       # Training set (Each index in batch_train came from the collate_fn_padd)
@@ -346,6 +349,7 @@ if __name__ == '__main__':
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
       vis_signal = False
+    # '''
 
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)
