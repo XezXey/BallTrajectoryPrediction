@@ -59,8 +59,9 @@ def autoregressive_plot(pred_uv, gt_dict, ):
   # Here we passed input_test_dict as a gt_dict.
   gt_uv = pt.cumsum(pt.cat((gt_dict['startpos'][..., [0, 1]], gt_dict['input'][..., [0, 1]]), dim=1), dim=1).detach().cpu().numpy()
   pred_uv = pt.cumsum(pt.cat((gt_dict['startpos'][..., [0, 1]], pred_uv), dim=1), dim=1).detach().cpu().numpy()
-  missing = pt.cat((pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda(), gt_dict['in_f_missing'].cuda(), pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda()), dim=1).detach().cpu().numpy()
-  missing = missing[:, :-1, :] & missing[:, 1:, :]
+  # missing = pt.cat((pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda(), gt_dict['in_f_missing_duv'].cuda(), pt.zeros(size=(pred_uv.shape[0], 1, 1)).long().cuda()), dim=1).detach().cpu().numpy()
+  # missing = missing[:, :-1, :] & missing[:, 1:, :]
+  missing = gt_dict['in_f_missing_uv'].detach().cpu().numpy()
   missing = np.where(missing == 1, np.nan, missing)
   lengths = gt_dict['lengths']+1
   # Visualize by make a subplots of trajectory

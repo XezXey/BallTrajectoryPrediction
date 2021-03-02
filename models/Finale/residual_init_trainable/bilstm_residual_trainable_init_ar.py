@@ -69,14 +69,14 @@ class BiLSTMResidualTrainableInit_AR(pt.nn.Module):
 
   def forward(self, in_f, lengths, hidden=None, cell_state=None):
     if self.autoregressive:
-      return self.auto_regressive(in_f=in_f, lengths=lengths)
+      return self.auto_regressive(in_f=in_f)
     else:
       return self.forward_pass(in_f=in_f, lengths=lengths)
 
   #######################################################################################
   ################################# AUTO REGRESSIVE #####################################
   #######################################################################################
-  def auto_regressive(self, in_f, lengths, hidden=None, cell_state=None):
+  def auto_regressive(self, in_f, hidden=None, cell_state=None):
     out_f = pt.unsqueeze(in_f[[0], [0], ...], dim=0)
     residual = pt.Tensor([0.]).cuda()
     for block_idx, recurrent_block in enumerate(self.recurrent_blocks):
@@ -84,10 +84,10 @@ class BiLSTMResidualTrainableInit_AR(pt.nn.Module):
       if block_idx == 0:
         # Only first time that no skip connection from input to other networks
         out_f, (hidden, cell_state) = recurrent_block(out_f, (self.current_h[block_idx], self.current_c[block_idx]))
-        residual = self.get_residual_ar(out_f=out_f, lengths=lengths, residual=residual, apply_skip=False)
+        residual = self.get_residual_ar(out_f=out_f, residual=residual, apply_skip=False)
       else:
         out_f, (hidden, cell_state) = recurrent_block(residual, (self.current_h[block_idx], self.current_c[block_idx]))
-        residual = self.get_residual_ar(out_f=out_f, lengths=lengths, residual=residual, apply_skip=True)
+        residual = self.get_residual_ar(out_f=out_f, residual=residual, apply_skip=True)
 
       self.current_h[block_idx] = hidden
       self.current_c[block_idx] = cell_state
@@ -95,7 +95,7 @@ class BiLSTMResidualTrainableInit_AR(pt.nn.Module):
     out = self.fc_blocks(residual)
     return out, (hidden, cell_state)
 
-  def get_residual_ar(self, out_f, lengths, residual, apply_skip):
+  def get_residual_ar(self, out_f, residual, apply_skip):
     # Unpacked sequence for residual connection then packed it back for next input
     if apply_skip:
       residual = residual + out_f

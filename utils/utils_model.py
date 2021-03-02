@@ -29,23 +29,36 @@ def share_args(a):
 def uv_forward(model_dict, input_dict, in_f, prediction_dict):
   # FORWARD DIRECTION
   model_uv_fw = model_dict['model_uv_fw']
-  in_f_uv_fw = in_f
-  pred_uv_fw, (_, _) = model_uv_fw(in_f=in_f_uv_fw, lengths=input_dict['lengths'])
-  pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :-1, [0, 1]]), dim=1)
+  if args.pred_uv_space == 'pixel':
+    lengths_fw = input_dict['lengths']+1
+    in_f_uv_fw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], in_f), dim=1), dim=1)
 
+  elif args.pred_uv_space == 'cumsum' or args.pred_uv_space == 'delta' or args.pred_uv_space == 'consec':
+    lengths_fw = input_dict['lengths']
+    in_f_uv_fw = in_f
+
+  pred_uv_fw, (_, _) = model_uv_fw(in_f=in_f_uv_fw, lengths=lengths_fw)
+  pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :-1, [0, 1]]), dim=1)
 
   # BACKWARD DIRECTION
   model_uv_bw = model_dict['model_uv_bw']
-  lengths = input_dict['lengths']
-  in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f[..., [0, 1]], lengths=input_dict['lengths'])
-  pred_uv_bw, (_, _) = model_uv_bw(in_f=in_f_uv_bw, lengths=input_dict['lengths'])
+  if args.pred_uv_space == 'pixel':
+    lengths_bw = input_dict['lengths']+1
+    in_f_uv_bw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], in_f), dim=1), dim=1)
+    in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f_uv_bw[..., [0, 1]].clone(), lengths=lengths_bw)
+
+  elif args.pred_uv_space == 'cumsum' or args.pred_uv_space == 'delta' or args.pred_uv_space == 'consec':
+    lengths_bw = input_dict['lengths']
+    in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f[..., [0, 1]].clone(), lengths=lengths_bw)
+
+  pred_uv_bw, (_, _) = model_uv_bw(in_f=in_f_uv_bw, lengths=lengths_bw)
   pred_uv_bw = pt.cat((pt.unsqueeze(in_f_uv_bw[:, [0], [0, 1]], dim=1), pred_uv_bw[:, :-1, [0, 1]]), dim=1)
 
   # Use the interpolate_missing to combine 2 direction into one displacement
   prediction_dict['model_uv_fw'] = pred_uv_fw
   prediction_dict['model_uv_bw'] = pred_uv_bw
 
-  pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode='position')
+  pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode=args.pred_uv_space, missing_annotation=None)
   prediction_dict['model_uv'] = pred_uv
 
   return prediction_dict
@@ -57,80 +70,88 @@ def uv_auto_regressive_forward(model_dict, input_dict, in_f, prediction_dict):
   1 = missing
   0 = not missing
   '''
-  lengths = input_dict['lengths']
   model_uv_fw = model_dict['model_uv_fw']
   model_uv_bw = model_dict['model_uv_bw']
-  model_uv_fw.set_init()
 
   batch_size = in_f.shape[0]
   pred_uv_fw = [[] for i in range(batch_size)]
   pred_uv_bw = [[] for i in range(batch_size)]
 
   # Pre-inverse the backward sequence
-  in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f[..., [0, 1]], lengths=input_dict['lengths'])
-  in_f_uv_fw = in_f
+  if args.pred_uv_space == 'pixel':
+    lengths = input_dict['lengths'] + 1
+    in_f_uv_fw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], in_f), dim=1), dim=1)
+    in_f_uv_bw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], in_f), dim=1), dim=1)
+    in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f_uv_bw[..., [0, 1]].clone(), lengths=lengths)
+
+  elif args.pred_uv_space == 'cumsum' or args.pred_uv_space == 'delta' or args.pred_uv_space == 'consec' or args.pred_uv_space == 'consec_ar':
+    lengths = input_dict['lengths']
+    in_f_uv_bw = utils_func.reverse_masked_seq(seq=in_f[..., [0, 1]].clone(), lengths=lengths)
+    in_f_uv_fw = in_f
 
   # Missing annotation
   # This is mock-up version (Real data will loaded from tracking file)
-  input_dict['in_f_missing'] = pt.randint(low=0, high=2, size=(in_f.shape[0], in_f.shape[1], 1))
-  missing_annotation = input_dict['in_f_missing'].cuda()
+  missing_uv = pt.randint(low=0, high=2, size=(in_f_uv_fw.shape[0], in_f_uv_fw.shape[1]+1, 1)).cuda()
+  missing_uv[:, :2, 0] *= 0
+  missing_uv[:, -2:, 0] *= 0
+  input_dict['in_f_missing_uv'] = missing_uv
+  missing_duv = missing_uv[:, :-1, :] | missing_uv[:, 1:, :]
+  input_dict['in_f_missing_duv'] = missing_duv
+  missing_annotation = missing_uv.cuda()
 
   for batch_idx in range(batch_size):    # Batch dimension
     # Reset initial state
     model_uv_fw.set_init()
     model_uv_bw.set_init()
 
+    # Duv missing
     missing_fw = missing_annotation[batch_idx, ...]
-    missing_fw[0] = 0
     missing_bw = pt.flip(missing_annotation[batch_idx, ...], dims=[0])
-    missing_bw[0] = 0
 
-    # for i in tqdm(range(in_f[batch_idx].shape[0])):   # Sequence length
-    for i in tqdm(range(lengths[batch_idx])):   # Sequence length
+    for i in tqdm(range(lengths[batch_idx]-1)):   # Sequence length => #n times to predict
+      ###########################################################################################
       #################################### FORWARD DIRECTION ####################################
+      ###########################################################################################
       # Input selection
       if missing_fw[i] == 1:
+        # Never happend when i=0
         # The point is missing => Use the previous point (t-1)
-        # print("[#] FW MISSING : ", missing_fw[i])
         in_f_uv_fw_temp = pred_uv_fw[batch_idx][i-1]
       else:
         # The tracking is not missing => Use tracking
-        # print("[#] FW MISSING : ", missing_fw[i])
         in_f_uv_fw_temp = pt.unsqueeze(in_f_uv_fw[[batch_idx], [i], ...], dim=0)
 
-      pred_uv_fw_temp, (_, _) = model_uv_fw(in_f=in_f_uv_fw_temp, lengths=input_dict['lengths'])
+      pred_uv_fw_temp, (_, _) = model_uv_fw(in_f=in_f_uv_fw_temp, lengths=None)
 
-      if i == in_f[batch_idx].shape[0] - 1:
-        # We dont use the last prediction
-        pred_uv_fw[batch_idx].append(in_f_uv_fw_temp)
-      elif missing_bw[i+1] == 1:
+      # Output selection
+      if missing_fw[i+1] == 1:
         # The point is missing => Use the previous point (t-1)
         pred_uv_fw[batch_idx].append(pred_uv_fw_temp)
       else:
-        # The tracking is not missing => Use tracking
-        pred_uv_fw[batch_idx].append(in_f_uv_fw_temp)
+        # The tracking is not missing => Use tracking (t+1)
+        in_f_uv_fw_t_future = pt.unsqueeze(in_f_uv_fw[[batch_idx], [i+1], ...], dim=0)
+        pred_uv_fw[batch_idx].append(in_f_uv_fw_t_future)
 
+      ###########################################################################################
       ################################### BACKWARD DIRECTION ####################################
+      ###########################################################################################
       if missing_bw[i] == 1:
+        # Never happend when i=0
         # The point is missing => Use the previous point (t-1)
-        # print("[#] BW MISSING : ", missing_bw[i])
         in_f_uv_bw_temp = pred_uv_bw[batch_idx][i-1]
       else:
         # The tracking is not missing => Use tracking
-        # print("[#] BW MISSING : ", missing_bw[i])
         in_f_uv_bw_temp = pt.unsqueeze(in_f_uv_bw[[batch_idx], [i], ...], dim=0)
 
-      pred_uv_bw_temp, (_, _) = model_uv_bw(in_f=in_f_uv_bw_temp, lengths=input_dict['lengths'])
+      pred_uv_bw_temp, (_, _) = model_uv_bw(in_f=in_f_uv_bw_temp, lengths=None)
 
-      if i == in_f[batch_idx].shape[0] - 1:
-        # We dont use the last prediction
-        pred_uv_bw[batch_idx].append(in_f_uv_bw_temp)
-      elif missing_bw[i+1] == 1:
+      if missing_bw[i+1] == 1:
         # The point is missing => Use the previous point (t-1)
         pred_uv_bw[batch_idx].append(pred_uv_bw_temp)
       else:
         # The tracking is not missing => Use tracking
-        pred_uv_bw[batch_idx].append(in_f_uv_bw_temp)
+        in_f_uv_bw_t_future = pt.unsqueeze(in_f_uv_bw[[batch_idx], [i+1], ...], dim=0)
+        pred_uv_bw[batch_idx].append(in_f_uv_bw_t_future)
 
     # One long sequence
     pred_uv_fw[batch_idx] = pt.cat(pred_uv_fw[batch_idx], dim=1)
@@ -142,20 +163,19 @@ def uv_auto_regressive_forward(model_dict, input_dict, in_f, prediction_dict):
   pred_uv_fw = pt.nn.utils.rnn.pad_sequence([pred_uv_fw[i][0] for i in range(batch_size)], batch_first=True)
   pred_uv_bw = pt.nn.utils.rnn.pad_sequence([pred_uv_bw[i][0] for i in range(batch_size)], batch_first=True)
 
-  # If loop using maximum sequence length ===> Concat directly
-  # Batch dimension
-  # pred_uv_fw = pt.cat(pred_uv_fw, dim=0)
-  # pred_uv_bw = pt.cat(pred_uv_bw, dim=0)
-
-  # du0, dv0 concat (Note that du0, dv0 is always exists
-  pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :-1, [0, 1]]), dim=1)
-  pred_uv_bw = pt.cat((pt.unsqueeze(in_f_uv_bw[:, [0], [0, 1]], dim=1), pred_uv_bw[:, :-1, [0, 1]]), dim=1)
+  # du0, dv0 concat (Note that du0, dv0 is always exists)
+  if args.pred_uv_space == 'pixel':
+    pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :, [0, 1]]), dim=1)
+    pred_uv_bw = pt.cat((pt.unsqueeze(in_f_uv_bw[:, [0], [0, 1]], dim=1), pred_uv_bw[:, :, [0, 1]]), dim=1)
+  elif args.pred_uv_space == 'delta' or args.pred_uv_space == 'cumsum' or args.pred_uv_space == 'consec' or args.pred_uv_space == 'consec_ar':
+    pred_uv_fw = pt.cat((pt.unsqueeze(in_f_uv_fw[:, [0], [0, 1]], dim=1), pred_uv_fw[:, :, [0, 1]]), dim=1)
+    pred_uv_bw = pt.cat((pt.unsqueeze(in_f_uv_bw[:, [0], [0, 1]], dim=1), pred_uv_bw[:, :, [0, 1]]), dim=1)
 
   # Use the interpolate_missing to combine 2 direction into one displacement
   prediction_dict['model_uv_fw'] = pred_uv_fw
   prediction_dict['model_uv_bw'] = pred_uv_bw
 
-  pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode='position')
+  pred_uv = utils_func.combine_uv_bidirection(pred_dict=prediction_dict, input_dict=input_dict, mode=args.pred_uv_space, missing_annotation=[missing_fw, missing_bw, missing_uv])
   prediction_dict['model_uv'] = pred_uv
 
   return prediction_dict
@@ -426,7 +446,7 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
   # optimizer = pt.optim.LBFGS(trajectory_optimizer.parameters(), lr=100)
   lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.07, patience=10)
   trajectory_optimizer.train()
-  t = tqdm(range(10000), desc='Optimizing...', leave=True)
+  t = tqdm(range(10), desc='Optimizing...', leave=True)
   for i in t:
     # def closure():
     optimizer.zero_grad()

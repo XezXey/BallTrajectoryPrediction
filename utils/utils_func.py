@@ -172,6 +172,9 @@ def get_model_depth(model_arch, features_cols, args):
       residual = True if 'xyz_residual' == args.out_refine else False
       model = model(input_size=insize, output_size=outsize, batch_size=args.batch_size, residual=residual, model=args.pipeline[idx])
 
+    #############################################
+    ######### UV-AutoRegressive Module ##########
+    #############################################
     elif args.pipeline[idx] == 'uv':
       model_uv_fw = model(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=True if args.bidirectional[idx] == 'T' else False, model='uv_fw', autoregressive=args.autoregressive)
       model_uv_bw = model(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=True if args.bidirectional[idx] == 'T' else False, model='uv_bw', autoregressive=args.autoregressive)
@@ -187,28 +190,11 @@ def get_model_depth(model_arch, features_cols, args):
     elif args.pipeline[idx] == 'refinement':
       model_refinement_list.append(model)
 
-  #############################################
-  ######### UV-AutoRegressive Module ##########
-  #############################################
-
-  model_cfg = {}
-
-  # if 'uv' in args.pipeline:
-    # if model_arch =='residual_block':
-      # # FORWARD
-      # model_uv_fw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
-    # else:
-      # model_uv_fw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fw', autoregressive=args.autoregressive)
-
-    # # BACWARD 
-    # if model_arch =='residual_block':
-      # model_uv_bw = ResNetLayer_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_fb', autoregressive=args.autoregressive)
-    # else:
-      # model_uv_bw = BiLSTMResidualTrainableInit_AR(input_size=2, output_size=2, trainable_init=args.trainable_init, batch_size=args.batch_size, bidirectional=False, model='uv_bw', autoregressive=args.autoregressive)
 
   #############################################
   ################ Model Config ###############
   #############################################
+  model_cfg = {}
 
   if 'uv' in args.pipeline:
     model_cfg['model_uv_fw'] = {'input_size':model_uv_fw.input_size, 'output_size':model_uv_fw.output_size, 'hidden_dim':model_uv_fw.hidden_dim, 'n_layers':model_uv_fw.n_layers, 'n_stack':model_uv_fw.n_stack, 'recurrent_stacked':model_uv_fw.recurrent_stacked, 'fc_size':model_uv_fw.fc_size}
@@ -512,6 +498,7 @@ def construct_bipred_weight(weight, lengths):
 def construct_bipred_ramp(weight_template, lengths):
   '''
   This function increase the seq_len by 1. For cummulative weighted
+  This function use lengths + 1
   '''
   fw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
   bw_weight = pt.zeros(weight_template.shape[0], weight_template.shape[1]+1, weight_template.shape[2]).cuda()
@@ -519,6 +506,11 @@ def construct_bipred_ramp(weight_template, lengths):
   for i in range(weight_template.shape[0]):
     # Forward prediction weight
     fw_weight[i][:lengths[i]+1] = 1 - pt.linspace(start=0, end=1, steps=lengths[i]+1).view(-1, 1).to(device)
+    # print("LENGTHS : ", lengths[i])
+    # print(pt.linspace(start=0, end=1, steps=lengths[i]+1).view(-1, 1).to(device).shape)
+    # print(fw_weight[i][:lengths[i]+1].shape)
+    # print(fw_weight[i][:lengths[i]+2].shape)
+    # exit()
     # Backward prediction weight
     bw_weight[i][:lengths[i]+1] = pt.linspace(start=0, end=1, steps=lengths[i]+1).view(-1, 1).to(device)
 
@@ -537,7 +529,6 @@ def save_reconstructed(eval_metrics, trajectory):
     seq_len = trajectory[i][4]
     for j in range(seq_len.shape[0]):
       # Iterate over each trajectory
-      # print(gt_xyz[j].shape, pred_xyz[j].shape, uv[j].shape, d[j].shape)
       each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]].reshape(-1, 1)), axis=1)
       lengths.append(seq_len)
       trajectory_all.append(each_trajectory)
@@ -589,16 +580,39 @@ def get_pipeline_var(pred_dict, input_dict):
 
   return pred_depth, pred_flag, input_flag
 
-def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
+def combine_uv_bidirection(pred_dict, input_dict, mode, missing_annotation):
   '''
   Combining 2 direction of forward and backward into one uv
-  1. position mode : combine on screen pixel space
-  2. delta mode : combine on delta-t of pixel space
+  1. pixel mode : combine on screen pixel space (Prediction is uv)
+  2. position mode : cumsum to get pixel space then combine (Prediction is du, dv)
+  3. delta mode : combine on delta-t of pixel space (Prediction is du, dv)
 
   Return : UV in dt space
   '''
 
-  if mode == 'position':
+  if mode == 'pixel':
+    # Combine on pixel space
+    # Construct ramping weight 
+    w_shape = pred_dict['model_uv_fw'][..., [0]].shape
+    print("W : ", w_shape)
+    bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(size=(w_shape[0], w_shape[1]-1, w_shape[2])), lengths=input_dict['lengths']-1)
+    bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
+    print("RAMP : ", bi_pred_ramp_.shape)
+
+    # Forward prediction cumsum
+    pred_uv_fw_ = pred_dict['model_uv_fw']
+    # pred_uv_fw_cat = pt.cat((input_dict['startpos'][..., [0, 1]], pred_uv_fw), dim=1)
+
+    # Backward prediction cumsum
+    pred_uv_bw = pred_dict['model_uv_bw']
+    # pred_uv_bw_cat = pt.cat((last_uv, pred_uv_bw), dim=1)
+    pred_uv_bw_ = reverse_masked_seq(seq=pred_uv_bw.clone(), lengths=input_dict['lengths']+1)
+    # Weight with ramp function
+    pred_uv = (pred_uv_fw_ * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw_ * bi_pred_ramp_[..., [2, 3]])
+    # Return the displacement
+    return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
+
+  elif mode == 'cumsum':
     # Combine on pixel space
     # Construct ramping weight 
     bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][..., [0]].shape), lengths=input_dict['lengths'])
@@ -616,9 +630,40 @@ def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
     # Backward prediction cumsum
     pred_uv_bw = pred_dict['model_uv_bw']
     pred_uv_bw_cumsum = pt.cumsum(pt.cat((last_uv, pred_uv_bw), dim=1), dim=1)
-    pred_uv_bw_cumsum = reverse_masked_seq(seq=pred_uv_bw_cumsum, lengths=input_dict['lengths']+1)
+    pred_uv_bw_cumsum = reverse_masked_seq(seq=pred_uv_bw_cumsum.clone(), lengths=input_dict['lengths']+1)
     # Weight with ramp function
     pred_uv = (pred_uv_fw_cumsum * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw_cumsum * bi_pred_ramp_[..., [2, 3]])
+    # Return the displacement
+    return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
+
+  elif mode == 'consec':
+    # Combine on pixel space
+    # Construct ramping weight 
+    bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][..., [0]].shape), lengths=input_dict['lengths'])
+    bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
+
+    # Calculate last timestep uv for performing a backward cumsum
+    uv_fw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], input_dict['input'][..., [0, 1]]), dim=1), dim=1)
+    last_u = pt.tensor([uv_fw[i][input_dict['lengths'][i], 0] for i in range(input_dict['input'].shape[0])]).view(-1, 1, 1)
+    last_v = pt.tensor([uv_fw[i][input_dict['lengths'][i], 1] for i in range(input_dict['input'].shape[0])]).view(-1, 1, 1)
+    last_uv = pt.cat((last_u, last_v), dim=2).to(device)
+
+    # Forward prediction consec
+    pred_uv_fw = pred_dict['model_uv_fw']
+    # if consec is used, we need du0, dv0 from input because we predict future not the present
+    pred_uv_fw_consec = pt.cat((input_dict['input'][:, [0], :], pred_uv_fw[:, :-1, [0, 1]]), dim=1)
+    pred_uv_fw_consec = pt.cat((input_dict['startpos'][..., [0, 1]], pred_uv_fw_consec + uv_fw[:, :-1, [0, 1]]), dim=1)
+
+    # Backward prediction consec
+    pred_uv_bw = pred_dict['model_uv_bw']
+    uv_bw = reverse_masked_seq(seq=uv_fw.clone(), lengths=input_dict['lengths']+1)
+    bw_duv_first = pt.unsqueeze((uv_bw[:, 1, :] - uv_bw[:, 0, :]), dim=1)
+    # if consec is used, we need du0, dv0 from input because we predict future not the present
+    pred_uv_bw_consec = pt.cat((bw_duv_first, pred_uv_bw[:, :-1, [0, 1]]), dim=1)
+    pred_uv_bw_consec = pt.cat((last_uv, pred_uv_bw_consec + uv_bw[:, :-1, [0, 1]]), dim=1)
+    pred_uv_bw_consec = reverse_masked_seq(seq=pred_uv_bw_consec.clone(), lengths=input_dict['lengths']+1)
+    # Weight with ramp function
+    pred_uv = (pred_uv_fw_consec * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw_consec * bi_pred_ramp_[..., [2, 3]])
     # Return the displacement
     return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
 
@@ -630,11 +675,55 @@ def combine_uv_bidirection(pred_dict, input_dict, mode='position'):
     pred_uv_fw = pred_dict['model_uv_fw']
     # Backward prediction 
     pred_uv_bw = pred_dict['model_uv_bw']
-    pred_uv_bw = reverse_masked_seq(seq=pred_uv_bw, lengths=input_dict['lengths'])
+    pred_uv_bw = reverse_masked_seq(seq=pred_uv_bw.clone(), lengths=input_dict['lengths'])
     # Weight with ramp function
     pred_uv = (pred_uv_fw * bi_pred_ramp_[..., [0, 1]]) + (pred_uv_bw * bi_pred_ramp_[..., [2, 3]])
-
     return pred_uv
+
+  elif mode == 'consec_ar':
+    missing_duv_fw = missing_annotation[0]
+    missing_duv_bw = missing_annotation[1]
+    missing_uv = missing_annotation[2]
+    # missing_fw = pt.cat((pt.zeros(size=(1, 1)).to(device).long(), missing_fw), dim=0)
+    # missing_bw = pt.cat((pt.zeros(size=(1, 1)).to(device).long(), missing_bw), dim=0)
+    # Forward prediction 
+    pred_uv_fw = pred_dict['model_uv_fw']
+    # Backward prediction 
+    pred_uv_bw = pred_dict['model_uv_bw']
+    uv_fw = pt.cumsum(pt.cat((input_dict['startpos'][..., [0, 1]], input_dict['input'][..., [0, 1]]), dim=1), dim=1)
+    uv_bw = reverse_masked_seq(seq=uv_fw.clone(), lengths=input_dict['lengths']+1)
+    first_uv_fw = uv_fw[:, [0], :]
+    first_uv_bw = uv_bw[:, [0], :]
+    uv_fw_interpolated = pt.zeros(size=uv_fw.shape).to(device)
+    uv_bw_interpolated = pt.zeros(size=uv_bw.shape).to(device)
+    lengths = input_dict['lengths']
+    batch_size = uv_fw.shape[0]
+    for batch_idx in range(batch_size):
+      uv_fw_interpolated[batch_idx, [0]] = first_uv_fw[0]
+      uv_bw_interpolated[batch_idx, [0]] = first_uv_bw[0]
+      missing_uv_fw = missing_uv[batch_idx, ...]
+      missing_uv_bw = pt.flip(missing_uv[batch_idx, ...], dims=[0])
+      for i in range(1, uv_fw_interpolated.shape[1]):
+        if missing_uv_fw[i] == 1:
+          uv_fw_interpolated[batch_idx, [i]] = uv_fw_interpolated[batch_idx, [i-1]] + pred_uv_fw[batch_idx, [i-1]]
+        elif missing_uv_fw[i] == 0:
+          uv_fw_interpolated[batch_idx, [i]] = uv_fw[batch_idx, [i]]
+
+        if missing_uv_bw[i] == 1:
+          uv_bw_interpolated[batch_idx, [i]] = uv_bw_interpolated[batch_idx, [i-1]] + pred_uv_bw[batch_idx, [i-1]]
+        elif missing_uv_bw[i] == 0:
+          uv_bw_interpolated[batch_idx, [i]] = uv_bw[batch_idx, [i]]
+
+
+    # Construct ramping weight 
+    uv_bw_interpolated = reverse_masked_seq(seq=uv_bw_interpolated.clone(), lengths=input_dict['lengths']+1)
+    bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(pred_dict['model_uv_fw'][..., [0]].shape), lengths=input_dict['lengths'])
+    bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
+    pred_uv = (uv_fw_interpolated * bi_pred_ramp_[..., [0, 1]]) + (uv_bw_interpolated * bi_pred_ramp_[..., [2, 3]])
+
+    return pred_uv[:, 1:, :] - pred_uv[:, :-1, :]
+
+
 
 def select_uv_recon(input_dict, pred_dict, in_f_noisy):
   if args.recon == 'ideal_uv':
