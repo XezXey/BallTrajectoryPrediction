@@ -538,8 +538,31 @@ def save_reconstructed(eval_metrics, trajectory):
   save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
   initialize_folder(save_path)
   np.save(file='{}/{}_trajectory'.format(save_path, save_file_suffix), arr=np.array(trajectory_all))
-  np.save(file='{}/{}_metrices'.format(save_path, save_file_suffix), arr=eval_metrics)
   print("[#] Saving reconstruction to /{}/{}".format(args.savetofile, save_file_suffix))
+
+def save_autoregression(uv_interpolated, trajectory_loader):
+  # [0] every batch means batch_size = 1
+  all_trajectory = []
+  for idx, batch in enumerate(trajectory_loader):
+    uv_interpolated_each = uv_interpolated['pred_uv'][idx]  # [Seq_len, 2]
+    duv_interpolated_each = uv_interpolated_each[1:, :] - uv_interpolated_each[:-1, :]
+    xyz_dt = batch['gt'][4][0][1:, :] - batch['gt'][4][0][:-1, :]
+    uv_dt = batch['input'][0][0]
+    uv_start_pos = batch['input'][3][0] #   Include a depth col
+    xyz_start_pos = batch['gt'][3][0]
+    depth_dt = batch['gt'][0][0]
+    print("[#] Sanity check -> Start position(u, v) equality : ", uv_interpolated_each[0, :] == uv_start_pos[0, [0, 1]])
+    print("[#] Sanity check -> Start position(x, y, z) equality : ", batch['gt'][4][0][0, :] == xyz_start_pos)
+    start_pos_row = pt.cat((xyz_start_pos, uv_start_pos), dim=-1)
+    duv_row = pt.cat((xyz_dt, duv_interpolated_each, depth_dt), dim=-1)
+    dummy_cols = pt.zeros(size=(uv_interpolated_each.shape[0], 5)).cpu()
+    trajectory_data = pt.cat((start_pos_row, duv_row), dim=0)
+    trajectory_data = pt.cat((trajectory_data, dummy_cols), dim=-1)
+    trajectory_data_npy = trajectory_data.detach().cpu().numpy()
+    all_trajectory.append(trajectory_data_npy)
+
+  np.save(file='{}/Mixed_trajectory_Trialx_autoregression.npy'.format(args.dataset_test_path), arr=all_trajectory)
+  print("[#] Saving Autoregression to /{}/{}".format(args.savetofile, 'Mixed_trajectory_Trialx_autoregression.npy'))
 
 def save_visualize(fig, postfix=None):
   if postfix is None:

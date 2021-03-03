@@ -60,6 +60,7 @@ parser.add_argument('--env', dest='env', help='Environment', type=str, default='
 parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', nargs='+', default=[])
 parser.add_argument('--directional', dest='bidirectional', help='Directional', action='store_false')
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
+parser.add_argument('--pred_uv_space', dest='pred_uv_space', help='Prediction space for uv interpolation', type=str, default='pixel')
 parser.add_argument('--savetofile', dest='savetofile', help='Save the prediction trajectory for doing optimization', type=str, default=None)
 parser.add_argument('--multiview_loss', dest='multiview_loss', help='Use multiview loss', nargs='+', default=[])
 parser.add_argument('--round', dest='round', help='Rounding pixel', action='store_true', default=False)

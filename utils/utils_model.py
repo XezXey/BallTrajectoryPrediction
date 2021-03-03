@@ -441,12 +441,12 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
   for name, param in trajectory_optimizer.named_parameters():
     print('{}, {}, {}'.format(name, param, param.grad))
   # Optimizer
-  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=10)
+  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=0.1)
   # optimizer = pt.optim.SGD(trajectory_optimizer.parameters(), lr=10)
   # optimizer = pt.optim.LBFGS(trajectory_optimizer.parameters(), lr=100)
   lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.07, patience=10)
   trajectory_optimizer.train()
-  t = tqdm(range(10), desc='Optimizing...', leave=True)
+  t = tqdm(range(1000), desc='Optimizing...', leave=True)
   for i in t:
     # def closure():
     optimizer.zero_grad()

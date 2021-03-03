@@ -327,7 +327,7 @@ if __name__ == '__main__':
     # Log the learning rate
     for param_group in optimizer.param_groups:
       print("[#]Learning rate (Depth & EOT) : ", param_group['lr'])
-      wandb.log({'Learning Rate':param_group['lr']})
+      wandb.log({'Learning Rate':param_group['lr'], 'n_epochs':epoch})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
     vis_signal = True if epoch % 20 == 0 else False
@@ -349,7 +349,6 @@ if __name__ == '__main__':
       accumulate_val_loss.append(val_loss)
       accumulate_train_loss.append(train_loss)
       vis_signal = False
-    # '''
 
     # Get the average loss for each epoch over entire dataset
     val_loss_per_epoch = np.mean(accumulate_val_loss)
