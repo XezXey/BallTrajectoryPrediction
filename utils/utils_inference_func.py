@@ -132,21 +132,28 @@ def visualize_layout_update(fig=None, n_vis=3):
   # Save to html file and use wandb to log the html and display (Plotly3D is not working)
   for i in range(n_vis*2):
     if i%2==0:
-      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-27, 33],), yaxis = dict(nticks=5, range=[-3, 12],), zaxis = dict(nticks=10, range=[-31, 19],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
-      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(nticks=10, range=[-4, 4],), yaxis = dict(nticks=5, range=[-3, 8],), zaxis = dict(nticks=10, range=[-4, 4],), aspectmode='manual', aspectratio=dict(x=4, y=2, z=3))
-      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
-                                                  camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
-                                                              up=dict(x=0, y=1, z=0)))
-      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-50, 50],), yaxis = dict(dtick=1, range=[-6, 6],), zaxis = dict(dtick=1, range=[-40, 40]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
+      # fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-4, 4],), yaxis = dict(dtick=1, range=[-4, 4],), zaxis = dict(dtick=1, range=[-4, 4]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
                                                   # camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
                                                               # up=dict(x=0, y=1, z=0)))
+      fig['layout']['scene{}'.format(i+1)].update(xaxis=dict(dtick=1, range=[-50, 50],), yaxis = dict(dtick=1, range=[-6, 6],), zaxis = dict(dtick=1, range=[-40, 40]), aspectmode='manual', aspectratio=dict(x=1, y=1, z=1),
+                                                  camera=dict(eye=dict(x=0.2, y=3.9, z=3.9),
+                                                              up=dict(x=0, y=1, z=0)))
   return fig
 
 def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluation_results, vis_idx, gt_eot, pred_eot, args, latent_optimized, cam_params_dict, fig=None, flag='test', n_vis=5):
   # detach() for visualization
   uv = uv.cpu().detach().numpy()
+  gt_xyz = gt_xyz.clone().cpu().detach().numpy()
+  # gt_xyz = np.where(np.isclose(0.0, gt_xyz, atol=1e-6), np.nan, gt_xyz)
+
+  # if args.ipl is not None:
+    # pred_xyz = pt.tensor(gt_xyz).clone().to(device) + pt.rand(size=gt_xyz.shape).to(device)/args.ipl
   pred_xyz = pred_xyz.cpu().detach().numpy()
-  gt_xyz = gt_xyz.cpu().detach().numpy()
+  # mse = (pred_xyz - gt_xyz)**2
+  # mse = mse[~np.isnan(mse).any(axis=2)]
+  # if args.ipl is not None:
+    # print(np.sqrt(np.mean(mse, axis=0)))
+
   if args.optimize is not None:
     latent_optimized = latent_optimized.cpu().detach().numpy()
   if pred_eot is not None:
@@ -204,8 +211,14 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
     uv_pred_proj = pt.cat((pred_xyz_proj[0], pred_xyz_proj[1]), dim=2).cpu().detach().numpy()
     uv_gt_proj = pt.cat((gt_xyz_proj[0], gt_xyz_proj[1]), dim=2).cpu().detach().numpy()
 
-    fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 0].shape[0]), y=uv[i][:lengths[i]+1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], dU'.format(flag, i)), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=np.arange(uv[i][:lengths[i], 1].shape[0]), y=uv[i][:lengths[i]+1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], dV'.format(flag, i)), row=row_idx, col=col_idx)
+    duv_pred_proj = uv_pred_proj[:, 1:, :] - uv_pred_proj[:, :-1, :]
+    duv_gt_proj = uv_gt_proj[:, 1:, :] - uv_gt_proj[:, :-1, :]
+
+    fig.add_trace(go.Scatter(x=np.arange(duv_gt_proj[0][:lengths[i], 0].shape[0]-1), y=duv_gt_proj[0][:lengths[i]-1, 0], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], dU-GT'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(duv_gt_proj[0][:lengths[i], 1].shape[0]-1), y=duv_gt_proj[0][:lengths[i]-1, 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], dV-GT'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(duv_pred_proj[0][:lengths[i], 0].shape[0]-1), y=duv_pred_proj[0][:lengths[i]-1, 0], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], dU-PRED'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=np.arange(duv_pred_proj[0][:lengths[i], 1].shape[0]-1), y=duv_pred_proj[0][:lengths[i]-1, 1], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], dV-PRED'.format(flag, i)), row=row_idx, col=col_idx)
+
     fig.add_trace(go.Scatter(x=uv_gt_proj[0][:lengths[i], 0], y=uv_gt_proj[0][:lengths[i], 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], UV-Gt'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=uv_pred_proj[0][:lengths[i], 0], y=uv_pred_proj[0][:lengths[i], 1], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], UV-Pred'.format(flag, i)), row=row_idx, col=col_idx)
 

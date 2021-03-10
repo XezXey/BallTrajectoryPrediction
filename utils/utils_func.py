@@ -548,21 +548,23 @@ def save_autoregression(uv_interpolated, trajectory_loader):
     duv_interpolated_each = uv_interpolated_each[1:, :] - uv_interpolated_each[:-1, :]
     xyz_dt = batch['gt'][4][0][1:, :] - batch['gt'][4][0][:-1, :]
     uv_dt = batch['input'][0][0]
-    uv_start_pos = batch['input'][3][0] #   Include a depth col
+    uvd_start_pos = batch['input'][3][0] #   Include a depth col
     xyz_start_pos = batch['gt'][3][0]
     depth_dt = batch['gt'][0][0]
-    print("[#] Sanity check -> Start position(u, v) equality : ", uv_interpolated_each[0, :] == uv_start_pos[0, [0, 1]])
+    print("[#] Sanity check -> Start position(u, v) equality : ", uv_interpolated_each[0, :] == uvd_start_pos[0, [0, 1]])
     print("[#] Sanity check -> Start position(x, y, z) equality : ", batch['gt'][4][0][0, :] == xyz_start_pos)
-    start_pos_row = pt.cat((xyz_start_pos, uv_start_pos), dim=-1)
-    duv_row = pt.cat((xyz_dt, duv_interpolated_each, depth_dt), dim=-1)
+    start_pos_row = pt.cat((xyz_start_pos, uvd_start_pos), dim=-1)      # Concat Column
+    dt_xyzuv_row = pt.cat((xyz_dt, duv_interpolated_each, depth_dt), dim=-1)    # Concat Column
     dummy_cols = pt.zeros(size=(uv_interpolated_each.shape[0], 5)).cpu()
-    trajectory_data = pt.cat((start_pos_row, duv_row), dim=0)
-    trajectory_data = pt.cat((trajectory_data, dummy_cols), dim=-1)
+    trajectory_data = pt.cat((start_pos_row, dt_xyzuv_row), dim=0)   # Concat Row
+    trajectory_data = pt.cat((trajectory_data, dummy_cols), dim=-1)     # Concat Column
     trajectory_data_npy = trajectory_data.detach().cpu().numpy()
+    print(trajectory_data_npy)
     all_trajectory.append(trajectory_data_npy)
 
-  np.save(file='{}/Mixed_trajectory_Trialx_autoregression.npy'.format(args.dataset_test_path), arr=all_trajectory)
-  print("[#] Saving Autoregression to /{}/{}".format(args.savetofile, 'Mixed_trajectory_Trialx_autoregression.npy'))
+  initialize_folder('{}/Interpolated/'.format(args.dataset_test_path))
+  np.save(file='{}/Interpolated/Mixed_trajectory_Trialx_autoregression.npy'.format(args.dataset_test_path), arr=all_trajectory)
+  print("[#] Saving Autoregression to /{}/Interpolated/{}".format(args.dataset_test_path, 'Mixed_trajectory_Trialx_autoregression.npy'))
 
 def save_visualize(fig, postfix=None):
   if postfix is None:
@@ -617,10 +619,8 @@ def combine_uv_bidirection(pred_dict, input_dict, mode, missing_annotation):
     # Combine on pixel space
     # Construct ramping weight 
     w_shape = pred_dict['model_uv_fw'][..., [0]].shape
-    print("W : ", w_shape)
     bi_pred_ramp = construct_bipred_ramp(weight_template=pt.zeros(size=(w_shape[0], w_shape[1]-1, w_shape[2])), lengths=input_dict['lengths']-1)
     bi_pred_ramp_ = pt.index_select(x=bi_pred_ramp.repeat(1, 1, 2), dim=2, index=pt.LongTensor([0, 2, 1, 3]).to(device))
-    print("RAMP : ", bi_pred_ramp_.shape)
 
     # Forward prediction cumsum
     pred_uv_fw_ = pred_dict['model_uv_fw']
@@ -674,7 +674,7 @@ def combine_uv_bidirection(pred_dict, input_dict, mode, missing_annotation):
     # Forward prediction consec
     pred_uv_fw = pred_dict['model_uv_fw']
     # if consec is used, we need du0, dv0 from input because we predict future not the present
-    pred_uv_fw_consec = pt.cat((input_dict['input'][:, [0], :], pred_uv_fw[:, :-1, [0, 1]]), dim=1)
+    pred_uv_fw_consec = pt.cat((pt.unsqueeze(input_dict['input'][:, [0], [0, 1]], dim=1), pred_uv_fw[:, :-1, [0, 1]]), dim=1)
     pred_uv_fw_consec = pt.cat((input_dict['startpos'][..., [0, 1]], pred_uv_fw_consec + uv_fw[:, :-1, [0, 1]]), dim=1)
 
     # Backward prediction consec
@@ -727,6 +727,18 @@ def combine_uv_bidirection(pred_dict, input_dict, mode, missing_annotation):
       missing_uv_fw = missing_uv[batch_idx, ...]
       missing_uv_bw = pt.flip(missing_uv[batch_idx, ...], dims=[0])
       for i in range(1, uv_fw_interpolated.shape[1]):
+        print("FLAG STATUS")
+        print("MISSING FW : ", missing_uv_fw[i-1])
+        print("MISSING BW : ", missing_uv_bw[i-1])
+        print("="*100)
+        print("BEFORE INTERPOLATED")
+        print("FORWARD : ", uv_fw_interpolated[batch_idx, i-1])
+        print("BACKWARD : ", uv_bw_interpolated[batch_idx, i-1])
+        print("="*100)
+        print("PREDICTION")
+        print("FORWARD : ", pred_uv_fw[batch_idx, [i-1]])
+        print("BACKWARD : ", pred_uv_bw[batch_idx, [i-1]])
+        print("="*100)
         if missing_uv_fw[i] == 1:
           uv_fw_interpolated[batch_idx, [i]] = uv_fw_interpolated[batch_idx, [i-1]] + pred_uv_fw[batch_idx, [i-1]]
         elif missing_uv_fw[i] == 0:
@@ -736,6 +748,12 @@ def combine_uv_bidirection(pred_dict, input_dict, mode, missing_annotation):
           uv_bw_interpolated[batch_idx, [i]] = uv_bw_interpolated[batch_idx, [i-1]] + pred_uv_bw[batch_idx, [i-1]]
         elif missing_uv_bw[i] == 0:
           uv_bw_interpolated[batch_idx, [i]] = uv_bw[batch_idx, [i]]
+        print("AFTER INTERPOLATED")
+        print("FORWARD : ", uv_fw_interpolated[batch_idx, i-1])
+        print("BACKWARD : ", uv_bw_interpolated[batch_idx, i-1])
+        print("#"*100)
+        print("#"*100)
+        print("#"*100)
 
 
     # Construct ramping weight 
@@ -752,10 +770,10 @@ def select_uv_recon(input_dict, pred_dict, in_f_noisy):
   if args.recon == 'ideal_uv':
     return input_dict['input'][..., [0, 1]]
   elif args.recon == 'noisy_uv' and 'uv' not in args.pipeline:
-    return noisy_in_f
+    return in_f_noisy
   elif 'uv' in args.pipeline :
     if args.recon == 'noisy_uv':
-      return noisy_in_f
+      return in_f_noisy
     elif args.recon =='pred_uv':
       return pred_dict['model_uv']
   else:
@@ -795,7 +813,7 @@ def add_noise(input_trajectory, startpos, lengths):
   #############################################
   factor = np.random.uniform(low=0.6, high=0.95)
   if args.noise_sd is None:
-    noise_sd = np.random.uniform(low=0.3, high=1)
+    noise_sd = np.random.uniform(low=0.3, high=20.)
   else:
     noise_sd = args.noise_sd
 

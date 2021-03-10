@@ -91,13 +91,20 @@ def uv_auto_regressive_forward(model_dict, input_dict, in_f, prediction_dict):
 
   # Missing annotation
   # This is mock-up version (Real data will loaded from tracking file)
-  missing_uv = pt.randint(low=0, high=2, size=(in_f_uv_fw.shape[0], in_f_uv_fw.shape[1]+1, 1)).cuda()
-  missing_uv[:, :2, 0] *= 0
-  missing_uv[:, -2:, 0] *= 0
-  input_dict['in_f_missing_uv'] = missing_uv
-  missing_duv = missing_uv[:, :-1, :] | missing_uv[:, 1:, :]
-  input_dict['in_f_missing_duv'] = missing_duv
-  missing_annotation = missing_uv.cuda()
+  if not args.load_missing:
+    missing_uv = pt.randint(low=0, high=2, size=(in_f_uv_fw.shape[0], in_f_uv_fw.shape[1]+1, 1)).cuda()
+    missing_uv[:, :2, 0] *= 0
+    missing_uv[:, -2:, 0] *= 0
+    input_dict['in_f_missing_uv'] = missing_uv
+    missing_duv = missing_uv[:, :-1, :] | missing_uv[:, 1:, :]
+    input_dict['in_f_missing_duv'] = missing_duv
+    missing_annotation = missing_duv.cuda()
+  else:
+    missing_uv = input_dict['missing_mask'].int().cuda()
+    input_dict['in_f_missing_uv'] = missing_uv
+    missing_duv = missing_uv[:, :-1, :] | missing_uv[:, 1:, :]
+    input_dict['in_f_missing_duv'] = missing_duv
+    missing_annotation = missing_duv.cuda()
 
   for batch_idx in range(batch_size):    # Batch dimension
     # Reset initial state
@@ -122,6 +129,9 @@ def uv_auto_regressive_forward(model_dict, input_dict, in_f, prediction_dict):
         in_f_uv_fw_temp = pt.unsqueeze(in_f_uv_fw[[batch_idx], [i], ...], dim=0)
 
       pred_uv_fw_temp, (_, _) = model_uv_fw(in_f=in_f_uv_fw_temp, lengths=None)
+      print("INPUT : ", in_f_uv_fw_temp)
+      print("PREDICTION : ", pred_uv_fw_temp)
+      print("="*100)
 
       # Output selection
       if missing_fw[i+1] == 1:
@@ -158,7 +168,6 @@ def uv_auto_regressive_forward(model_dict, input_dict, in_f, prediction_dict):
     pred_uv_bw[batch_idx] = pt.cat(pred_uv_bw[batch_idx], dim=1)
 
   # Padding first
-
   # If loop using sequence length ===> Padding
   pred_uv_fw = pt.nn.utils.rnn.pad_sequence([pred_uv_fw[i][0] for i in range(batch_size)], batch_first=True)
   pred_uv_bw = pt.nn.utils.rnn.pad_sequence([pred_uv_bw[i][0] for i in range(batch_size)], batch_first=True)
@@ -289,6 +298,14 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
   ######################################
   ############# REFINEMENT #############
   ######################################
+  # print(pred_xyz.shape)
+  # print(gt_dict['xyz'].shape)
+  # print(gt_dict['xyz'])
+  # exit()
+
+  if args.ipl is not None:
+    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]]
+
   features_indexing = 3
   if 'eot' in args.pipeline:
     features_indexing = 4
@@ -392,6 +409,8 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     -   Latent was fed
     -   Encoder was used
   '''
+  if args.ipl is not None:
+    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]] #+ pt.randn(pred_xyz.shape).to(device)/10
 
   # Initial the latent size
   features_indexing = 3
@@ -441,12 +460,12 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
   for name, param in trajectory_optimizer.named_parameters():
     print('{}, {}, {}'.format(name, param, param.grad))
   # Optimizer
-  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=0.1)
+  optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=1)
   # optimizer = pt.optim.SGD(trajectory_optimizer.parameters(), lr=10)
   # optimizer = pt.optim.LBFGS(trajectory_optimizer.parameters(), lr=100)
-  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.07, patience=10)
+  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10)
   trajectory_optimizer.train()
-  t = tqdm(range(1000), desc='Optimizing...', leave=True)
+  t = tqdm(range(150), desc='Optimizing...', leave=True)
   for i in t:
     # def closure():
     optimizer.zero_grad()
@@ -508,12 +527,11 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
     t.refresh()
     lr_scheduler.step(optimization_loss)
-    # optimization_loss.backward(retain_graph=True)
     optimization_loss.backward()
-    for name, param in trajectory_optimizer.named_parameters():
-      print("Name : ", name)
-      print("PARAM : ", param)
-      print("GRAD : ", param.grad)
+    # for name, param in trajectory_optimizer.named_parameters():
+      # print("Name : ", name)
+      # print("PARAM : ", param)
+      # print("GRAD : ", param.grad)
 
     optimizer.step()
 
@@ -562,7 +580,7 @@ def optimization_depth(model_dict, gt_dict, cam_params_dict, optimize, input_dic
   latent_optimized = trajectory_optimizer.update_latent(lengths)
   trajectory_optimizer.train()
   optimizer = pt.optim.Adam(trajectory_optimizer.parameters(), lr=args.lr)
-  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.03, patience=10)
+  lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=10)
   t = tqdm(range(500), desc='Optimizing...', leave=True)
   for i in t:
     optimizer.zero_grad()
@@ -631,7 +649,7 @@ def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
   # print(trajectory_loss)
   # print(below_ground_loss)
   # print(multiview_loss)
-  optimization_loss = below_ground_loss + multiview_loss # + trajectory_loss
+  optimization_loss = below_ground_loss + multiview_loss + gravity_loss #+ multiview_loss # + trajectory_loss
   return optimization_loss
 
 def train_mode(model_dict):

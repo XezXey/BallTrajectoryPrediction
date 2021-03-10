@@ -19,6 +19,8 @@ import io
 from sklearn.metrics import confusion_matrix
 import wandb
 import json
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 # Utils
 from utils.dataloader import TrajectoryDataset
 import utils.utils_func as utils_func
@@ -79,6 +81,8 @@ parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help=
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
 parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
 parser.add_argument('--lr', dest='lr', type=float, help='Learning rate for optimizaer', default=10)
+parser.add_argument('--load_missing', dest='load_missing', help='Load missing', action='store_true', default=False)
+parser.add_argument('--ipl', dest='ipl', type=float, default=None)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -110,6 +114,15 @@ def add_flag_noise(flag, lengths):
     # flag_active = pt.where(flag[idx]==1.)
     # exit()
   return flag
+
+def get_each_batch_pred(latent_optimized, pred_flag, pred_xyz, lengths):
+  if args.optimize is not None:
+    return {'latent_optimized':latent_optimized.clone().detach().cpu().numpy(), 'flag':pred_flag.clone().detach().cpu().numpy(), 'xyz':pred_xyz.clone().detach().cpu().numpy(), 'lengths':lengths.clone().detach().cpu().numpy()}
+  else:
+    if eot not in args.pipeline:
+      return {'latent_optimized':latent_optimized, 'flag':pred_flag, 'xyz':pred_xyz.clone().detach().cpu().numpy(), 'lengths':lengths.clone().detach().cpu().numpy()}
+    else:
+      return {'latent_optimized':latent_optimized, 'flag':pred_flag.clone().detach().cpu().numpy(), 'xyz':pred_xyz.clone().detach().cpu().numpy(), 'lengths':lengths.clone().detach().cpu().numpy()}
 
 def get_each_batch_trajectory(pred, gt, mask, lengths, cam_params_dict):
   gt_xyz = []
@@ -180,6 +193,72 @@ def evaluateModel(pred, gt, mask, lengths, cam_params_dict, threshold=1, delmask
 
   # Accepted trajectory < Threshold
   return evaluation_results
+
+def latent_evaluate(all_batch_pred):
+  all_latent_optimized = all_batch_pred['latent_optimized']
+  all_flag = all_batch_pred['flag']
+  all_xyz = all_batch_pred['xyz']
+  all_lengths = all_batch_pred['lengths']
+  n_sample = 5
+  # Over batch
+  angle_diff_list = []
+  for i in range(len(all_xyz)):
+    flag = np.concatenate((all_flag[i], np.ones(shape=(all_flag[i].shape[0], 1, 1))), axis=1)
+    xyz = all_xyz[i]
+    latent_optimized = all_latent_optimized[i]
+    lengths = all_lengths[i]
+    # flag = pt.cat((all_flag[i], pt.ones(size=(all_flag[i].shape[0], 1, 1)).cuda()), dim=1).detach().cpu().numpy()
+    # xyz = all_xyz[i].detach().cpu().numpy()
+    # latent_optimized = all_latent_optimized[i].detach().cpu().numpy()
+    # lengths = all_lengths[i].detach().cpu().numpy()
+    trajectory = np.concatenate((xyz, flag, latent_optimized), axis=-1)
+    # print("#"*100)
+    for j, each_traj in enumerate(trajectory):
+      # Over trajectory
+      close = np.isclose(each_traj[:lengths[j], 3], 1.0, atol=5e-1)
+      where = np.where(close == True)[0]+1
+      where = where[where<lengths[j]]
+      if len(where) == 0:
+        where = [0] + [flag[j].shape[0]]
+      else:
+        # We use indexing so we dont need to +1 here
+        where = [0] + list(where) + [flag[j].shape[0]]
+
+      # Over each flag
+      # print("*"*100)
+      # print("WHERE : ", where)
+      for each_pos in where:
+        # print("EACH : ", each_pos+1, lengths[j])
+        # Don't care the last latent
+        if each_pos+1 == lengths[j]:
+          break
+        elif len(where) == 2 and each_pos==flag[j].shape[0]:
+          # Sequence has one flag : We stop at the padding sequence length
+          break
+        else:
+          if 'sin_cos' in args.latent_code:
+            # print("[#] Sanity check (sin^2 + cos^2 = 1): ", np.sum(latent_optimized[j][each_pos]**2))
+            trajectory_initial = trajectory[j][each_pos, [0, 2]]
+            # print("DIR : ", trajectory[j][each_pos+1:each_pos+n_sample, [0, 2]])
+            # print("START : ", trajectory[j][each_pos, [0, 2]])
+            trajectory_direction = trajectory[j][each_pos+1:each_pos+n_sample, [0, 2]] - trajectory_initial
+            latent_direction = trajectory_initial + trajectory[j][each_pos, [4, 5]]
+            latent_direction_unit = latent_direction / np.sqrt(np.sum(latent_direction**2, axis=-1)).reshape(-1, 1)
+            trajectory_unit = trajectory_direction / np.sqrt(np.sum(trajectory_direction**2, axis=-1)).reshape(-1, 1)
+            trajectory_direction_mean = np.mean(trajectory_unit, axis=0)
+            # print("LATENT DIR : ", latent_direction_unit)
+            # print("TRAJECTORY DIR : ", trajectory_direction_mean)
+
+            trajectory_direction_mean_length = np.sqrt(np.sum(trajectory_direction_mean**2))
+            latent_direction_unit_length = np.sqrt(np.sum(latent_direction_unit**2))
+            vector_dot = np.sum(trajectory_direction_mean * latent_direction_unit)
+            angle_diff = np.arccos(vector_dot/(trajectory_direction_mean_length * latent_direction_unit_length))
+            # angle_diff_list.append(angle_diff)
+            angle_diff_list.append(angle_diff*180/np.pi)
+
+  angle_diff_ = np.array(angle_diff_list)
+  fig = go.Figure(data=[go.Histogram(x=angle_diff_, nbinsx=18)])
+  fig.show()
 
 def evaluate(all_batch_trajectory):
   print("[#]Summary All Trajectory")
@@ -277,6 +356,8 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   evaluation_results = evaluateModel(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold, cam_params_dict=cam_params_dict)
   reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
   each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
+  # each_batch_pred = get_each_batch_pred(latent_optimized=latent_optimized, pred_flag=pred_flag_test, pred_xyz=pred_xyz_test[..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
+  each_batch_pred=None
 
   utils_func.print_loss(loss_list=[test_loss_dict, test_loss], name='Testing')
 
@@ -284,7 +365,7 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     pred_test_dict = {'input':in_test, 'flag':pred_flag_test, 'depth':pred_depth_test, 'xyz':pred_xyz_test, 'latent_optimized':latent_optimized}
     utils_inference_func.make_visualize(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict, evaluation_results=evaluation_results, animation_visualize_flag=args.animation, pred_test_dict=pred_test_dict, visualization_path=visualization_path, args=args, cam_params_dict=cam_params_dict)
 
-  return evaluation_results, reconstructed_trajectory, each_batch_trajectory
+  return evaluation_results, reconstructed_trajectory, each_batch_trajectory, each_batch_pred
 
 def collate_fn_padd(batch):
     # Padding batch of variable length
@@ -319,8 +400,13 @@ def collate_fn_padd(batch):
     ## Compute mask
     gt_mask = (gt_xyz != padding_value)
 
-    return {'input':[input_batch, lengths, input_mask, input_startpos],
-            'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz]}
+    if args.autoregressive:
+      missing_mask = pt.tensor([trajectory[:, [-1]] for trajectory in batch])
+    else:
+      missing_mask = pt.tensor([])
+
+    return {'input':[input_batch, lengths, input_mask, input_startpos, missing_mask],
+            'gt':[gt_batch, lengths+1, gt_mask, gt_startpos, gt_xyz, missing_mask]}
 
 def summary(evaluation_results_all):
   print("="*100)
@@ -401,15 +487,16 @@ if __name__ == '__main__':
   evaluation_results_all = []
   reconstructed_trajectory_all = []
   all_batch_trajectory = {'gt_xyz':[], 'pred_xyz':[], 'gt_d':[], 'pred_d':[]}
+  all_batch_pred = {'flag':[], 'latent_optimized':[], 'xyz':[], 'lengths':[]}
   n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
     # Testing set (Each index in batch_test came from the collate_fn_padd)
-    input_test_dict = {'input':batch_test['input'][0].to(device), 'lengths':batch_test['input'][1].to(device), 'mask':batch_test['input'][2].to(device), 'startpos':batch_test['input'][3].to(device)}
-    gt_test_dict = {'o_with_f':batch_test['gt'][0].to(device), 'lengths':batch_test['gt'][1].to(device), 'mask':batch_test['gt'][2].to(device), 'startpos':batch_test['gt'][3].to(device), 'xyz':batch_test['gt'][4].to(device)}
+    input_test_dict = {'input':batch_test['input'][0].to(device), 'lengths':batch_test['input'][1].to(device), 'mask':batch_test['input'][2].to(device), 'startpos':batch_test['input'][3].to(device), 'missing_mask':batch_test['input'][4]}
+    gt_test_dict = {'o_with_f':batch_test['gt'][0].to(device), 'lengths':batch_test['gt'][1].to(device), 'mask':batch_test['gt'][2].to(device), 'startpos':batch_test['gt'][3].to(device), 'xyz':batch_test['gt'][4].to(device), 'missing_mask':batch_test['gt'][5]}
 
     # Call function to test
-    evaluation_results, reconstructed_trajectory, each_batch_trajectory = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
+    evaluation_results, reconstructed_trajectory, each_batch_trajectory, each_batch_pred = predict(input_test_dict=input_test_dict, gt_test_dict=gt_test_dict,
                                                                                   model_dict=model_dict, vis_flag=args.vis_flag,
                                                                                   threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
@@ -420,10 +507,16 @@ if __name__ == '__main__':
     for key in each_batch_trajectory.keys():
       all_batch_trajectory[key].append(each_batch_trajectory[key])
 
+    # for key in each_batch_pred.keys():
+      # all_batch_pred[key].append(each_batch_pred[key])
+
   summary_evaluation = summary(evaluation_results_all)
   evaluate(all_batch_trajectory)
+  if args.optimize is not None:
+    latent_evaluate(all_batch_pred=all_batch_pred)
   # Save prediction file
   if args.savetofile is not None:
     utils_func.initialize_folder(args.savetofile)
     utils_func.save_reconstructed(eval_metrics=summary_evaluation, trajectory=reconstructed_trajectory_all)
   print("[#] Done")
+

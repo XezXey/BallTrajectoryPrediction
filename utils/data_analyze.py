@@ -11,12 +11,15 @@ parser.add_argument('--cumsum', dest='cumsum', help='Perform a cummulative summa
 parser.add_argument('--ndc', dest='ndc', help='Normalized device coordinates', action='store_true', default=False)
 parser.add_argument('--cmp_folder', dest='cmp_folder', help='Compare to', type=str, default=None)
 args = parser.parse_args()
-w = 1664.
-h = 1088.
+# w = 1664.
+# h = 1088.
+
+w = 1920.
+h = 1080.
 if args.ndc:
   clip_range = [-0.1, 0.1]
 else:
-  clip_range = [-10, 10]
+  clip_range = [-50, 50]
 
 def get_feature_columns():
   feature_col = []

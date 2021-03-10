@@ -79,6 +79,8 @@ parser.add_argument('--annealing', dest='annealing', help='Apply annealing', act
 parser.add_argument('--annealing_cycle', dest='annealing_cycle', type=int, help='Apply annealing every n epochs', default=5)
 parser.add_argument('--annealing_gamma', dest='annealing_gamma', type=float, help='Apply annealing every n epochs', default=0.95)
 parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Extra latent manipulation method', default=None)
+parser.add_argument('--pred_uv_space', dest='pred_uv_space', help='Prediction space for uv interpolation', type=str, default='pixel')
+parser.add_argument('--ipl', dest='ipl', type=float, default=None)
 args = parser.parse_args()
 
 
@@ -333,7 +335,6 @@ if __name__ == '__main__':
     vis_signal = True if epoch % 20 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
-    # '''
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):
       print('===> [Minibatch {}/{}].........'.format(batch_idx+1, len(trajectory_train_dataloader)), end='\n')
       # Training set (Each index in batch_train came from the collate_fn_padd)
