@@ -303,9 +303,6 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
   # print(gt_dict['xyz'])
   # exit()
 
-  if args.ipl is not None:
-    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]]
-
   features_indexing = 3
   if 'eot' in args.pipeline:
     features_indexing = 4
@@ -409,8 +406,6 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     -   Latent was fed
     -   Encoder was used
   '''
-  if args.ipl is not None:
-    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]] #+ pt.randn(pred_xyz.shape).to(device)/10
 
   # Initial the latent size
   features_indexing = 3
@@ -649,7 +644,7 @@ def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
   # print(trajectory_loss)
   # print(below_ground_loss)
   # print(multiview_loss)
-  optimization_loss = below_ground_loss + multiview_loss + gravity_loss #+ multiview_loss # + trajectory_loss
+  optimization_loss = below_ground_loss + multiview_loss + gravity_loss #+ trajectory_loss
   return optimization_loss
 
 def train_mode(model_dict):
@@ -717,11 +712,16 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
       depth_loss_fw = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [0]], gt=gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
       depth_loss_bw = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [1]], gt=-gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
       depth_loss = depth_loss_fw + depth_loss_bw
+    if args.si_pred_ramp:
+      depth_loss_fw = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [0]], gt=gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
+      depth_loss_bw = utils_loss.DepthLoss(pred=-pred_dict['model_depth'][..., [0]], gt=-gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
+      depth_loss = depth_loss_fw + depth_loss_bw
   else:
     depth_loss = pt.tensor(0.).to(device)
 
   # Sum up all loss 
-  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + multiview_loss + interpolation_loss + depth_loss * 100
+  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + depth_loss * 100 # + multiview_loss + interpolation_loss
+
   loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item() * 100}
 
   return loss_dict, loss

@@ -60,6 +60,7 @@ parser.add_argument('--selected_features', dest='selected_features', help='Speci
 parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
+parser.add_argument('--si_pred_ramp', help='Directional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
 parser.add_argument('--trainable_init', help='Trainable initial state', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', default='unity')
@@ -332,7 +333,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr'], 'n_epochs':epoch})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 20 == 0 else False
+    vis_signal = True if epoch % 50 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

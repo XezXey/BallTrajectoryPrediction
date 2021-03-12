@@ -132,6 +132,9 @@ def get_model_depth(model_arch, features_cols, args):
   elif args.bi_pred_weight:
     # Predict depth in 2 direction
     depth_outsize = 3
+  elif args.si_pred_ramp:
+    # Predict only one direction, but aggregate into 2 direction
+    depth_outsize = 1
   else:
     # Predict only bw or fw depth direction
     depth_outsize = 1
@@ -520,6 +523,9 @@ def save_reconstructed(eval_metrics, trajectory):
   # Take the evaluation metrics and reconstructed trajectory to create the save file for ranking visualization
   lengths = []
   trajectory_all = []
+  prediction_all = []
+  gt_all = []
+  # Over batch
   for i in range(len(trajectory)):
     # Iterate over each batch
     gt_xyz = trajectory[i][0]
@@ -532,13 +538,19 @@ def save_reconstructed(eval_metrics, trajectory):
       each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]].reshape(-1, 1)), axis=1)
       lengths.append(seq_len)
       trajectory_all.append(each_trajectory)
+      gt_all.append(gt_xyz[j][:seq_len[j]])
+      prediction_all.append(pred_xyz[j][:seq_len[j]])
 
   # Save to file
   save_file_suffix = args.load_checkpoint.split('/')[-2]
   save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
   initialize_folder(save_path)
   np.save(file='{}/{}_trajectory'.format(save_path, save_file_suffix), arr=np.array(trajectory_all))
+  np.save(file='{}/{}_trajectory_gt'.format(save_path, save_file_suffix), arr=np.array(gt_all))
+  np.save(file='{}/{}_trajectory_prediction'.format(save_path, save_file_suffix), arr=np.array(prediction_all))
+
   print("[#] Saving reconstruction to /{}/{}".format(args.savetofile, save_file_suffix))
+
 
 def save_autoregression(uv_interpolated, trajectory_loader):
   # [0] every batch means batch_size = 1

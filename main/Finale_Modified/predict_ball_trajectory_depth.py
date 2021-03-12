@@ -57,6 +57,7 @@ parser.add_argument('--selected_features', dest='selected_features', help='Speci
 parser.add_argument('--bi_pred_avg', help='Bidirectional prediction', action='store_true', default=False)
 parser.add_argument('--bi_pred_weight', help='Bidirectional prediction with weight', action='store_true', default=False)
 parser.add_argument('--bw_pred', help='Backward prediction', action='store_true', default=False)
+parser.add_argument('--si_pred_ramp', help='Directional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--bi_pred_ramp', help='Bidirectional prediction with ramp weight', action='store_true', default=False)
 parser.add_argument('--env', dest='env', help='Environment', type=str, default='unity')
 parser.add_argument('--bidirectional', dest='bidirectional', help='Bidirectional', nargs='+', default=[])
@@ -171,8 +172,18 @@ def evaluateModel(pred, gt, mask, lengths, cam_params_dict, threshold=1, delmask
     elif distance == 'RMSE':
       loss_3axis = pt.sqrt(pt.sum((((gt - pred)**2) * mask), axis=1) / pt.sum(mask, axis=1))
       maxdist_3axis = pt.max(((gt - pred)**2) * mask, dim=1)[0]
+      mindist_3axis = pt.min(((gt - pred)**2) * mask, dim=1)[0]
       loss_depth = pt.sqrt(pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1))
       maxdist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
+      mindist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
+      print("[#######] EACH TRAJECTORY LOSS [#######]")
+      print("[#] 3AXIS RMSE : ", loss_3axis)
+      print("[#] MAX 3AXIS RMSE : ", maxdist_3axis)
+      print("[#] MIN 3AXIS RMSE : ", mindist_3axis)
+      print("[#] DEPTH RMSE : ", loss_depth)
+      print("[#] MAX DEPTH RMSE : ", maxdist_depth)
+      print("[#] MIN DEPTH RMSE : ", mindist_depth)
+
 
     # Trajectory 3 axis loss
     evaluation_results[distance]['maxdist_3axis'] = maxdist_3axis.cpu().detach().numpy()

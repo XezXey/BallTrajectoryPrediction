@@ -102,6 +102,22 @@ def cummulative_fn(depth, depth_teacher, uv, startpos, lengths, eot, cam_params_
     depth_bw_cumsum, _ = cumsum_trajectory(depth=depth_bw[..., [0]], uv=uv[..., [0, 1]], trajectory_startpos=pt.cat((startpos[..., [0, 1]], last_d), dim=2))
     depth_bw_cumsum = utils_func.reverse_masked_seq(seq=depth_bw_cumsum[..., [0]], lengths=lengths+1)
     depth_cumsum = pt.unsqueeze(pt.sum(pt.cat((depth_fw_cumsum, depth_bw_cumsum), dim=2) * bi_pred_ramp, dim=2), dim=2)
+
+  elif args.si_pred_ramp:
+    # Function for bidirectional prediction
+    bi_pred_ramp = utils_func.construct_bipred_ramp(weight_template=bi_pred_weight, lengths=lengths)
+    # Function that take xyz to project to get u, v, d
+    _, _, d = transformation.projectToScreenSpace(world=gt, cam_params_dict=cam_params_dict, normalize=False)   # Without normalize to NDC space
+    # lengths variable here is the input sequence_length and we need the positition before lengths+1 so we use lengths here
+    last_d = pt.tensor([d[i][lengths[i], :] for i in range(d.shape[0])]).view(-1, 1, 1).to(device)
+    # forward depth
+    depth_fw_cumsum, uv_cumsum = cumsum_trajectory(depth=depth[..., [0]], uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
+    # backward depth
+    depth_bw = utils_func.reverse_masked_seq(seq=-depth[..., [0]].clone(), lengths=lengths)
+    depth_bw_cumsum, _ = cumsum_trajectory(depth=depth_bw[..., [0]], uv=uv[..., [0, 1]], trajectory_startpos=pt.cat((startpos[..., [0, 1]], last_d), dim=2))
+    depth_bw_cumsum = utils_func.reverse_masked_seq(seq=depth_bw_cumsum[..., [0]], lengths=lengths+1)
+    depth_cumsum = pt.unsqueeze(pt.sum(pt.cat((depth_fw_cumsum, depth_bw_cumsum), dim=2) * bi_pred_ramp, dim=2), dim=2)
+
   else:
     depth_cumsum, uv_cumsum = cumsum_trajectory(depth=depth, uv=uv[..., [0, 1]], trajectory_startpos=startpos[..., [0, 1, 2]])
 
