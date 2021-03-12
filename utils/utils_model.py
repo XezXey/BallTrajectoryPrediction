@@ -713,15 +713,13 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
       depth_loss_bw = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [1]], gt=-gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
       depth_loss = depth_loss_fw + depth_loss_bw
     if args.si_pred_ramp:
-      depth_loss_fw = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [0]], gt=gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
-      depth_loss_bw = utils_loss.DepthLoss(pred=-pred_dict['model_depth'][..., [0]], gt=-gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
-      depth_loss = depth_loss_fw + depth_loss_bw
+      depth_loss = utils_loss.DepthLoss(pred=pred_dict['model_depth'][..., [0]], gt=gt_dict['o_with_f'][..., [0]], lengths=input_dict['lengths'], mask=input_dict['mask'][..., [0]])
   else:
     depth_loss = pt.tensor(0.).to(device)
 
   # Sum up all loss 
-  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + depth_loss * 100 # + multiview_loss + interpolation_loss
+  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + depth_loss # + multiview_loss + interpolation_loss
 
-  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item() * 100}
+  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item() }
 
   return loss_dict, loss
