@@ -36,7 +36,9 @@ class BiLSTMTrainableInit(pt.nn.Module):
     # This will create the Recurrent blocks by specify the input/output features
     self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
-    self.fc_size = [self.hidden_dim*self.bidirectional, 32, 16, 8, 4, self.output_size]
+    self.fc_size = [self.hidden_dim*self.bidirectional, 32, 16, 8, 4, self.output_size]   # Original
+    # self.fc_size = [self.hidden_dim*self.bidirectional, 64, 32, 16, 8, self.output_size]    # Double Up
+    # self.fc_size = [self.hidden_dim*self.bidirectional, 32, 16, 8, 4, self.output_size]    # Double Down
     # Define the layers
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers
     self.recurrent_blocks = pt.nn.ModuleList([self.create_recurrent_block(in_f=in_f, hidden_f=hidden_f, num_layers=self.n_layers, is_first_layer=True) if in_f == self.input_size
@@ -53,7 +55,8 @@ class BiLSTMTrainableInit(pt.nn.Module):
     # Passing in the input(x) and hidden state into the model and obtaining the outputs
     # Use packed sequence to speed up the RNN/LSTM
     # pack_padded_sequence => RNN => pad_packed_sequence[0] to get the data in batch
-    residual = pt.Tensor([0.]).cuda()
+    in_f_packed = pack_padded_sequence(in_f, lengths=lengths, batch_first=True, enforce_sorted=False)
+    out_packed = in_f_packed
     for idx, recurrent_block in enumerate(self.recurrent_blocks):
       # print("IDX = {}".format(idx), self.h[idx], self.c[idx])
       # Pass the packed sequence to the recurrent blocks with the skip connection
@@ -62,32 +65,14 @@ class BiLSTMTrainableInit(pt.nn.Module):
         init_c = self.c.repeat(1, 1, self.batch_size, 1)[idx]
       else:
         init_h, init_c = self.initial_state()
-      if idx == 0:
-        # Only first time that no skip connection from input to other networks
-        output, (hidden, cell_state) = recurrent_block(in_f, (init_h, init_c))
-        residual = self.get_residual(output=output, lengths=lengths, residual=residual, apply_skip=False)
-      else:
-        output, (hidden, cell_state) = recurrent_block(residual, (init_h, init_c))
-        residual = self.get_residual(output=output, lengths=lengths, residual=residual, apply_skip=True)
+      # Only first time that no skip connection from input to other networks
+      out_packed, (hidden, cell_state) = recurrent_block(out_packed, (init_h, init_c))
 
     # Residual from recurrent block to FC
-    # residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
+    out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
     # Pass the unpacked(The hidden features from RNN) to the FC layers
-    out = self.fc_blocks(residual)
+    out = self.fc_blocks(out_unpacked)
     return out, (hidden, cell_state)
-
-  def get_residual(self, output, lengths, residual, apply_skip):
-    # Unpacked sequence for residual connection then packed it back for next input
-    # out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]
-
-    if apply_skip:
-      # residual = pad_packed_sequence(residual, batch_first=True, padding_value=-10)[0]
-      residual = residual + output
-    else:
-      residual = output
-    # Pack the sequence for next input
-    # residual = pack_padded_sequence(residual, lengths=lengths, batch_first=True, enforce_sorted=False)
-    return residual
 
   def create_fc_block(self, in_f, out_f, is_last_layer=False):
     # Auto create the FC blocks

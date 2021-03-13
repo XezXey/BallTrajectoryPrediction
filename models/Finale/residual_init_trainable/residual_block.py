@@ -105,6 +105,8 @@ class ResidualBlock(pt.nn.Module):
     self.recurrent_stacked = [self.input_size] + [self.hidden_dim] * self.n_stack
     # This will create the FC blocks by specify the input/output features
     self.fc_size = [self.hidden_dim*self.bidirectional, 32, 16, 8, 4, self.input_size]
+    # self.fc_size = [self.hidden_dim*self.bidirectional, 64, 32, 16, 8, self.input_size]     # Double Up
+    # self.fc_size = [self.hidden_dim*self.bidirectional, 16, 8, 4, 2, self.input_size]     # Double Down
 
     ################################# Layer ####################################
     # LSTM layer with Bi-directional : need to multiply the input size by 2 because there's 2 directional from previous layers

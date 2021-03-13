@@ -303,6 +303,9 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
   # print(gt_dict['xyz'])
   # exit()
 
+  if args.ipl is not None:
+    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]] + pt.randn(pred_xyz.shape).to(device)/args.ipl
+
   features_indexing = 3
   if 'eot' in args.pipeline:
     features_indexing = 4
@@ -670,7 +673,7 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
     if args.annealing:
       trajectory_loss_refined = utils_loss.TrajectoryLoss(pred=pred_xyz_refined[..., [0, 1, 2]], gt=gt_dict['xyz'][..., [0, 1, 2]], mask=gt_dict['mask'][..., [0, 1, 2]], lengths=gt_dict['lengths'])
 
-      trajectory_loss = annealing_weight * trajectory_loss + trajectory_loss_refined * (1 - annealing_weight)
+      trajectory_loss = trajectory_loss + (trajectory_loss_refined * annealing_weight)
   else:
     trajectory_loss = pt.tensor(0.).to(device)
     gravity_loss = pt.tensor(0.).to(device)
@@ -718,8 +721,8 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
     depth_loss = pt.tensor(0.).to(device)
 
   # Sum up all loss 
-  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + depth_loss # + multiview_loss + interpolation_loss
+  loss = trajectory_loss + eot_loss + gravity_loss + below_ground_loss + depth_loss*100 # + multiview_loss + interpolation_loss
 
-  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item() }
+  loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item()*100}
 
   return loss_dict, loss

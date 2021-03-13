@@ -3,6 +3,7 @@ import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
+plt.style.use('seaborn-white')
 import argparse
 
 '''
@@ -61,7 +62,7 @@ if __name__ == '__main__':
   if args.sample_idx is not None:
     idx = [args.sample_idx]
   else:
-    idx = np.random.randint(0, ours_list[0].shape)
+    idx = np.random.randint(0, gt.shape[0])
 
   # Plot ours
   if len(args.ours) > 0:
@@ -105,5 +106,84 @@ if __name__ == '__main__':
   else:
     print("[#] Ours and Cmps is needed")
     exit()
-  fig.show()
+  # fig.show()
 
+  all_cmp_error = []
+  all_our_error = []
+  # Histogram of error
+  if len(args.ours) > 0 and len(args.cmps) > 0:
+    for idx in range(gt.shape[0]):
+      each_gt = gt[idx][:, [0, 1, 2]]
+      # OURS
+      for our in ours_list:
+        each_our = our[idx][:, [0, 1, 2]]
+        each_our_dis_err = np.sqrt(np.sum((each_gt - each_our)**2, axis=-1)).reshape(-1, 1)
+        all_our_error.append(each_our_dis_err)
+      # CMPS
+      for cmp in cmps_list:
+        each_cmp = cmp[idx][:, [0, 1, 2]]
+        each_cmp_dis_err = np.sqrt(np.sum((each_gt - each_cmp)**2, axis=-1)).reshape(-1, 1)
+        all_cmp_error.append(each_cmp_dis_err)
+
+
+  all_our_error = np.concatenate(all_our_error, axis=0).reshape(-1)
+  # all_our_error[all_our_error > 0.12] = 0.02
+  all_cmp_error = np.concatenate(all_cmp_error, axis=0).reshape(-1)
+  print("[#]DATA SHAPE")
+  print("OURS : ", all_our_error.shape)
+  print("CMPS : ", all_cmp_error.shape)
+
+  '''
+  # fig = make_subplots(rows=1, cols=2)
+  # fig.add_trace(go.Histogram(x=all_our_error, nbinsx=50, name='OURS'), row=1, col=1)
+  # fig.add_trace(go.Histogram(x=all_cmp_error, nbinsx=50, name='Cmps'), row=1, col=2)
+  fig = make_subplots(rows=1, cols=1)
+  fig.add_trace(go.Histogram(x=all_cmp_error, nbinsx=30, name='CMPS'))
+  fig.add_trace(go.Histogram(x=all_our_error, nbinsx=30, name='OURS'))
+
+  fig.update_layout(barmode='overlay')
+  fig.update_traces(opacity=0.75)
+
+  fig.show()
+  '''
+
+  # kwargs = dict(histtype='stepfilled', alpha=0.3, density=False, bins=40, ec="k")
+  max_bin = np.max([np.max(all_our_error), np.max(all_cmp_error)])
+  kwargs = dict(histtype='stepfilled', alpha=0.3, density=False, bins=list(np.arange(0, max_bin, 0.005)), ec="k")
+
+  # fig, axs = plt.subplots(1, 1, sharex=True, sharey=True, tight_layout=True)
+  # axs.hist(all_our_error, **kwargs, label='OURS')
+  # axs.hist(all_cmp_error, **kwargs, label='CMPS')
+
+  print(np.mean(all_our_error))
+  print(np.mean(all_cmp_error))
+
+  print(np.std(all_our_error))
+  print(np.std(all_cmp_error))
+
+  print(np.max(all_our_error))
+  print(np.max(all_cmp_error))
+
+  print(np.min(all_our_error))
+  print(np.min(all_cmp_error))
+
+  print(np.median(all_our_error)-np.median(all_cmp_error))
+  print(np.median(all_cmp_error))
+  gaussian = np.random.normal(size=(all_our_error.shape[0], 3))
+  plt.hist(np.sqrt(gaussian[..., [0]]**2 + gaussian[..., [1]]**2 + gaussian[..., [2]]**2))
+  # plt.hist(gaussian[..., [1]]**2)
+  # plt.hist(gaussian[..., [2]]**2)
+  print(gaussian.shape)
+  print(gaussian**2)
+  gaussian_dis_err = np.sqrt(np.sum((gaussian)**2, axis=-1)).reshape(-1, 1)
+  plt.hist(gaussian_dis_err, **kwargs, label='Gaussian')
+  # plt.hist(all_our_error, **kwargs, label='OURS')
+  # plt.hist(all_cmp_error, **kwargs, label='CMPS')
+  plt.axvline(x=np.mean(all_our_error), c='b')
+  plt.axvline(x=np.mean(all_cmp_error), c='r')
+
+  plt.axvline(x=np.median(all_our_error), c='c')
+  plt.axvline(x=np.median(all_cmp_error), c='y')
+  plt.legend()
+
+  plt.show()

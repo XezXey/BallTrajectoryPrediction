@@ -274,6 +274,7 @@ if __name__ == '__main__':
   min_val_loss = 2e10
   annealing_step = 0
   annealing_weight = 1.0
+  annealing_weight_list = np.linspace(start=0, stop=1, num=15)
   model_dict, model_cfg = utils_func.get_model_depth(model_arch=args.model_arch, features_cols=features_cols, args=args)
   print(model_dict)
   print(model_cfg)
@@ -366,10 +367,13 @@ if __name__ == '__main__':
 
     # Decrease learning rate every n_epochs % annealing_cycle batch
     if epoch % args.annealing_cycle == 0:
-      annealing_weight = annealing_weight * args.annealing_gamma ** annealing_step
+      # annealing_weight = annealing_weight * args.annealing_gamma ** annealing_step
+      if annealing_step < len(annealing_weight_list):
+        annealing_weight = annealing_weight_list[annealing_step]
+      else:
+        annealing_weight = annealing_weight_list[-1]
       annealing_step += 1
       print("[#]Stepping annealing weight to ", annealing_weight)
-
 
     # Save the model checkpoint every finished the epochs
     print('[#]Finish Epoch : {}/{}.........Train loss : {:.3f}, Val loss : {:.3f}'.format(epoch, n_epochs, train_loss_per_epoch, val_loss_per_epoch))

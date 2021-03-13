@@ -1,21 +1,21 @@
-2021-03-12 17:04:54,163 DEBUG   MainThread:28280 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
-2021-03-12 17:04:54,172 DEBUG   MainThread:28280 [meta.py:setup():97] code probe starting
-2021-03-12 17:04:54,172 DEBUG   MainThread:28280 [meta.py:_setup_code_git():49] probe for git information
-2021-03-12 17:04:54,181 DEBUG   MainThread:28280 [meta.py:_setup_code_program():58] save program starting
-2021-03-12 17:04:54,181 DEBUG   MainThread:28280 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-03-12 17:04:54,182 DEBUG   MainThread:28280 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210312_100453-33q4pf64/code/main/Finale_Modified/train_ball_trajectory_depth.py
-2021-03-12 17:04:54,182 DEBUG   MainThread:28280 [meta.py:_setup_code_program():67] save program
-2021-03-12 17:04:54,182 DEBUG   MainThread:28280 [meta.py:setup():119] code probe done
-2021-03-12 17:04:54,189 DEBUG   MainThread:28280 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/33q4pf64
-2021-03-12 17:04:54,191 INFO    MainThread:28280 [run_manager.py:wrap_existing_process():1144] wrapping existing process 28247
-2021-03-12 17:04:54,191 WARNING MainThread:28280 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
-2021-03-12 17:04:54,338 INFO    MainThread:28280 [run_manager.py:init_run():924] system metrics and metadata threads started
-2021-03-12 17:04:54,339 INFO    MainThread:28280 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
-2021-03-12 17:04:54,339 INFO    MainThread:28280 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
-2021-03-12 17:04:55,168 INFO    Thread-3  :28280 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210312_100453-33q4pf64/config.yaml
-2021-03-12 17:05:34,779 INFO    MainThread:28280 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
-2021-03-12 17:05:34,779 INFO    MainThread:28280 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
-2021-03-12 17:05:34,786 INFO    MainThread:28280 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
+2021-03-13 21:21:58,613 DEBUG   MainThread:14814 [wandb_config.py:_load_defaults():122] no defaults not found in config-defaults.yaml
+2021-03-13 21:21:58,621 DEBUG   MainThread:14814 [meta.py:setup():97] code probe starting
+2021-03-13 21:21:58,621 DEBUG   MainThread:14814 [meta.py:_setup_code_git():49] probe for git information
+2021-03-13 21:21:58,631 DEBUG   MainThread:14814 [meta.py:_setup_code_program():58] save program starting
+2021-03-13 21:21:58,631 DEBUG   MainThread:14814 [meta.py:_setup_code_program():60] save program starting: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-03-13 21:21:58,632 DEBUG   MainThread:14814 [meta.py:_setup_code_program():65] save program saved: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210313_142158-pb8v7air/code/main/Finale_Modified/train_ball_trajectory_depth.py
+2021-03-13 21:21:58,632 DEBUG   MainThread:14814 [meta.py:_setup_code_program():67] save program
+2021-03-13 21:21:58,632 DEBUG   MainThread:14814 [meta.py:setup():119] code probe done
+2021-03-13 21:21:58,640 DEBUG   MainThread:14814 [run_manager.py:__init__():541] Initialized sync for ball-trajectory-estimation/pb8v7air
+2021-03-13 21:21:58,642 INFO    MainThread:14814 [run_manager.py:wrap_existing_process():1144] wrapping existing process 14780
+2021-03-13 21:21:58,642 WARNING MainThread:14814 [io_wrap.py:register():104] SIGWINCH handler was not None: <Handlers.SIG_DFL: 0>
+2021-03-13 21:21:58,789 INFO    MainThread:14814 [run_manager.py:init_run():924] system metrics and metadata threads started
+2021-03-13 21:21:58,789 INFO    MainThread:14814 [run_manager.py:wrap_existing_process():1161] informing user process we are ready to proceed
+2021-03-13 21:21:58,789 INFO    MainThread:14814 [run_manager.py:_sync_etc():1268] entering loop for messages from user process
+2021-03-13 21:21:59,617 INFO    Thread-3  :14814 [run_manager.py:_on_file_modified():688] file/dir modified: /home/puntawat/Mint/Work/Vision/BallTrajectory/BallTrajectoryProject_Branches/end_of_trajectory_flag/BallTrajectoryPrediction/main/Finale_Modified/wandb/dryrun-20210313_142158-pb8v7air/config.yaml
+2021-03-13 21:22:02,252 INFO    MainThread:14814 [run_manager.py:_sync_etc():1324] process received interrupt signal, shutting down
+2021-03-13 21:22:02,252 INFO    MainThread:14814 [run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-03-13 21:22:02,253 INFO    MainThread:14814 [run_manager.py:shutdown():1068] shutting down system stats and metadata service
 c_etc():1324] process received interrupt signal, shutting down
-2021-03-12 17:05:34,779 INFO    MainThread:28280 [33q4pf64:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
-2021-03-12 17:05:34,786 INFO    MainThread:28280 [33q4pf64:run_manager.py:shutdown():1068] shutting down system stats and metadata service
+2021-03-13 21:22:02,252 INFO    MainThread:14814 [pb8v7air:run_manager.py:_sync_etc():1377] closing log streams and sending exitcode to W&B
+2021-03-13 21:22:02,253 INFO    MainThread:14814 [pb8v7air:run_manager.py:shutdown():1068] shutting down system stats and metadata service

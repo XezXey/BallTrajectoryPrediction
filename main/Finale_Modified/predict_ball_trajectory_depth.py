@@ -273,7 +273,7 @@ def latent_evaluate(all_batch_pred):
 
 def evaluate(all_batch_trajectory):
   print("[#]Summary All Trajectory")
-  distance = ['MAE', 'MSE', 'RMSE']
+  distance = ['MAE', 'MSE', 'RMSE', 'RMSE-DISTANCE']
   space = ['xyz', 'd']
   trajectory = {}
   for key in all_batch_trajectory.keys():
@@ -288,9 +288,12 @@ def evaluate(all_batch_trajectory):
   gt_d = trajectory['gt_d']
   pred_d = trajectory['pred_d']
 
+  print("@@")
   for each_space in space:
     print("Space : ", each_space)
     gt = trajectory['gt_{}'.format(each_space)]
+    print(gt.shape)
+    exit()
     pred = trajectory['pred_{}'.format(each_space)]
     for each_distance in distance:
       print("===>Distance : ", each_distance)
@@ -307,6 +310,11 @@ def evaluate(all_batch_trajectory):
       elif each_distance == 'RMSE':
         rmse = pt.sqrt(pt.mean(((gt - pred)**2), dim=0))
         print("RMSE : ", rmse.cpu().detach().numpy())
+      elif each_distance == 'RMSE-DISTANCE' and each_space == 'xyz':
+        rmse_distance_1 = pt.mean(pt.sqrt(pt.sum(((gt - pred)**2), dim=-1)), dim=0)
+        print("RMSE-DISTANCE-1 : ", rmse_distance_1.cpu().detach().numpy())
+        rmse_distance_2 = pt.sqrt(pt.mean(pt.sum(((gt - pred)**2), dim=-1), dim=0))
+        print("RMSE-DISTANCE-2 : ", rmse_distance_2.cpu().detach().numpy())
     print("*"*100)
 
 def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dict, vis_flag=True, visualization_path='./visualize_html/'):

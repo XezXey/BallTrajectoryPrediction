@@ -254,7 +254,7 @@ def generate_random_num_continuous_trajectory(trajectory_df, index_split_by_flag
   # For the trajectory into continuous trajectory
   threshold_lengths = 12 # Remove some trajectory that cause from applying multiple force at a time (Threshold of applying force is not satisfied)
   temp_trajectory = []
-  random_continuous_length = np.arange(1, 8)
+  random_continuous_length = np.arange(1, 6)
   total_trajectory = len(index_split_by_flag) - 2   # For the timelag may access the trajectory at index_split_by_flag[end_index+1] and can cause the out-of-range error so need to -2 to reserve the last trajectory for timelag
   ptr_index_split = 0 # Pointer to the trajectory
   while total_trajectory > 0:
