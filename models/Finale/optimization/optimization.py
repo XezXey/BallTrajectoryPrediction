@@ -1,4 +1,3 @@
-
 import torch as pt
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,6 +5,7 @@ import math
 import sys
 import os
 from utils import utils_model as utils_model
+import time
 
 # TrajectoryOptimization Class
 class TrajectoryOptimization(pt.nn.Module):
@@ -38,6 +38,7 @@ class TrajectoryOptimization(pt.nn.Module):
     # This use EOT to split the latent. Stack and repeat to have the same shape with the "pred_xyz" 
     flag = self.pred_dict['model_flag']
     lengths = lengths
+    pt.manual_seed(time.time())
     if pt.max(lengths) >= pt.max(self.gt_dict['lengths']):
       # xyz features : Add first flag as zero to make these 2 seq have a same length
       flag = pt.cat((pt.zeros((flag.shape[0], 1, 1)).cuda(), flag), dim=1)
@@ -52,7 +53,6 @@ class TrajectoryOptimization(pt.nn.Module):
       else:
         # Flag prediction work properly ===> Create latents accroding to number of predicted flag=1
         n_latent = len(where)
-        pt.manual_seed(np.random.randint(0, 999))
         self.latent.append(pt.nn.Parameter(data=pt.randn(size=(n_latent+1, self.latent_size), dtype=pt.float32).cuda(), requires_grad=True).cuda())
 
         # self.latent.append(pt.nn.Parameter(pt.zeros(n_latent+1, self.latent_size, dtype=pt.float32).cuda(), requires_grad=True).cuda())
@@ -114,8 +114,8 @@ class TrajectoryOptimization(pt.nn.Module):
       #####################################
       latent_sin_cos = latent[..., latent_pointer:latent_pointer+2] / pt.sqrt(pt.sum(latent[..., latent_pointer:latent_pointer+2]**2, dim=2, keepdims=True) + 1e-16)
       latent_in.append(latent_sin_cos)
-      print("Manipulate Sin Cos : ", latent_sin_cos.shape)
-      print("[#] Sanity check => Sin Cos : ", pt.all(pt.isclose(pt.sum(latent_sin_cos**2, dim=2, keepdims=True), pt.ones(size=latent_sin_cos.shape).cuda())).item())
+      # print("Manipulate Sin Cos : ", latent_sin_cos.shape)
+      # print("[#] Sanity check => Sin Cos : ", pt.all(pt.isclose(pt.sum(latent_sin_cos**2, dim=2, keepdims=True), pt.ones(size=latent_sin_cos.shape).cuda())).item())
       remaining_size -= 2
       latent_pointer += 2
 

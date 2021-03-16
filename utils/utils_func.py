@@ -525,6 +525,9 @@ def save_reconstructed(eval_metrics, trajectory):
   trajectory_all = []
   prediction_all = []
   gt_all = []
+  if args.optimize is not None:
+    latent_all = []
+  flag_all = []
   # Over batch
   for i in range(len(trajectory)):
     # Iterate over each batch
@@ -533,6 +536,12 @@ def save_reconstructed(eval_metrics, trajectory):
     uv = trajectory[i][2]
     d = trajectory[i][3]
     seq_len = trajectory[i][4]
+    if 'eot' in args.pipeline:
+      flag_pred = np.concatenate((np.zeros((seq_len.shape[0], 1, 1)), trajectory[i][5]), axis=1)
+      flag_gt = trajectory[i][7]
+    if args.optimize is not None:
+      latent_gt = trajectory[i][8]
+      latent_opt = trajectory[i][6]
     for j in range(seq_len.shape[0]):
       # Iterate over each trajectory
       each_trajectory = np.concatenate((gt_xyz[j][:seq_len[j]], pred_xyz[j][:seq_len[j]], uv[j][:seq_len[j]], d[j][:seq_len[j]].reshape(-1, 1)), axis=1)
@@ -540,14 +549,24 @@ def save_reconstructed(eval_metrics, trajectory):
       trajectory_all.append(each_trajectory)
       gt_all.append(gt_xyz[j][:seq_len[j]])
       prediction_all.append(pred_xyz[j][:seq_len[j]])
+      # Latent columns => [gt, pred]
+      if args.optimize is not None:
+        latent_all.append(np.concatenate((latent_gt[j][:seq_len[j]], latent_opt[j][:seq_len[j]]), axis=-1))
+      if 'eot' in args.pipeline:
+        flag_all.append(np.concatenate((flag_gt[j][:seq_len[j]], flag_pred[j][:seq_len[j]]), axis=-1))
 
   # Save to file
-  save_file_suffix = args.load_checkpoint.split('/')[-2]
+  save_file_suffix = args.load_checkpoint.split('/')[-2] + '_{}'.format(args.label)
   save_path = '{}/{}'.format(args.savetofile, save_file_suffix)
   initialize_folder(save_path)
   np.save(file='{}/{}_trajectory'.format(save_path, save_file_suffix), arr=np.array(trajectory_all))
   np.save(file='{}/{}_trajectory_gt'.format(save_path, save_file_suffix), arr=np.array(gt_all))
   np.save(file='{}/{}_trajectory_prediction'.format(save_path, save_file_suffix), arr=np.array(prediction_all))
+
+  if 'eot' in args.pipeline:
+    np.save(file='{}/{}_trajectory_flag'.format(save_path, save_file_suffix), arr=np.array(flag_all))
+  if args.optimize is not None:
+    np.save(file='{}/{}_trajectory_latent'.format(save_path, save_file_suffix), arr=np.array(latent_all))
 
   print("[#] Saving reconstruction to /{}/{}".format(args.savetofile, save_file_suffix))
 

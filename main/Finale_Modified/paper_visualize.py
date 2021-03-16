@@ -1,5 +1,6 @@
 import numpy as np
 import plotly
+from scipy.stats import sem
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
@@ -85,10 +86,13 @@ if __name__ == '__main__':
     for our in ours_list:
       each_our = our[idx][0][:, [0, 1, 2]]
       each_our_diff = np.abs(each_our - each_gt)
+      each_our_dis_err = np.sqrt(np.sum((each_gt - each_our)**2, axis=-1)).reshape(-1, 1)
       for cmp in cmps_list:
         each_cmp = cmp[idx][0][:, [0, 1, 2]]
         each_cmp_diff = np.abs(each_cmp - each_gt)
         each_improv = each_our_diff - each_cmp_diff
+        each_cmp_dis_err = np.sqrt(np.sum((each_gt - each_cmp)**2, axis=-1)).reshape(-1, 1)
+        print(np.mean(each_cmp_dis_err), np.mean(each_our_dis_err))
 
 
         for axis in range(0, 3):
@@ -103,10 +107,25 @@ if __name__ == '__main__':
             fig = plot2d(x=seq_len, y=each_improv[:, axis], col=2, row=1, fig=fig, marker=marker_dict_gt, name="Improv - {}".format(axes[axis]))
 
 
+  elif len(args.ours) > 0:
+    each_gt = gt[idx][0][:, [0, 1, 2]]
+    seq_len = np.arange(each_gt.shape[0])
+    for our in ours_list:
+      each_our = our[idx][0][:, [0, 1, 2]]
+      each_our_diff = np.abs(each_our - each_gt)
+
+      for axis in range(0, 3):
+        if args.selection_2d == 'xyz':
+          fig = plot2d(x=seq_len, y=each_gt[:, axis], col=2, row=1, fig=fig, marker=marker_dict_gt, name="GT - {}".format(axes[axis]))
+          fig = plot2d(x=seq_len, y=each_our[:, axis], col=2, row=1, fig=fig, marker=marker_dict_our, name="Ours - {}".format(axes[axis]))
+
+        if args.selection_2d == 'diff':
+          fig = plot2d(x=seq_len, y=each_our_diff[:, axis], col=2, row=1, fig=fig, marker=marker_dict_our, name="Ours - {}".format(axes[axis]))
+
   else:
     print("[#] Ours and Cmps is needed")
     exit()
-  # fig.show()
+  fig.show()
 
   all_cmp_error = []
   all_our_error = []
@@ -133,57 +152,52 @@ if __name__ == '__main__':
   print("OURS : ", all_our_error.shape)
   print("CMPS : ", all_cmp_error.shape)
 
-  '''
-  # fig = make_subplots(rows=1, cols=2)
-  # fig.add_trace(go.Histogram(x=all_our_error, nbinsx=50, name='OURS'), row=1, col=1)
-  # fig.add_trace(go.Histogram(x=all_cmp_error, nbinsx=50, name='Cmps'), row=1, col=2)
-  fig = make_subplots(rows=1, cols=1)
-  fig.add_trace(go.Histogram(x=all_cmp_error, nbinsx=30, name='CMPS'))
-  fig.add_trace(go.Histogram(x=all_our_error, nbinsx=30, name='OURS'))
-
-  fig.update_layout(barmode='overlay')
-  fig.update_traces(opacity=0.75)
-
-  fig.show()
-  '''
-
   # kwargs = dict(histtype='stepfilled', alpha=0.3, density=False, bins=40, ec="k")
   max_bin = np.max([np.max(all_our_error), np.max(all_cmp_error)])
   kwargs = dict(histtype='stepfilled', alpha=0.3, density=False, bins=list(np.arange(0, max_bin, 0.005)), ec="k")
 
-  # fig, axs = plt.subplots(1, 1, sharex=True, sharey=True, tight_layout=True)
-  # axs.hist(all_our_error, **kwargs, label='OURS')
-  # axs.hist(all_cmp_error, **kwargs, label='CMPS')
+  # '''
+  print("[#] Evaluation")
+  print("===>Mean")
+  print("OURS : ", np.mean(all_our_error))
+  print("CMPS : ", np.mean(all_cmp_error))
 
-  print(np.mean(all_our_error))
-  print(np.mean(all_cmp_error))
+  print("===>STD")
+  print("OURS : ", np.std(all_our_error))
+  print("CMPS : ", np.std(all_cmp_error))
 
-  print(np.std(all_our_error))
-  print(np.std(all_cmp_error))
+  print("===>SE")
+  print("OURS : ", sem(all_our_error))
+  print("CMPS : ", sem(all_cmp_error))
 
-  print(np.max(all_our_error))
-  print(np.max(all_cmp_error))
+  print("===>MAX")
+  print("OURS : ", np.max(all_our_error))
+  print("CMPS : ", np.max(all_cmp_error))
 
-  print(np.min(all_our_error))
-  print(np.min(all_cmp_error))
+  print("===>MIN")
+  print("OURS : ", np.min(all_our_error))
+  print("CMPS : ", np.min(all_cmp_error))
 
-  print(np.median(all_our_error)-np.median(all_cmp_error))
-  print(np.median(all_cmp_error))
-  gaussian = np.random.normal(size=(all_our_error.shape[0], 3))
-  plt.hist(np.sqrt(gaussian[..., [0]]**2 + gaussian[..., [1]]**2 + gaussian[..., [2]]**2))
+  print("===>MEDIAN")
+  print("OURS : ", np.median(all_our_error))
+  print("CMPS : ", np.median(all_cmp_error))
+  # '''
+  # gaussian = np.random.normal(size=(all_our_error.shape[0], 3))
+  # plt.hist(np.sqrt(gaussian[..., [0]]**2 + gaussian[..., [1]]**2 + gaussian[..., [2]]**2))
   # plt.hist(gaussian[..., [1]]**2)
   # plt.hist(gaussian[..., [2]]**2)
-  print(gaussian.shape)
-  print(gaussian**2)
-  gaussian_dis_err = np.sqrt(np.sum((gaussian)**2, axis=-1)).reshape(-1, 1)
-  plt.hist(gaussian_dis_err, **kwargs, label='Gaussian')
-  # plt.hist(all_our_error, **kwargs, label='OURS')
-  # plt.hist(all_cmp_error, **kwargs, label='CMPS')
+  # print(gaussian.shape)
+  # print(gaussian**2)
+  # gaussian_dis_err = np.sqrt(np.sum((gaussian)**2, axis=-1)).reshape(-1, 1)
+  # plt.hist(gaussian_dis_err, **kwargs, label='Gaussian')
+  plt.hist(all_our_error, **kwargs, label='OURS')
+  plt.hist(all_cmp_error, **kwargs, label='CMPS')
   plt.axvline(x=np.mean(all_our_error), c='b')
   plt.axvline(x=np.mean(all_cmp_error), c='r')
 
-  plt.axvline(x=np.median(all_our_error), c='c')
-  plt.axvline(x=np.median(all_cmp_error), c='y')
+  # plt.axvline(x=np.median(all_our_error), c='c')
+  # plt.axvline(x=np.median(all_cmp_error), c='y')
   plt.legend()
 
   plt.show()
+

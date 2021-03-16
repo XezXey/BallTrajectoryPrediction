@@ -84,6 +84,8 @@ parser.add_argument('--latent_transf', dest='latent_transf', type=str, help='Ext
 parser.add_argument('--lr', dest='lr', type=float, help='Learning rate for optimizaer', default=10)
 parser.add_argument('--load_missing', dest='load_missing', help='Load missing', action='store_true', default=False)
 parser.add_argument('--ipl', dest='ipl', type=float, default=None)
+parser.add_argument('--label', dest='label', type=str, default="")
+parser.add_argument('--random_init', dest='random_init', type=int, default=0)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -176,13 +178,13 @@ def evaluateModel(pred, gt, mask, lengths, cam_params_dict, threshold=1, delmask
       loss_depth = pt.sqrt(pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1))
       maxdist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
       mindist_depth = pt.sum(((pt.abs(gt_d - pred_d)**2) * mask_d), axis=1) / pt.sum(mask_d, axis=1)
-      print("[#######] EACH TRAJECTORY LOSS [#######]")
-      print("[#] 3AXIS RMSE : ", loss_3axis)
-      print("[#] MAX 3AXIS RMSE : ", maxdist_3axis)
-      print("[#] MIN 3AXIS RMSE : ", mindist_3axis)
-      print("[#] DEPTH RMSE : ", loss_depth)
-      print("[#] MAX DEPTH RMSE : ", maxdist_depth)
-      print("[#] MIN DEPTH RMSE : ", mindist_depth)
+      # print("[#######] EACH TRAJECTORY LOSS [#######]")
+      # print("[#] 3AXIS RMSE : ", loss_3axis)
+      # print("[#] MAX 3AXIS RMSE : ", maxdist_3axis)
+      # print("[#] MIN 3AXIS RMSE : ", mindist_3axis)
+      # print("[#] DEPTH RMSE : ", loss_depth)
+      # print("[#] MAX DEPTH RMSE : ", maxdist_depth)
+      # print("[#] MIN DEPTH RMSE : ", mindist_depth)
 
 
     # Trajectory 3 axis loss
@@ -269,7 +271,7 @@ def latent_evaluate(all_batch_pred):
 
   angle_diff_ = np.array(angle_diff_list)
   fig = go.Figure(data=[go.Histogram(x=angle_diff_, nbinsx=18)])
-  fig.show()
+  # fig.show()
 
 def evaluate(all_batch_trajectory):
   print("[#]Summary All Trajectory")
@@ -288,12 +290,9 @@ def evaluate(all_batch_trajectory):
   gt_d = trajectory['gt_d']
   pred_d = trajectory['pred_d']
 
-  print("@@")
   for each_space in space:
     print("Space : ", each_space)
     gt = trajectory['gt_{}'.format(each_space)]
-    print(gt.shape)
-    exit()
     pred = trajectory['pred_{}'.format(each_space)]
     for each_distance in distance:
       print("===>Distance : ", each_distance)
@@ -355,8 +354,11 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
     pred_xyz_test = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_test[i], depth=pred_depth_cumsum_test[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_test.shape[0])])
 
     if 'refinement' in args.pipeline:
-      if args.optimize == 'refinement':
+      if args.optimize == 'refinement' and args.random_init == 0:
         pred_xyz_test, latent_optimized = utils_model.optimization_refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
+      elif args.optimize == 'refinement' and args.random_init > 0:
+        pred_xyz_test, latent_optimized = utils_model.optimization_refinement_random_init(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
+
       else:
         pred_xyz_test = utils_model.refinement(model_dict=model_dict, gt_dict=gt_test_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_test, optimize=args.optimize, pred_dict=pred_dict_test)
 
@@ -373,7 +375,14 @@ def predict(input_test_dict, gt_test_dict, model_dict, threshold, cam_params_dic
   ####################################
   # Calculate loss per trajectory
   evaluation_results = evaluateModel(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], threshold=threshold, cam_params_dict=cam_params_dict)
-  reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy()]
+  if args.optimize is not None:
+    reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy(), pred_flag_test.cpu().detach().numpy(), latent_optimized.detach().cpu().numpy()]
+  else:
+    if 'eot' in args.pipeline:
+      reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy(), pred_flag_test.cpu().detach().numpy(), latent_optimized]
+    else:
+      reconstructed_trajectory = [gt_test_dict['xyz'][..., [0, 1, 2]].detach().cpu().numpy(), pred_xyz_test.detach().cpu().numpy(), input_uv_cumsum_test.detach().cpu().numpy(), pred_depth_cumsum_test.detach().cpu().numpy(), gt_test_dict['lengths'].detach().cpu().numpy(), pred_flag_test, latent_optimized]
+
   each_batch_trajectory = get_each_batch_trajectory(pred=pred_xyz_test[..., [0, 1, 2]], gt=gt_test_dict['xyz'][..., [0, 1, 2]], mask=gt_test_dict['mask'][..., [0, 1, 2]], lengths=gt_test_dict['lengths'], cam_params_dict=cam_params_dict)
   # each_batch_pred = get_each_batch_pred(latent_optimized=latent_optimized, pred_flag=pred_flag_test, pred_xyz=pred_xyz_test[..., [0, 1, 2]], lengths=gt_test_dict['lengths'])
   each_batch_pred=None
@@ -411,10 +420,12 @@ def collate_fn_padd(batch):
     gt_startpos = pt.unsqueeze(gt_startpos, dim=1)
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
-    if args.optimize:
-      gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., :])), dim=-1) for trajectory in batch]
+    if args.optimize is not None:
+      # gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., :])), dim=-1) for trajectory in batch]
+      gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
     else:
       gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
+
     gt_xyz = pad_sequence(gt_xyz, batch_first=True, padding_value=padding_value)
     ## Compute mask
     gt_mask = (gt_xyz != padding_value)
@@ -505,8 +516,8 @@ if __name__ == '__main__':
   # Test a model iterate over dataloader to get each batch and pass to predict function
   evaluation_results_all = []
   reconstructed_trajectory_all = []
-  all_batch_trajectory = {'gt_xyz':[], 'pred_xyz':[], 'gt_d':[], 'pred_d':[]}
-  all_batch_pred = {'flag':[], 'latent_optimized':[], 'xyz':[], 'lengths':[]}
+  all_batch_trajectory = {'gt_xyz':[], 'pred_xyz':[], 'gt_d':[], 'pred_d':[], 'latent_gt':[]}
+  all_batch_pred = {'flag':[], 'latent_optimized':[], 'xyz':[], 'lengths':[], 'latent_gt':[]}
   n_trajectory = 0
   for batch_idx, batch_test in enumerate(trajectory_test_dataloader):
     print("[#]Batch-{}".format(batch_idx))
@@ -520,9 +531,25 @@ if __name__ == '__main__':
                                                                                   threshold=args.threshold, cam_params_dict=cam_params_dict, visualization_path=args.visualization_path)
 
 
+    if args.optimize is not None:
+      # if 'f_sin' in args.selected_features and 'f_cos' in args.selected_features:
+      col_idx = 4
+      # print(pt.sum(gt_test_dict['xyz'][0][..., col_idx:]**2, dim=-1)[:gt_test_dict['lengths'][0]])
+      latent_gt = gt_test_dict['xyz'][..., col_idx:].cpu().detach().numpy()
+    else:
+      latent_gt = []
+
+    if 'eot' in args.pipeline:
+      reconstructed_trajectory.append(gt_test_dict['xyz'][..., [3]].cpu().detach().numpy())
+    else:
+      reconstructed_trajectory.append([])
+
+    reconstructed_trajectory.append(latent_gt)
+
     reconstructed_trajectory_all.append(reconstructed_trajectory)
     evaluation_results_all.append(evaluation_results)
     n_trajectory += input_test_dict['input'].shape[0]
+
     for key in each_batch_trajectory.keys():
       all_batch_trajectory[key].append(each_batch_trajectory[key])
 
