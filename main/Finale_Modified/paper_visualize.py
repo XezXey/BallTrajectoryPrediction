@@ -146,7 +146,6 @@ if __name__ == '__main__':
 
 
   all_our_error = np.concatenate(all_our_error, axis=0).reshape(-1)
-  # all_our_error[all_our_error > 0.12] = 0.02
   all_cmp_error = np.concatenate(all_cmp_error, axis=0).reshape(-1)
   print("[#]DATA SHAPE")
   print("OURS : ", all_our_error.shape)
