@@ -135,6 +135,9 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
   # Project the (u, v, depth) to world space
   pred_xyz_train = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_train[i], depth=pred_depth_cumsum_train[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_train.shape[0])])
 
+  # Centering
+  pred_xyz_train = utils_transform.centering(xyz=pred_xyz_train, cam_params_dict=cam_params_dict, device=device)
+
   if 'refinement' in args.pipeline:
     pred_xyz_refined_train = utils_model.refinement(model_dict=model_dict, gt_dict=gt_train_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_train, optimize=args.optimize, pred_dict=pred_dict_train)
   else: pred_xyz_refined_train = None
@@ -174,6 +177,9 @@ def train(input_train_dict, gt_train_dict, input_val_dict, gt_val_dict, model_di
 
   # Project the (u, v, depth) to world space
   pred_xyz_val = pt.stack([utils_transform.projectToWorldSpace(uv=input_uv_cumsum_val[i], depth=pred_depth_cumsum_val[i], cam_params_dict=cam_params_dict, device=device) for i in range(input_uv_cumsum_val.shape[0])])
+
+
+  pred_xyz_val = utils_transform.centering(xyz=pred_xyz_val, cam_params_dict=cam_params_dict, device=device)
 
   if 'refinement' in args.pipeline:
     pred_xyz_refined_val = utils_model.refinement(model_dict=model_dict, gt_dict=gt_val_dict, cam_params_dict=cam_params_dict, pred_xyz=pred_xyz_val, optimize=args.optimize, pred_dict=pred_dict_val)
@@ -246,6 +252,7 @@ if __name__ == '__main__':
   # Load camera parameters : ProjectionMatrix and WorldToCameraMatrix
   cam_params_dict = utils_transform.get_cam_params_dict(args.cam_params_file, device)
 
+
   # Create Datasetloader for train and validation
   trajectory_train_dataset = TrajectoryDataset(dataset_path=args.dataset_train_path, trajectory_type=args.trajectory_type)
   trajectory_train_dataloader = DataLoader(trajectory_train_dataset, batch_size=args.batch_size, num_workers=10, shuffle=True, collate_fn=collate_fn_padd, pin_memory=True, drop_last=True)
@@ -259,6 +266,18 @@ if __name__ == '__main__':
   # Trajectory path : (x0, y0) ... (xn, yn)
   print("======================================================Summary Batch (batch_size = {})=========================================================================".format(args.batch_size))
   for key, batch in enumerate(trajectory_train_dataloader):
+    print("Input batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['input'][0].shape, batch['input'][1].shape, batch['input'][2].shape, batch['input'][3].shape))
+    print("gt batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['gt'][0].shape, batch['gt'][1].shape, batch['gt'][2].shape, batch['gt'][3].shape))
+    # Test RNN/LSTM Step
+    # 1.Pack the padded
+    packed = pt.nn.utils.rnn.pack_padded_sequence(batch['input'][0], batch_first=True, lengths=batch['input'][1], enforce_sorted=False)
+    # 2.RNN/LSTM model
+    # 3.Unpack the packed
+    unpacked = pt.nn.utils.rnn.pad_packed_sequence(packed, batch_first=True, padding_value=-10)
+    print("Unpacked equality : ", pt.eq(batch['input'][0], unpacked[0]).all())
+    print("===============================================================================================================================================================")
+
+  for key, batch in enumerate(trajectory_val_dataloader):
     print("Input batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['input'][0].shape, batch['input'][1].shape, batch['input'][2].shape, batch['input'][3].shape))
     print("gt batch [{}] : batch={}, lengths={}, mask={}, initial position={}".format(key, batch['gt'][0].shape, batch['gt'][1].shape, batch['gt'][2].shape, batch['gt'][3].shape))
     # Test RNN/LSTM Step
@@ -308,6 +327,9 @@ if __name__ == '__main__':
   for model in model_cfg.keys():
     print('####### Model - {} #######'.format(model))
     print(model_dict[model])
+    for name, param in model_dict[model].named_parameters():
+      print(name, param.shape)
+    # exit()
     # Log metrics with wandb
     wandb.watch(model_dict[model])
 
@@ -317,6 +339,7 @@ if __name__ == '__main__':
     accumulate_train_loss = []
     accumulate_val_loss = []
     # Fetch the Validation set (Get each batch for each training epochs)
+    utils_func.random_seed()
     try:
       batch_val = next(trajectory_val_iterloader)
     except StopIteration:
@@ -334,7 +357,7 @@ if __name__ == '__main__':
       wandb.log({'Learning Rate':param_group['lr'], 'n_epochs':epoch})
 
     # Visualize signal to make a plot and save to wandb every epoch is done.
-    vis_signal = True if epoch % 50 == 0 else False
+    vis_signal = True if epoch % 1 == 0 else False
 
     # Training a model iterate over dataloader to get each batch and pass to train function
     for batch_idx, batch_train in enumerate(trajectory_train_dataloader):

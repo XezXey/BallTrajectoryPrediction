@@ -57,7 +57,7 @@ if __name__ == '__main__':
   marker_dict_our = dict(color='rgba(255, 0, 0, 0.7)', size=3)
   marker_dict_cmp = dict(color='rgba(0, 0, 0, 0.7)', size=3)
 
-  marker_dict_2d = dict(color='rgba(255, 0, 0, 0.7)', size=3)
+  marker_dict_2d = dict(color='rgba(255, 0, 0, 0.4)', size=3)
 
   # 3D plot
   if args.sample_idx is not None:
@@ -65,6 +65,14 @@ if __name__ == '__main__':
   else:
     idx = np.random.randint(0, gt.shape[0])
 
+  # x = []
+  # for i in range(gt.shape[0]):
+    # x.append(gt[i].shape[0])
+  # print(x)
+  # print(np.mean(x))
+  # print(np.max(x))
+  # print(np.min(x))
+  # exit()
   # Plot ours
   if len(args.ours) > 0:
     for our in ours_list:
@@ -80,6 +88,9 @@ if __name__ == '__main__':
 
   axes = ['X', 'Y', 'Z']
   # 2D plot
+
+  y_max = 0
+  y_min = 0
   if len(args.ours) > 0 and len(args.cmps) > 0:
     each_gt = gt[idx][0][:, [0, 1, 2]]
     seq_len = np.arange(each_gt.shape[0])
@@ -94,6 +105,20 @@ if __name__ == '__main__':
         each_cmp_dis_err = np.sqrt(np.sum((each_gt - each_cmp)**2, axis=-1)).reshape(-1, 1)
         print(np.mean(each_cmp_dis_err), np.mean(each_our_dis_err))
 
+        if args.selection_2d == 'each_pair':
+
+            fig = plot2d(x=each_gt[:, 0], y=each_gt[:, 1], col=2, row=1, fig=fig, marker=marker_dict_gt, name="GT - xy")
+            fig = plot2d(x=each_gt[:, 0], y=each_gt[:, 2], col=2, row=1, fig=fig, marker=marker_dict_gt, name="GT - xz")
+            fig = plot2d(x=each_gt[:, 1], y=each_gt[:, 2], col=2, row=1, fig=fig, marker=marker_dict_gt, name="GT - yz")
+
+            fig = plot2d(x=each_cmp[:, 0], y=each_cmp[:, 1], col=2, row=1, fig=fig, marker=marker_dict_cmp, name="cmp - xy")
+            fig = plot2d(x=each_cmp[:, 0], y=each_cmp[:, 2], col=2, row=1, fig=fig, marker=marker_dict_cmp, name="cmp - xz")
+            fig = plot2d(x=each_cmp[:, 1], y=each_cmp[:, 2], col=2, row=1, fig=fig, marker=marker_dict_cmp, name="cmp - yz")
+
+            fig = plot2d(x=each_our[:, 0], y=each_our[:, 1], col=2, row=1, fig=fig, marker=marker_dict_our, name="our - xy")
+            fig = plot2d(x=each_our[:, 0], y=each_our[:, 2], col=2, row=1, fig=fig, marker=marker_dict_our, name="our - xz")
+            fig = plot2d(x=each_our[:, 1], y=each_our[:, 2], col=2, row=1, fig=fig, marker=marker_dict_our, name="our - yz")
+
 
         for axis in range(0, 3):
           if args.selection_2d == 'xyz':
@@ -101,10 +126,24 @@ if __name__ == '__main__':
             fig = plot2d(x=seq_len, y=each_our[:, axis], col=2, row=1, fig=fig, marker=marker_dict_our, name="Ours - {}".format(axes[axis]))
             fig = plot2d(x=seq_len, y=each_cmp[:, axis], col=2, row=1, fig=fig, marker=marker_dict_cmp, name="Cmps - {}".format(axes[axis]))
 
+            if axis == 1:
+              gt_max = np.max(each_gt[:, axis])
+              our_max = np.max(each_our[:, axis])
+              pred_max = np.max(each_cmp[:, axis])
+              y_max = np.max([gt_max, our_max, pred_max])
+
+              gt_min = np.min(each_gt[:, axis])
+              our_min = np.min(each_our[:, axis])
+              pred_min = np.min(each_cmp[:, axis])
+              y_min = np.min([gt_min, our_min, pred_min])
+
+
+
           if args.selection_2d == 'diff':
             fig = plot2d(x=seq_len, y=each_our_diff[:, axis], col=2, row=1, fig=fig, marker=marker_dict_our, name="Ours - {}".format(axes[axis]))
             fig = plot2d(x=seq_len, y=each_cmp_diff[:, axis], col=2, row=1, fig=fig, marker=marker_dict_cmp, name="Cmps - {}".format(axes[axis]))
             fig = plot2d(x=seq_len, y=each_improv[:, axis], col=2, row=1, fig=fig, marker=marker_dict_gt, name="Improv - {}".format(axes[axis]))
+
 
 
   elif len(args.ours) > 0:
@@ -125,7 +164,40 @@ if __name__ == '__main__':
   else:
     print("[#] Ours and Cmps is needed")
     exit()
+
+  fig.update_yaxes(dtick=0.5)
+  # fig.update_yaxes(range=[-2, 2])
+  fig.update_xaxes(dtick=0.5)
+  fig.update_layout(
+      scene = dict(
+          xaxis_title='X',
+          yaxis_title='Y',
+          zaxis_title='Z',
+          xaxis = dict(tickfont=dict(
+              size=18,
+              family='Courier New, monospace',),
+          ),
+          yaxis = dict(tickfont=dict(
+              size=18,
+              family='Courier New, monospace',),
+          ),
+          zaxis = dict(tickfont=dict(
+              size=18,
+              family='Courier New, monospace',),
+          ),
+      ),
+
+      # scene_camera= dict(
+              # eye=dict(x=-1., y=3, z=-1.),
+              # up=dict(x=0.71, y=0.41, z=0.65)
+          # ),
+      font=dict(
+          family="Courier New, monospace",
+          size=28,
+      )
+    )
   fig.show()
+
 
   all_cmp_error = []
   all_our_error = []
@@ -189,6 +261,7 @@ if __name__ == '__main__':
   # print(gaussian**2)
   # gaussian_dis_err = np.sqrt(np.sum((gaussian)**2, axis=-1)).reshape(-1, 1)
   # plt.hist(gaussian_dis_err, **kwargs, label='Gaussian')
+  '''
   plt.hist(all_our_error, **kwargs, label='OURS')
   plt.hist(all_cmp_error, **kwargs, label='CMPS')
   plt.axvline(x=np.mean(all_our_error), c='b')
@@ -200,3 +273,4 @@ if __name__ == '__main__':
 
   plt.show()
 
+'''

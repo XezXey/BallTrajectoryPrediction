@@ -213,8 +213,8 @@ def visualize_trajectory(uv, pred_xyz, gt_xyz, startpos, lengths, mask, evaluati
     fig.add_trace(go.Scatter(x=np.arange(duv_pred_proj[0][:lengths[i], 0].shape[0]-1), y=duv_pred_proj[0][:lengths[i]-1, 0], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], dU-PRED'.format(flag, i)), row=row_idx, col=col_idx)
     fig.add_trace(go.Scatter(x=np.arange(duv_pred_proj[0][:lengths[i], 1].shape[0]-1), y=duv_pred_proj[0][:lengths[i]-1, 1], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], dV-PRED'.format(flag, i)), row=row_idx, col=col_idx)
 
-    fig.add_trace(go.Scatter(x=uv_gt_proj[0][:lengths[i], 0], y=uv_gt_proj[0][:lengths[i], 1], marker=marker_dict_gt, mode='lines', name='{}-Trajectory [{}], UV-Gt'.format(flag, i)), row=row_idx, col=col_idx)
-    fig.add_trace(go.Scatter(x=uv_pred_proj[0][:lengths[i], 0], y=uv_pred_proj[0][:lengths[i], 1], marker=marker_dict_pred, mode='lines', name='{}-Trajectory [{}], UV-Pred'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=uv_gt_proj[0][:lengths[i], 0], y=uv_gt_proj[0][:lengths[i], 1], marker=marker_dict_gt, mode='lines+markers', name='{}-Trajectory [{}], UV-Gt'.format(flag, i)), row=row_idx, col=col_idx)
+    fig.add_trace(go.Scatter(x=uv_pred_proj[0][:lengths[i], 0], y=uv_pred_proj[0][:lengths[i], 1], marker=marker_dict_pred, mode='lines+markers', name='{}-Trajectory [{}], UV-Pred'.format(flag, i)), row=row_idx, col=col_idx)
 
     if pred_eot is not None:
       fig.add_trace(go.Scatter(x=np.arange(pred_eot[i][:lengths[i]].shape[0]), y=pred_eot[i][:lengths[i]].reshape(-1), marker=marker_dict_eot, mode='markers+lines', name='{}-Trajectory [{}], EOT PRED'.format(flag, i)), row=row_idx, col=col_idx)

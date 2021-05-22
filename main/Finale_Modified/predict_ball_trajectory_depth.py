@@ -86,6 +86,7 @@ parser.add_argument('--load_missing', dest='load_missing', help='Load missing', 
 parser.add_argument('--ipl', dest='ipl', type=float, default=None)
 parser.add_argument('--label', dest='label', type=str, default="")
 parser.add_argument('--random_init', dest='random_init', type=int, default=0)
+parser.add_argument('--ipl_use', dest='ipl_use', action='store_true', default=False)
 
 args = parser.parse_args()
 # Share args to every modules
@@ -421,8 +422,10 @@ def collate_fn_padd(batch):
     ## Retrieve the x, y, z in world space for compute the reprojection error (x', y', z' <===> x, y, z)
     ## Compute cummulative summation to form a trajectory from displacement every columns except the end_of_trajectory
     if args.optimize is not None:
-      # gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., :])), dim=-1) for trajectory in batch]
-      gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
+      if args.ipl_use:
+        gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., :])), dim=-1) for trajectory in batch]
+      else:
+        gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
     else:
       gt_xyz = [pt.cat((pt.cumsum(pt.Tensor(trajectory[..., [x, y, z]]), dim=0), pt.Tensor(trajectory[..., features_cols])), dim=-1) for trajectory in batch]
 
@@ -539,8 +542,11 @@ if __name__ == '__main__':
     else:
       latent_gt = []
 
-    if 'eot' in args.pipeline:
+    if 'eot' in args.pipeline and not args.ipl_use:
       reconstructed_trajectory.append(gt_test_dict['xyz'][..., [3]].cpu().detach().numpy())
+    elif 'eot' in args.pipeline and args.ipl_use:
+      reconstructed_trajectory.append(pt.ones(gt_test_dict['xyz'][..., [0]].shape).cpu().detach().numpy())
+
     else:
       reconstructed_trajectory.append([])
 

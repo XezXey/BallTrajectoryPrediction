@@ -18,6 +18,8 @@ def get_selected_cols():
     features_cols.append('end_of_trajectory')
   if 'og' in args.selected_features:
     features_cols.append('on_ground_flag')
+  if 'hw' in args.selected_features:
+    features_cols.append('hit_wall_flag')
   if 'f_rad' in args.selected_features:
     features_cols.append('force_angle_rad')
   if 'f_sin' in args.selected_features:
@@ -50,6 +52,9 @@ def get_selected_cols():
 def computeDisplacement(trajectory_split, trajectory_type, camera_config):
   # Compute the displacement
   features_cols, position_cols = get_selected_cols()
+  print("#"*50)
+  print("Columns order : ", position_cols, features_cols)
+  print("#"*50)
   drop_cols = ["outside_flag", "trajectory_type", "t"] + features_cols
   trajectory_npy = trajectory_split.copy()
   for traj_type in trajectory_type:
@@ -62,11 +67,28 @@ def computeDisplacement(trajectory_split, trajectory_type, camera_config):
                                             trajectory_split[traj_type][i][features_cols].values,))
                                  for i in range(len(trajectory_split[traj_type]))]
     # Cast to ndarray (Bunch of trajectory)
+    '''
     temp = trajectory_npy[traj_type][0]
-    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [3]], '-or')
-    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [4]], '-og')
-    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [6]], '-ob')
+    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [3]], '-or', label='u')
+    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [4]], '-og', label='v')
+    plt.plot(np.arange(temp.shape[0]-1), temp[1:, [6]], '-ob', label='d')
+    plt.legend()
     plt.show()
+
+
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [3]]), '-or', label='u')
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [4]]), '-og', label='v')
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [6]]), '-ob', label='d')
+    plt.legend()
+    plt.show()
+
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [0]]), '-or', label='x')
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [1]]), '-og', label='y')
+    plt.plot(np.arange(temp.shape[0]), np.cumsum(temp[:, [2]]), '-ob', label='z')
+    plt.legend()
+    plt.show()
+    '''
+
     trajectory_npy[traj_type] = np.array([trajectory_npy[traj_type][i] for i in range(len(trajectory_npy[traj_type]))])
     # Remove some dataset that goes below the ground (Error from unity)
     trajectory_npy[traj_type] = remove_bad_trajectory(trajectory=trajectory_npy[traj_type], traj_type=traj_type, camera_config=camera_config)
@@ -86,12 +108,20 @@ def remove_bad_trajectory(trajectory, traj_type, camera_config):
         or np.any(traj_cumsum_temp[:, 4] < 0) or np.any(traj_cumsum_temp[:, 4] > height)
         or np.any(trajectory[idx][1:, 3] > 50) or np.any(trajectory[idx][1:, 4] > 50)
         or np.any(trajectory[idx][1:, 3] < -50) or np.any(trajectory[idx][1:, 4] < -50))
-    # plt.plot(traj_cumsum_temp[:, 3], traj_cumsum_temp[:, 4])
-    # plt.axhline(y=0)
-    # plt.axhline(y=height)
-    # plt.axvline(x=0)
-    # plt.axvline(x=width)
-    # plt.title("Is bad : " + str(is_bad))
+    if 'hw' in args.selected_features:
+      is_bad = is_bad or np.any(trajectory[idx][1:, 8])
+      trajectory[idx] = np.delete(trajectory[idx], [8], axis=1)
+
+    '''
+    if is_bad:
+      plt.plot(traj_cumsum_temp[:, 3], traj_cumsum_temp[:, 4])
+      plt.axhline(y=0)
+      plt.axhline(y=height)
+      plt.axvline(x=0)
+      plt.axvline(x=width)
+      plt.title("Is bad : " + str(is_bad))
+      plt.show()
+    '''
     # plt.savefig('./Test/fig_test/{}.png'.format(idx))
     # plt.clf()
     # print(np.where(trajectory[idx][1:, 3] < 0))
@@ -101,7 +131,8 @@ def remove_bad_trajectory(trajectory, traj_type, camera_config):
       remove_idx.append(idx)
       count+=1
   # exit
-  print("\n{}===>Remove the below ground trajectory or off-screen trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
+  # print("\n{}===>Remove the below ground trajectory or off-screen trajectory : {} from {} at {}".format(traj_type, count, trajectory.shape[0], remove_idx))
+  print("\n{}===>Remove the below ground trajectory or off-screen trajectory : {} from {}".format(traj_type, count, trajectory.shape[0]))
   print(trajectory.shape)
   trajectory = np.delete(trajectory.copy(), obj=remove_idx)
   len_traj = []
@@ -392,6 +423,91 @@ def normalize_force(trajectory_df):
 
   return trajectory_df
 
+def latent_equality(data):
+  tol = 5e-2
+  fail = 0
+  fail_count = 0
+  fail_index = []
+  all_degree_diff = []
+  deg_count = 0
+  deg_fail = []
+  sin_fail = {}
+  cos_fail = {}
+  for i in tqdm.tqdm(range(data.shape[0])):
+    # Trajectory
+    trajectory = data[i]
+    trajectory_temp = np.cumsum(data[i], axis=0)
+    x, y, z = trajectory_temp[:, 0], trajectory_temp[:, 1], trajectory_temp[:, 2]
+    # Delta
+    dx = x[1:] - x[:-1]
+    dz = z[1:] - z[:-1]
+
+    # print(x)
+    # print(z)
+    dx_norm = dx / (np.sqrt((dx**2 + dz**2) + 1e-6) + 1e-6)
+    dz_norm = dz / (np.sqrt((dx**2 + dz**2) + 1e-6) + 1e-6)
+    # dx_norm = dx / np.sqrt((dx**2 + dz**2))
+    # dz_norm = dz / np.sqrt((dx**2 + dz**2))
+    # print(dx_norm)
+    # print(dz_norm)
+    # Latent
+    sin, cos = trajectory[:, 9], trajectory[:, 10]
+    # Degree
+    gt_deg = np.arctan2(np.mean(sin), np.mean(cos)) * 180.0 / np.pi
+    traj_deg = np.arctan2(np.mean(dz_norm), np.mean(dx_norm)) * 180.0 / np.pi
+    degree_diff = np.abs(gt_deg - traj_deg)
+    all_degree_diff.append(degree_diff)
+    if (not np.all(np.abs(cos[1:] - np.mean(dx_norm)) < tol)) or (not np.all(np.abs(sin[1:] - np.mean(dz_norm)) < tol)):
+      fail = 1
+      '''
+      print("#"*50)
+      print("#"*50)
+      print("*"*50)
+      print("[#] COMPARE SIN = {} with dz_norm = {}".format(sin[0], np.mean(dz_norm)))
+      print("===> MEAN SIN : {}, STD SIN : {}, UNIQUE : {}".format(np.mean(sin), np.std(sin), np.unique(sin)))
+      print("===> DIFF : ", np.abs(np.mean(sin) - np.mean(dz_norm)))
+      print("===> SIN Equality : ", np.all(np.abs(sin[1:] - np.mean(dz_norm)) < tol))
+      print("*"*50)
+      print("[#] COMPARE COS = {} with dx_norm = {}".format(cos[0], np.mean(dx_norm)))
+      print("===> MEAN COS : {}, STD COS : {}, UNIQUE : {}".format(np.mean(cos), np.std(cos), np.unique(cos)))
+      print("===> DIFF : ", np.abs(np.mean(cos) - np.mean(dx_norm)))
+      print("===> COS Equality : ", np.all(np.abs(cos[1:] - np.mean(dx_norm)) < tol))
+      print("*"*50)
+      print("[#] DEGREE DIFF = ", degree_diff)
+      # vis(i=i, data=data)
+      # input()
+      '''
+      fail_count+=1
+      sin_fail[i] = [np.unique(sin)[0], np.mean(dz_norm)]
+      cos_fail[i] = [np.unique(cos)[0], np.mean(dx_norm)]
+      if degree_diff > 1:
+        deg_count+=1
+        deg_fail.append(degree_diff)
+        fail_index.append(i)
+        # vis(i=i, data=data)
+        # input()
+
+  if fail:
+    print("[#] Equality check is failed")
+    print("===> N = : ", fail_count)
+    print("[#] Degree diff > 1.0")
+    print("===> N = : ", deg_count)
+    if deg_count > 0:
+      print("===> Max diff = {}, Min diff = {}".format(np.max(deg_fail), np.min(deg_fail)))
+  else:
+    print("[#] Latent is correct")
+
+  print(np.max(all_degree_diff))
+  # n_bins = np.linspace(start=0.0, stop=np.max(all_degree_diff), num=10)
+  # kwargs = dict(histtype='stepfilled', alpha=0.3, density=False, bins=n_bins , ec='k')
+  # plt.hist(all_degree_diff, **kwargs, label='Degree diff (mean={:.3f}, std={:.3f})'.format(np.mean(all_degree_diff), np.std(all_degree_diff)))
+  # plt.show()
+  if np.isnan(np.mean(all_degree_diff)):
+    print("Nan raised : Some x-z are in the same position for t and t-1")
+    exit()
+
+  return fail_index
+
 if __name__ == '__main__':
   # Argument for preprocessing
   parser = argparse.ArgumentParser(description="Ball trajectory-preprocessing script")
@@ -475,6 +591,18 @@ if __name__ == '__main__':
     for traj_type in trajectory_df.keys():
       # Adding Gravity columns
       trajectory_npy[traj_type] = addGravityColumns(trajectory_npy[traj_type])
+      # Remove Undetected wall
+      print("#"*100)
+      print("[#] Before remove the undetected wall collision")
+      fail_index = latent_equality(trajectory_npy[traj_type])
+      print("===>Fail : ", fail_index)
+      print("===>Init shape : ", trajectory_npy[traj_type].shape)
+      print("[#] After remove the undetected wall collision")
+      trajectory_npy[traj_type] = np.delete(trajectory_npy[traj_type], fail_index)
+      fail_index = latent_equality(trajectory_npy[traj_type])
+      print("===>Fail : ", fail_index)
+      print("===>Final shape : ", trajectory_npy[traj_type].shape)
+      print("#"*100)
       # Write each trajectory
       np.save(file=output_path + "/{}Trajectory_Trial{}.npy".format(traj_type, trial_index[i]), arr=trajectory_npy[traj_type])
     print("="*150)

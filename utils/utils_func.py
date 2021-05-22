@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 sys.path.append(os.path.realpath('../'))
 import numpy as np
 import torch as pt
@@ -47,9 +48,18 @@ marker_dict_noisy = dict(color='rgba(204, 102, 0, 0.4)', size=4)
 marker_dict_pred = dict(color='rgba(255, 0, 0, 0.4)', size=4)
 marker_dict_eot = dict(color='rgba(0, 255, 0, 0.4)', size=4)
 
+
 def initialize_folder(path):
   if not os.path.exists(path):
       os.makedirs(path)
+
+def random_seed():
+  print('-' * 50)
+  print("[#] Seeding...")
+  print("OLD RNG : ", pt.get_rng_state())
+  pt.manual_seed(time.time())
+  print("NEW RNG : ", pt.get_rng_state())
+  print('-' * 50)
 
 def latent_transform_size(depth_extra_insize, refinement_extra_insize):
   if args.optimize == 'refinement':
@@ -576,6 +586,8 @@ def save_autoregression(uv_interpolated, trajectory_loader):
   all_trajectory = []
   for idx, batch in enumerate(trajectory_loader):
     uv_interpolated_each = uv_interpolated['pred_uv'][idx]  # [Seq_len, 2]
+    uv_interpolated_each[:, 0][uv_interpolated_each[:, 0] < 0] = 0
+    uv_interpolated_each[:, 1][uv_interpolated_each[:, 1] < 0] = 0
     duv_interpolated_each = uv_interpolated_each[1:, :] - uv_interpolated_each[:-1, :]
     xyz_dt = batch['gt'][4][0][1:, :] - batch['gt'][4][0][:-1, :]
     uv_dt = batch['input'][0][0]

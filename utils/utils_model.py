@@ -303,10 +303,13 @@ def refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, optimize, pred_di
   # print(gt_dict['xyz'])
   # exit()
 
+  if args.ipl is not None:
+    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]] + pt.rand(size=gt_dict['xyz'][..., [0, 1, 2]].shape).to(device)/args.ipl
 
   features_indexing = 3
   if 'eot' in args.pipeline:
     features_indexing = 4
+
 
   for idx in range(args.n_refinement):
     ####################################
@@ -408,6 +411,8 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
     -   Encoder was used
   '''
 
+  if args.ipl is not None:
+    pred_xyz = gt_dict['xyz'][..., [0, 1, 2]] + pt.rand(size=gt_dict['xyz'][..., [0, 1, 2]].shape).to(device)/args.ipl
 
   # Initial the latent size
   features_indexing = 3
@@ -463,7 +468,7 @@ def optimization_refinement(model_dict, gt_dict, cam_params_dict, pred_xyz, opti
   # optimizer = pt.optim.LBFGS(trajectory_optimizer.parameters(), lr=100)
   lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10)
   trajectory_optimizer.train()
-  t = tqdm(range(15), desc='Optimizing...', leave=True)
+  t = tqdm(range(25), desc='Optimizing...', leave=True)
   for i in t:
     # def closure():
     optimizer.zero_grad()
@@ -617,7 +622,8 @@ def optimization_refinement_random_init(model_dict, gt_dict, cam_params_dict, pr
     # optimizer = pt.optim.LBFGS(trajectory_optimizer.parameters(), lr=100)
     lr_scheduler = pt.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10)
     trajectory_optimizer.train()
-    t = tqdm(range(250), desc='Optimizing...', leave=True)
+    # t = tqdm(range(250), desc='Optimizing...', leave=True)
+    t = range(250)
     for j in t:
       # def closure():
       optimizer.zero_grad()
@@ -676,8 +682,8 @@ def optimization_refinement_random_init(model_dict, gt_dict, cam_params_dict, pr
         lr = param_group['lr']
       if lr < 1e-5: break
 
-      t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
-      t.refresh()
+      # t.set_description("Optimizing... (Loss = {}, LR = {})".format(optimization_loss, lr))
+      # t.refresh()
       lr_scheduler.step(optimization_loss)
       optimization_loss.backward()
       # for name, param in trajectory_optimizer.named_parameters():
@@ -810,7 +816,7 @@ def calculate_optimization_loss(optimized_xyz, gt_dict, cam_params_dict):
   # print(trajectory_loss)
   # print(below_ground_loss)
   # print(multiview_loss)
-  optimization_loss = below_ground_loss + multiview_loss + gravity_loss #+ trajectory_loss
+  optimization_loss = below_ground_loss*10 + multiview_loss + gravity_loss*10 #+ trajectory_loss
   return optimization_loss
 
 def train_mode(model_dict):
@@ -888,7 +894,9 @@ def calculate_loss(pred_xyz, input_dict, gt_dict, cam_params_dict, pred_dict, mi
   # loss = trajectory_loss + eot_loss + below_ground_loss + gravity_loss #+ depth_loss*100  # + multiview_loss + interpolation_loss
   # loss = trajectory_loss + eot_loss + depth_loss*100 + gravity_loss #+ below_ground_loss # + multiview_loss + interpolation_loss
   # loss = trajectory_loss + eot_loss #+ gravity_loss + depth_loss*100 #+ below_ground_loss # + multiview_loss + interpolation_loss
-  loss = trajectory_loss + eot_loss + gravity_loss + depth_loss*100 + below_ground_loss # + multiview_loss + interpolation_loss
+  # loss = trajectory_loss + gravity_loss + depth_loss*100 + below_ground_loss #+ eot_loss # + multiview_loss + interpolation_loss
+  # loss = trajectory_loss # + eot_loss + gravity_loss + depth_loss*100 + below_ground_loss # + multiview_loss + interpolation_loss
+  loss = trajectory_loss + eot_loss + gravity_loss*10 + depth_loss*100 + below_ground_loss*10 # + multiview_loss + interpolation_loss
 
   loss_dict = {"Trajectory Loss":trajectory_loss.item(), "EndOfTrajectory Loss":eot_loss.item(), "Gravity Loss":gravity_loss.item(), "BelowGroundPenalize Loss":below_ground_loss.item(), "MultiviewReprojection Loss":multiview_loss.item(), "Interpolation Loss":interpolation_loss.item(), "Depth Loss":depth_loss.item()*100}
 

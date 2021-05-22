@@ -83,8 +83,12 @@ if __name__ == '__main__':
       print("="*100)
       data = np.load(each_file, allow_pickle=True)
       feature = []
+      x = []
       for each_trajectory in data:
         trajectory = np.cumsum(each_trajectory[:, feature_col[idx]])
+        print(trajectory.shape)
+        x.append(each_trajectory.shape[0])
+
         if args.ndc:
           trajectory = ndc(trajectory, feature_name[idx])
         if args.cumsum:
@@ -93,6 +97,8 @@ if __name__ == '__main__':
           feature.append(np.diff(trajectory))
         # if len(feature) == 47:
           # break
+      print(np.max(x), np.min(x))
+      exit()
       feature = np.concatenate(feature)
       # plt.plot(feature)
       # plt.show()

@@ -66,7 +66,9 @@ class BiLSTMTrainableInit(pt.nn.Module):
       else:
         init_h, init_c = self.initial_state()
       # Only first time that no skip connection from input to other networks
+      # print("I : ", idx, pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0].shape)
       out_packed, (hidden, cell_state) = recurrent_block(out_packed, (init_h, init_c))
+      # print("O : ", idx, pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0].shape)
 
     # Residual from recurrent block to FC
     out_unpacked = pad_packed_sequence(out_packed, batch_first=True, padding_value=-10)[0]

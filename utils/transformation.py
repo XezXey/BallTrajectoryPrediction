@@ -26,7 +26,17 @@ def projectToWorldSpace(uv, depth, cam_params_dict, device):
   uv = (uv.t() * depth).t()   # Normalize : (-1, 1) -> (-depth, depth) : Camera space (x', y', d, 1)
   uv = pt.stack((uv[:, 0], uv[:, 1], depth, pt.ones(depth.shape[0], dtype=pt.float32).to(device)), axis=1) # Stack the screen with depth and w ===> (x, y, depth, 1)
   uv = ((E_inv @ I_inv) @ uv.t()).t() # Reprojected
+
   return uv[:, :3]
+
+def centering(xyz, cam_params_dict, device):
+  x = cam_params_dict['center_offset']['x']
+  y = cam_params_dict['center_offset']['y']
+  z = cam_params_dict['center_offset']['z']
+
+  center_offset = pt.tensor([[[x, y, z]]]).to(device)
+  xyz = xyz - center_offset
+  return xyz
 
 def get_cam_params_dict(cam_params_file, device):
   '''
@@ -50,6 +60,11 @@ def get_cam_params_dict(cam_params_file, device):
       cam_params_dict[each_cam_use]['E_inv'] = pt.inverse(pt.tensor(cam_params['worldToCameraMatrix']).view(4, 4)).to(device)
       cam_params_dict[each_cam_use]['width'] = cam_params['width']
       cam_params_dict[each_cam_use]['height'] = cam_params['height']
+
+    if 'center_offset' in cam_params_file.keys():
+      cam_params_dict['center_offset'] = cam_params_file['center_offset']
+    else:
+      cam_params_dict['center_offset'] = dict({'x':0.0, 'y':0.0, 'z':0.0})
 
   return cam_params_dict
 
